@@ -67,3 +67,5 @@ Follow these instructions to set up the project locally.
 git clone https://github.com/Praveen-kumar625/rapid-crisis-response.git
 cd rapid-crisis-response
 npm install
+npm run dev
+npm start

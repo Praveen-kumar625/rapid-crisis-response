@@ -43,6 +43,19 @@ Given an incident **title** and **description**, you must output a **single JSON
 `.trim();
 }
 
+function parseJsonSafely(raw) {
+    if (!raw || typeof raw !== 'string') return {};
+    const first = raw.indexOf('{');
+    const last = raw.lastIndexOf('}');
+    const toParse = first >= 0 && last > first ? raw.slice(first, last + 1) : raw;
+    try {
+        return JSON.parse(toParse);
+    } catch (err) {
+        console.warn('[AI Service] parseJsonSafely failed, raw response:', raw);
+        return {};
+    }
+}
+
 // -----------------------------------------------------------------
 // 3️⃣  Public verify() function
 // -----------------------------------------------------------------
@@ -60,11 +73,27 @@ async function verify({ title, description, userSeverity }) {
     try {
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
         const prompt = buildPrompt({ title, description, userSeverity });
-        const result = await model.generateContent(prompt);
-        const text = await result.response.text();
+        const result = await model.generateContent({
+            prompt,
+            responseConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    jsonSchema: {
+                        type: 'object',
+                        properties: {
+                            spam_score: { type: 'number', minimum: 0, maximum: 1 },
+                            auto_severity: { type: 'integer', minimum: 1, maximum: 5 },
+                        },
+                        required: ['spam_score', 'auto_severity'],
+                    },
+                },
+            },
+            temperature: 0.0,
+            maxOutputTokens: 120,
+        });
 
-        // Gemini is instructed to emit only JSON, so we can safely parse.
-        const data = JSON.parse(text);
+        const text = await result.response.text();
+        const data = parseJsonSafely(text);
 
         // -----------------------------------------------------------------
         //   Validate / sanitize the returned values
@@ -128,9 +157,33 @@ async function analyzeReport({
 
     try {
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-        const result = await model.generateContent(prompt);
-        const text = await result.response.text();
-        const data = JSON.parse(text);
+        const result = await model.generateContent({
+            prompt,
+            responseConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    jsonSchema: {
+                        type: 'object',
+                        properties: {
+                            spam_score: { type: 'number', minimum: 0, maximum: 1 },
+                            auto_severity: { type: 'integer', minimum: 1, maximum: 5 },
+                            predicted_category: { type: 'string' },
+                            action_plan: { type: 'string' },
+                            recommended_resources: {
+                                type: 'array',
+                                items: { type: 'string' },
+                            },
+                        },
+                        required: ['spam_score', 'auto_severity', 'predicted_category', 'action_plan', 'recommended_resources'],
+                    },
+                },
+            },
+            temperature: 0.0,
+            maxOutputTokens: 256,
+        });
+
+        const responseText = await result.response.text();
+        const data = parseJsonSafely(responseText);
 
         const spam_score = (typeof data.spam_score === 'number' && data.spam_score >= 0 && data.spam_score <= 1) ? data.spam_score : 0.0;
         const auto_severity = (typeof data.auto_severity === 'number' && data.auto_severity >= 1 && data.auto_severity <= 5) ? Math.round(data.auto_severity) : userSeverity;

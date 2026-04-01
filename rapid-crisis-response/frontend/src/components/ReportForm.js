@@ -18,6 +18,13 @@ function ReportForm() {
     const [mediaType, setMediaType] = useState('');
     const [mediaBase64, setMediaBase64] = useState('');
     const [mediaPreview, setMediaPreview] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
+    const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        setIsSpeechSupported(!!SpeechRecognition);
+    }, []);
 
     // ---------------------------------------------------------
     // Request notification permission for background sync failures
@@ -85,6 +92,46 @@ function ReportForm() {
             }
         }
     }
+
+    // ---------------------------------------------------------
+    // Voice input support (speech-to-text)
+    // ---------------------------------------------------------
+    const handleVoiceToggle = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            toast.error('Voice input not supported on this browser.');
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-IN';
+        recognition.interimResults = true;
+        recognition.continuous = false;
+
+        if (!isRecording) {
+            setIsRecording(true);
+            recognition.start();
+        } else {
+            recognition.stop();
+        }
+
+        recognition.onresult = (event) => {
+            const transcript = Array.from(event.results)
+                .map((result) => result[0].transcript)
+                .join(' ');
+            setForm((prev) => ({...prev, description: prev.description ? `${prev.description} ${transcript}` : transcript }));
+        };
+
+        recognition.onend = () => {
+            setIsRecording(false);
+        };
+
+        recognition.onerror = (err) => {
+            console.error('Speech recognition error', err);
+            setIsRecording(false);
+            toast.error('Voice recognition failed.');
+        };
+    };
 
     // ---------------------------------------------------------
     // Media file processing
@@ -163,9 +210,13 @@ function ReportForm() {
         placeholder = "Title"
         value = { form.title }
         onChange = {
-            (e) => setForm({...form, title: e.target.value }) }
+            (e) => setForm({...form, title: e.target.value })
+        }
         required /
         >
+        <
+        <
+        div className = "space-y-2" >
         <
         textarea className = "w-full p-2 border"
         placeholder = "Description"
@@ -173,19 +224,29 @@ function ReportForm() {
         value = { form.description }
         onChange = {
             (e) => setForm({...form, description: e.target.value }) }
-        /> <
+        /> {
+            isSpeechSupported && ( <
+                button type = "button"
+                onClick = { handleVoiceToggle }
+                className = { `px-3 py-1 rounded ${isRecording ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}` } >
+                { isRecording ? 'Stop voice input' : 'Speak instead of typing' } <
+                /button>
+            )
+        } <
+        /div> <
         select className = "w-full p-2 border"
         value = { form.category }
         onChange = {
-            (e) => setForm({...form, category: e.target.value }) }
+            (e) => setForm({...form, category: e.target.value })
+        }
         required >
         <
         option value = "" > Category < /option> <
         option > FLOOD < /option> <
         option > EARTHQUAKE < /option> <
         option > FIRE < /option> <
-        option > PANDEMIC < /option> <
-        /select>
+        option > PANDEMIC < /option> < /
+        select >
 
         <
         label className = "block" >
@@ -195,7 +256,8 @@ function ReportForm() {
         max = { 5 }
         value = { form.severity }
         onChange = {
-            (e) => setForm({...form, severity: Number(e.target.value) }) }
+            (e) => setForm({...form, severity: Number(e.target.value) })
+        }
         className = "w-full" /
         >
         <
@@ -221,13 +283,15 @@ function ReportForm() {
                         alt = "Media Preview"
                         className = "rounded border"
                         style = {
-                            { maxWidth: '100%' } }
+                            { maxWidth: '100%' }
+                        }
                         />
                     ) : ( <
                         video controls src = { mediaPreview }
                         className = "rounded border"
                         style = {
-                            { maxWidth: '100%' } }
+                            { maxWidth: '100%' }
+                        }
                         />
                     )
                 } <
@@ -239,8 +303,8 @@ function ReportForm() {
         button type = "submit"
         className = "bg-green-600 text-white px-4 py-2 rounded" >
         Submit Incident <
-        /button> <
-        /form>
+        /button> < /
+        form >
     );
 }
 

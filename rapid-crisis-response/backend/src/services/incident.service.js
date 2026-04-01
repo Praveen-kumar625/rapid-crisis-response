@@ -22,6 +22,12 @@ exports.list = async(bbox) => {
             'severity',
             'category',
             'status',
+            'spam_score',
+            'auto_severity',
+            'ai_action_plan as actionPlan',
+            'ai_required_resources as requiredResources',
+            'media_type as mediaType',
+            'media_base64 as mediaBase64',
             db.raw('ST_AsGeoJSON(location) as location'),
             'reported_by as reportedBy',
             'created_at as createdAt',
@@ -55,6 +61,12 @@ exports.getById = async(id) => {
             'severity',
             'category',
             'status',
+            'spam_score',
+            'auto_severity',
+            'ai_action_plan as actionPlan',
+            'ai_required_resources as requiredResources',
+            'media_type as mediaType',
+            'media_base64 as mediaBase64',
             db.raw('ST_AsGeoJSON(location) as location'),
             'reported_by as reportedBy',
             'created_at as createdAt',
@@ -79,16 +91,29 @@ exports.create = async({
     lat,
     lng,
     reportedBy,
+    mediaType,
+    mediaBase64,
 }) => {
     // -------------------------------------------------
-    // 1️⃣  Call the (mock) AI verification service
+    // 1️⃣  Call the AI verification + recommendation service
     // -------------------------------------------------
-    const { spam_score, auto_severity } = await AIService.verify({
+    const {
+        spam_score,
+        auto_severity,
+        actionPlan,
+        requiredResources,
+        predictedCategory,
+    } = await AIService.analyzeReport({
         title,
         description,
-        // we also pass the manually supplied severity; the AI may override
+        category,
         userSeverity: severity,
+        mediaType,
+        mediaBase64,
     });
+
+    // If AI gives a better category, accept it (optional)
+    const finalCategory = predictedCategory || category;
 
     // -------------------------------------------------
     // 2️⃣ Determine final status and severity
@@ -120,10 +145,16 @@ exports.create = async({
             title,
             description,
             severity: finalSeverity,
-            category,
+            category: finalCategory,
             location,
             reported_by: reportedBy,
             status,
+            spam_score,
+            auto_severity,
+            ai_action_plan: actionPlan,
+            ai_required_resources: requiredResources || [],
+            media_type: mediaType,
+            media_base64: mediaBase64,
         })
         .returning('*');
 
@@ -136,6 +167,13 @@ exports.create = async({
     });
 
     return incident;
+};
+
+/**
+ * AI analysis endpoint (front-end prefill / sanity checks)
+ */
+exports.analyze = async({ title, description, category, userSeverity, mediaType, mediaBase64 }) => {
+    return AIService.analyzeReport({ title, description, category, userSeverity, mediaType, mediaBase64 });
 };
 
 /**

@@ -28,6 +28,12 @@ exports.up = async function(knex) {
             .notNullable()
             .index('incidents_location_idx', null, 'GIST');
         table.uuid('reported_by').references('id').inTable('users');
+        table.float('spam_score').defaultTo(0.0);
+        table.integer('auto_severity').defaultTo(1);
+        table.text('ai_action_plan');
+        table.jsonb('ai_required_resources');
+        table.string('media_type');
+        table.text('media_base64');
         table
             .enu('status', ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'])
             .defaultTo('OPEN');

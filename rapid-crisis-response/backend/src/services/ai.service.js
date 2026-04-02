@@ -352,4 +352,4 @@ function inferResourcesByCategory(category) {
     }
 }
 
-module.exports = { verify, analyzeReport };
+module.exports = { verify, analyzeReport, analyzeVoice };

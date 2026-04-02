@@ -271,38 +271,45 @@ function ReportForm() {
     // ---------------------------------------------------------
     return ( <
         form onSubmit = { handleSubmit }
-        className = "space-y-3" >
+        className = "space-y-4" >
         <
         input className = "w-full p-2 border"
         placeholder = "Title"
         value = { form.title }
         onChange = {
-            (e) => setForm({...form, title: e.target.value }) }
+            (e) => setForm((prev) => ({...prev, title: e.target.value })) }
         required /
         >
-        <
-        div className = "space-y-2" >
+
         <
         textarea className = "w-full p-2 border"
         placeholder = "Description"
         rows = { 3 }
         value = { form.description }
         onChange = {
-            (e) => setForm({...form, description: e.target.value }) }
-        /> {
+            (e) => setForm((prev) => ({...prev, description: e.target.value })) }
+        required /
+        >
+
+        <
+        div className = "flex gap-2" > {
             isSpeechSupported && ( <
                 button type = "button"
                 onClick = { handleVoiceToggle }
                 className = { `px-3 py-1 rounded ${isRecording ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'}` } > { isRecording ? 'Stop voice input' : 'Speak instead of typing' } <
                 /button>
             )
-        } <
+        }
+
+        <
         button type = "button"
         onClick = { handleAudioSOS }
         className = { `px-3 py-1 rounded ${isAudioRecording ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'}` } > { isAudioRecording ? 'Stop SOS Recording' : 'Red SOS Mic (Audio)' } <
-        /button> {
-            sosMessage && < p className = "text-sm text-gray-600" > { sosMessage } < /p>} <
-                /div>
+        /button> <
+        /div>
+
+        {
+            sosMessage && < p className = "text-sm text-gray-600" > { sosMessage } < /p>}
 
             <
             div className = "grid grid-cols-3 gap-2" >
@@ -312,29 +319,31 @@ function ReportForm() {
             placeholder = "Wing ID"
             value = { form.wingId }
             onChange = {
-                (e) => setForm({...form, wingId: e.target.value }) }
+                (e) => setForm((prev) => ({...prev, wingId: e.target.value })) }
             required
                 /
                 >
+
                 <
                 input
             className = "p-2 border"
             placeholder = "Floor Level"
             type = "number"
-            min = "1"
+            min = { 1 }
             value = { form.floorLevel }
             onChange = {
-                (e) => setForm({...form, floorLevel: e.target.value }) }
+                (e) => setForm((prev) => ({...prev, floorLevel: Number(e.target.value) })) }
             required
                 /
                 >
+
                 <
                 input
             className = "p-2 border"
             placeholder = "Room Number"
             value = { form.roomNumber }
             onChange = {
-                (e) => setForm({...form, roomNumber: e.target.value }) }
+                (e) => setForm((prev) => ({...prev, roomNumber: e.target.value })) }
             required
                 /
                 >
@@ -346,16 +355,18 @@ function ReportForm() {
             className = "w-full p-2 border"
             value = { form.category }
             onChange = {
-                (e) => setForm({...form, category: e.target.value }) }
+                (e) => setForm((prev) => ({...prev, category: e.target.value })) }
             required
                 >
                 <
                 option value = "" > Category < /option> <
-                option > MEDICAL < /option> <
-                option > FIRE < /option> <
-                option > INTRUDER < /option> <
-                /select> <
-                label className = "block" >
+                option value = "MEDICAL" > MEDICAL < /option> <
+                option value = "FIRE" > FIRE < /option> <
+                option value = "INTRUDER" > INTRUDER < /option> <
+                /select>
+
+            <
+            label className = "block" >
                 Severity: { form.severity } <
                 input
             type = "range"
@@ -363,7 +374,7 @@ function ReportForm() {
             max = { 5 }
             value = { form.severity }
             onChange = {
-                (e) => setForm({...form, severity: Number(e.target.value) }) }
+                (e) => setForm((prev) => ({...prev, severity: Number(e.target.value) })) }
             className = "w-full" /
                 >
                 <
@@ -387,7 +398,7 @@ function ReportForm() {
                     div className = "my-2" > {
                         mediaType.startsWith('image/') ? ( <
                             img src = { mediaPreview }
-                            alt = "Media Preview"
+                            alt = "Media preview"
                             className = "rounded border"
                             style = {
                                 { maxWidth: '100%' } }

@@ -1,0 +1,25 @@
+{
+    "name": "rapid-crisis-response",
+    "private": true,
+    "version": "0.1.0",
+    "workspaces": ["backend", "frontend"],
+    "scripts": {
+        "dev": "concurrently \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:web\"",
+        "dev:api": "npm --workspace=backend run dev",
+        "dev:worker": "npm --workspace=backend run worker",
+        "dev:web": "npm --workspace=frontend run start",
+        "migrate": "npm --workspace=backend run migrate",
+        "build": "npm run build:api && npm run build:web",
+        "build:api": "npm --workspace=backend run build",
+        "build:web": "npm --workspace=frontend run build",
+        "lint": "npm run lint:api && npm run lint:web",
+        "lint:api": "npm --workspace=backend run lint",
+        "lint:web": "npm --workspace=frontend run lint",
+        "test": "npm run test:api && npm run test:web",
+        "test:api": "npm --workspace=backend test",
+        "test:web": "npm --workspace=frontend test"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

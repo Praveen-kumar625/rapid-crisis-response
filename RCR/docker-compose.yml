@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+  # ---------- PostgreSQL with PostGIS ----------
+  postgres:
+    image: postgis/postgis:13-3.3
+    container_name: rcr-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Redis ----------
+  redis:
+    image: redis:7-alpine
+    container_name: rcr-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Backend API ----------
+  api:
+    build:
+      context: ./backend
+    container_name: rcr-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=development
+      - PORT=${PORT_API}
+      - DB_HOST=postgres
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+    ports:
+      - "${PORT_API}:${PORT_API}"
+    volumes:
+      - ./backend/src:/app/src        # hot‑reload for dev
+    command: npm run dev
+
+  # ---------- Worker ----------
+  worker:
+    build:
+      context: ./backend
+    container_name: rcr-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT}
+    volumes:
+      - ./backend/src:/app/src
+    command: npm run worker
+
+  # ---------- Frontend ----------
+  web:
+    build:
+      context: ./frontend
+    container_name: rcr-web
+    depends_on:
+      - api
+    environment:
+      - REACT_APP_API_URL=http://api:${PORT_API}
+      - REACT_APP_SOCKET_URL=http://api:${PORT_API}
+      - REACT_APP_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
+      - REACT_APP_AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - REACT_APP_AUTH0_CLIENT_ID=YOUR_CLIENT_ID   # set in .env
+      - REACT_APP_AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+    ports:
+      - "${PORT_WEB}:3000"
+    volumes:
+      - ./frontend/src:/app/src
+    command: npm start

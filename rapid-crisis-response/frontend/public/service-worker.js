@@ -56,6 +56,10 @@ async function syncReports() {
                     category: rpt.category,
                     lng: rpt.lng,
                     lat: rpt.lat,
+                    // 🚨 BUG FIX 2.1: Include hotel indoor context in sync
+                    floorLevel: rpt.floorLevel || 1,
+                    roomNumber: rpt.roomNumber || 'unknown',
+                    wingId: rpt.wingId || 'unknown',
                     mediaType: rpt.mediaType,
                     mediaBase64: rpt.mediaBase64,
                 }),

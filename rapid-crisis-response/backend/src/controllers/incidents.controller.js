@@ -2,9 +2,14 @@
 const IncidentService = require('../services/incident.service');
 
 exports.getAll = async(req, res) => {
-    const { bbox, wingId, floorLevel, roomNumber } = req.query;
-    const incidents = await IncidentService.list({ bbox, wingId, floorLevel, roomNumber });
-    res.json(incidents);
+    try {
+        const { bbox, wingId, floorLevel, roomNumber } = req.query;
+        const incidents = await IncidentService.list({ bbox, wingId, floorLevel, roomNumber });
+        res.json(incidents);
+    } catch (err) {
+        console.error('[IncidentsController] getAll failed:', err);
+        res.status(500).json({ error: 'Failed to fetch incidents', details: err.message });
+    }
 };
 
 exports.getOne = async(req, res) => {
@@ -14,62 +19,82 @@ exports.getOne = async(req, res) => {
 };
 
 exports.create = async(req, res) => {
-    const {
-        title,
-        description = '',
-        severity,
-        category,
-        lat,
-        lng,
-        floorLevel,
-        roomNumber,
-        wingId,
-        mediaType,
-        mediaBase64,
-    } = req.body;
+    try {
+        // 🚨 BUG FIX 2.3: VALIDATE req.user EXISTS
+        if (!req.user || !req.user.sub) {
+            return res.status(401).json({ error: 'Unauthorized: Missing or invalid JWT token' });
+        }
 
-    const reporterId = req.user.sub;
+        const {
+            title,
+            description = '',
+            severity,
+            category,
+            lat,
+            lng,
+            floorLevel,
+            roomNumber,
+            wingId,
+            mediaType,
+            mediaBase64,
+        } = req.body;
 
-    const incident = await IncidentService.create({
-        title,
-        description,
-        severity,
-        category,
-        lat,
-        lng,
-        floorLevel,
-        roomNumber,
-        wingId,
-        mediaType,
-        mediaBase64,
-        reportedBy: reporterId,
-    });
+        // Validate required fields
+        if (!title || !category || typeof lat === 'undefined' || typeof lng === 'undefined') {
+            return res.status(400).json({ error: 'Missing required fields: title, category, lat, lng' });
+        }
 
-    // If the AI flagged the report as REJECTED, we still return it but with a 202 status
-    if (incident.status === 'REJECTED') {
-        return res.status(202).json({
-            message: 'Report received but flagged as spam – it will not be displayed publicly.',
-            incident,
+        const reporterId = req.user.sub;
+
+        const incident = await IncidentService.create({
+            title,
+            description,
+            severity,
+            category,
+            lat,
+            lng,
+            floorLevel,
+            roomNumber,
+            wingId,
+            mediaType,
+            mediaBase64,
+            reportedBy: reporterId,
         });
-    }
 
-    // Normal case
-    res.status(201).json(incident);
+        // If the AI flagged the report as REJECTED, we still return it but with a 202 status
+        if (incident.status === 'REJECTED') {
+            return res.status(202).json({
+                message: 'Report received but flagged as spam – it will not be displayed publicly.',
+                incident,
+            });
+        }
+
+        // Normal case
+        res.status(201).json(incident);
+    } catch (err) {
+        console.error('[IncidentsController] create failed:', err);
+        res.status(500).json({ error: 'Failed to create incident', details: err.message });
+    }
 };
 
 exports.analyze = async(req, res) => {
-    const { title = '', description = '', category = '', severity = 3, mediaType, mediaBase64 } = req.body;
+    try {
+        const { title = '', description = '', category = '', severity = 3, mediaType, mediaBase64 } = req.body;
 
-    const analysis = await IncidentService.analyze({
-        title,
-        description,
-        category,
-        userSeverity: severity,
-        mediaType,
-        mediaBase64,
-    });
+        const analysis = await IncidentService.analyze({
+            title,
+            description,
+            category,
+            userSeverity: severity,
+            mediaType,
+            mediaBase64,
+        });
 
-    res.json(analysis);
+        res.json(analysis);
+    } catch (err) {
+        console.error('[IncidentsController] analyze failed:', err);
+        res.status(500).json({ error: 'AI analysis failed', details: err.message });
+    }
 };
 
 exports.createFromVoice = async(req, res) => {

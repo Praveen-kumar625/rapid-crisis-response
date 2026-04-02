@@ -45,13 +45,26 @@ Given an incident **title** and **description**, you must output a **single JSON
 
 function parseJsonSafely(raw) {
     if (!raw || typeof raw !== 'string') return {};
-    const first = raw.indexOf('{');
-    const last = raw.lastIndexOf('}');
-    const toParse = first >= 0 && last > first ? raw.slice(first, last + 1) : raw;
+
+    // Remove markdown code block wrappers if present (```json ... ```)
+    let text = raw.trim();
+    if (text.startsWith('```json')) {
+        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (text.startsWith('```')) {
+        text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    // Extract JSON object from text if needed
+    const first = text.indexOf('{');
+    const last = text.lastIndexOf('}');
+    const toParse = first >= 0 && last > first ? text.slice(first, last + 1) : text;
+
     try {
-        return JSON.parse(toParse);
+        const parsed = JSON.parse(toParse);
+        console.log('[AI Service] parseJsonSafely SUCCESS: parsed JSON object');
+        return parsed;
     } catch (err) {
-        console.warn('[AI Service] parseJsonSafely failed, raw response:', raw);
+        console.error('[AI Service] parseJsonSafely FATAL:', err.message, 'Raw substring:', text.substring(0, 200));
         return {};
     }
 }
@@ -71,7 +84,11 @@ async function verify({ title, description, userSeverity }) {
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+        const model = genAI.getGenerativeModel({
+            model: MODEL_NAME,
+            // 🚨 BUG FIX 1.2: Enforce strict JSON mode to prevent markdown wrapping
+            generationConfig: { responseMimeType: 'application/json' }
+        });
         const prompt = buildPrompt({ title, description, userSeverity });
         const result = await model.generateContent({
             prompt,
@@ -173,7 +190,11 @@ async function analyzeReport({
         `${details}`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+        const model = genAI.getGenerativeModel({
+            model: MODEL_NAME,
+            // 🚨 BUG FIX 1.2: Enforce strict JSON mode to prevent markdown wrapping
+            generationConfig: { responseMimeType: 'application/json' }
+        });
         const result = await model.generateContent({
             prompt,
             responseConfig: {
@@ -260,7 +281,11 @@ async function analyzeVoice({ audioBase64, floorLevel, roomNumber, wingId, lat, 
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+        const model = genAI.getGenerativeModel({
+            model: MODEL_NAME,
+            // 🚨 BUG FIX 1.2: Enforce strict JSON mode to prevent markdown wrapping
+            generationConfig: { responseMimeType: 'application/json' }
+        });
         const prompt = `You are a hotel crisis AI that transcribes guest speech and outputs strict JSON.\n` +
             `Audio payload (base64) needs transcription plus triage. Output keys: translated_english_text, detected_language, panic_level, hospitality_category, action_plan, spam_score, auto_severity, predicted_category, required_resources. No extra.`;
 

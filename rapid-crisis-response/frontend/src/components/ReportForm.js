@@ -34,6 +34,30 @@ function ReportForm() {
     }, []);
 
     // ---------------------------------------------------------
+    // 🚨 BUG FIX 1.1: FETCH ACTUAL GEOLOCATION (NOT NULL ISLAND)
+    // ---------------------------------------------------------
+    useEffect(() => {
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    setPosition({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                    });
+                    console.log('[ReportForm] Geolocation SUCCESS:', pos.coords.latitude, pos.coords.longitude);
+                },
+                (err) => {
+                    console.warn('[ReportForm] Geolocation FAILED:', err.message);
+                    toast.error(`📍 Unable to get location: ${err.message}. Using default coordinates.`);
+                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+            );
+        } else {
+            console.warn('[ReportForm] Geolocation not supported');
+            toast.error('📍 Geolocation not supported on this browser.');
+        }
+    }, []);
+
+    // ---------------------------------------------------------
     // Request notification permission for background sync failures
     // ---------------------------------------------------------
     useEffect(() => {
@@ -213,22 +237,36 @@ function ReportForm() {
             setMediaPreview(base64data);
 
             try {
+                console.log('[ReportForm] Sending multimodal input to AI:', file.type);
                 const { data } = await api.post('/incidents/analyze', {
                     ...form,
                     mediaType: file.type,
                     mediaBase64: base64data,
+                    // 🏨 Hospitality context: include room/floor/wing for vision AI
+                    floorLevel: form.floorLevel,
+                    roomNumber: form.roomNumber,
+                    wingId: form.wingId,
                 });
 
+                // Auto-update form from AI vision analysis
                 if (data.predictedCategory) {
                     setForm((prev) => ({...prev, category: data.predictedCategory }));
+                    toast.success(`🎯 AI detected: ${data.predictedCategory}`);\
+                    n
                 }
                 if (typeof data.auto_severity === 'number') {
                     setForm((prev) => ({...prev, severity: data.auto_severity }));
+                    toast.success(`📊 Severity auto-set: ${data.auto_severity}/5`);
+                }
+                // 🌍 Hospitality: if language detected, show user
+                if (data.detected_language && data.detected_language !== 'en') {
+                    toast.info(`🌍 Language: ${data.detected_language} (AI translated to English)`);
                 }
 
-                toast.success('🎯 AI prefill complete: category/severity updated');
+                console.log('[ReportForm] AI analysis complete:', data);
             } catch (err) {
                 console.warn('[ReportForm] AI analyze failed', err);
+                toast.error('⚠️ AI analysis unavailable; proceed manually');
             }
         };
         reader.readAsDataURL(file);
@@ -277,7 +315,8 @@ function ReportForm() {
         placeholder = "Title"
         value = { form.title }
         onChange = {
-            (e) => setForm((prev) => ({...prev, title: e.target.value })) }
+            (e) => setForm((prev) => ({...prev, title: e.target.value }))
+        }
         required /
         >
 
@@ -287,7 +326,8 @@ function ReportForm() {
         rows = { 3 }
         value = { form.description }
         onChange = {
-            (e) => setForm((prev) => ({...prev, description: e.target.value })) }
+            (e) => setForm((prev) => ({...prev, description: e.target.value }))
+        }
         required /
         >
 
@@ -305,93 +345,94 @@ function ReportForm() {
         button type = "button"
         onClick = { handleAudioSOS }
         className = { `px-3 py-1 rounded ${isAudioRecording ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'}` } > { isAudioRecording ? 'Stop SOS Recording' : 'Red SOS Mic (Audio)' } <
-        /button> <
-        /div>
+        /button> < /
+        div >
 
         {
             sosMessage && < p className = "text-sm text-gray-600" > { sosMessage } < /p>}
 
             <
             div className = "grid grid-cols-3 gap-2" >
-                <
-                input
+            <
+            input
             className = "p-2 border"
             placeholder = "Wing ID"
             value = { form.wingId }
             onChange = {
-                (e) => setForm((prev) => ({...prev, wingId: e.target.value })) }
-            required
-                /
-                >
+                (e) => setForm((prev) => ({...prev, wingId: e.target.value }))
+            }
+            required /
+            >
 
-                <
-                input
+            <
+            input
             className = "p-2 border"
             placeholder = "Floor Level"
             type = "number"
             min = { 1 }
             value = { form.floorLevel }
             onChange = {
-                (e) => setForm((prev) => ({...prev, floorLevel: Number(e.target.value) })) }
-            required
-                /
-                >
+                (e) => setForm((prev) => ({...prev, floorLevel: Number(e.target.value) }))
+            }
+            required /
+            >
 
-                <
-                input
+            <
+            input
             className = "p-2 border"
             placeholder = "Room Number"
             value = { form.roomNumber }
             onChange = {
-                (e) => setForm((prev) => ({...prev, roomNumber: e.target.value })) }
-            required
-                /
-                >
-                <
-                /div>
+                (e) => setForm((prev) => ({...prev, roomNumber: e.target.value }))
+            }
+            required /
+            >
+            <
+            /div>
 
             <
             select
             className = "w-full p-2 border"
             value = { form.category }
             onChange = {
-                (e) => setForm((prev) => ({...prev, category: e.target.value })) }
-            required
-                >
-                <
-                option value = "" > Category < /option> <
-                option value = "MEDICAL" > MEDICAL < /option> <
-                option value = "FIRE" > FIRE < /option> <
-                option value = "INTRUDER" > INTRUDER < /option> <
-                /select>
+                (e) => setForm((prev) => ({...prev, category: e.target.value }))
+            }
+            required >
+            <
+            option value = "" > Category < /option> <
+            option value = "MEDICAL" > MEDICAL < /option> <
+            option value = "FIRE" > FIRE < /option> <
+            option value = "INTRUDER" > INTRUDER < /option> < /
+            select >
 
             <
             label className = "block" >
-                Severity: { form.severity } <
-                input
+            Severity: { form.severity } <
+            input
             type = "range"
             min = { 1 }
             max = { 5 }
             value = { form.severity }
             onChange = {
-                (e) => setForm((prev) => ({...prev, severity: Number(e.target.value) })) }
+                (e) => setForm((prev) => ({...prev, severity: Number(e.target.value) }))
+            }
             className = "w-full" /
-                >
-                <
-                /label>
+            >
+            <
+            /label>
 
             <
             label className = "block mt-2" >
-                Attach photo / video <
-                input
+            Attach photo / video <
+            input
             type = "file"
             accept = "image/*,video/*"
             capture = "environment"
             onChange = { handleMediaChange }
             className = "mt-1" /
-                >
-                <
-                /label>
+            >
+            <
+            /label>
 
             {
                 mediaPreview && ( <
@@ -401,13 +442,15 @@ function ReportForm() {
                             alt = "Media preview"
                             className = "rounded border"
                             style = {
-                                { maxWidth: '100%' } }
+                                { maxWidth: '100%' }
+                            }
                             />
                         ) : ( <
                             video controls src = { mediaPreview }
                             className = "rounded border"
                             style = {
-                                { maxWidth: '100%' } }
+                                { maxWidth: '100%' }
+                            }
                             />
                         )
                     } <
@@ -418,9 +461,9 @@ function ReportForm() {
             <
             button type = "submit"
             className = "bg-green-600 text-white px-4 py-2 rounded" >
-                Submit Incident <
-                /button> <
-                /form>
+            Submit Incident <
+            /button> < /
+            form >
         );
     }
 

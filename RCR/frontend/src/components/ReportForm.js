@@ -264,10 +264,10 @@ function ReportForm() {
                 });
 
                 // Auto-update form from AI vision analysis
+                // Auto-update form from AI vision analysis
                 if (data.predictedCategory) {
                     setForm((prev) => ({...prev, category: data.predictedCategory }));
-                    toast.success(`🎯 AI detected: ${data.predictedCategory}`);\
-                    n
+                    toast.success(`🎯 AI detected: ${data.predictedCategory}`);
                 }
                 if (typeof data.auto_severity === 'number') {
                     setForm((prev) => ({...prev, severity: data.auto_severity }));

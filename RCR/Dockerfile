@@ -1,23 +1,25 @@
-# Root Dockerfile for Rapid Crisis Response Backend
-# Render expects Dockerfile at root level
-
+# Dockerfile for Rapid Crisis Response Monorepo (Backend)
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy backend package files
-COPY backend/package*.json ./
+# Copy root package files (monorepo with workspaces)
+COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Copy backend and frontend package files (for workspace resolution)
+COPY backend/package*.json ./backend/
+COPY frontend/package*.json ./frontend/
 
-# Copy backend code
-COPY backend/src ./src
-COPY backend/knexfile.js ./
-COPY backend/.env ./
+# Install all dependencies (including both workspaces)
+RUN npm install --production
 
-# Expose port
+# Copy backend source code
+COPY backend/src ./backend/src
+COPY backend/knexfile.js ./backend/
+COPY backend/.env ./backend/
+
+# Expose backend port
 EXPOSE 5000
 
-# Start the application
-CMD ["npm", "start"]
+# Start backend from workspace
+CMD ["npm", "--workspace=backend", "start"]

@@ -3,18 +3,18 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy only backend folder
-COPY backend/package*.json ./
+# Copy backend package files
+COPY backend/package.json backend/package-lock.json ./
 
-# Install backend dependencies only
+# Install backend dependencies (reproducible)
 RUN npm ci --only=production
 
-# Copy backend source
-COPY backend/src ./src
-COPY backend/knexfile.js ./
+# Copy backend project files
+COPY backend/ ./
 
+# Ensure we are using production .env from Render env vars (do not commit secrets)
 # Expose port
 EXPOSE 5000
 
-# Start backend directly
-CMD ["node", "src/index.js"]
+# Start backend
+CMD ["npm", "--prefix", "./", "start"]

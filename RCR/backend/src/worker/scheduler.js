@@ -1,19 +1,46 @@
 const cron = require('node-cron');
 const { generateHotelIoTEvent } = require('./feeds/hotel_iot_feed');
+const IncidentService = require('../services/incident.service');
+const db = require('../db');
 
-function startScheduler(redisConfig) {
-    const redis = new(require('ioredis'))(redisConfig);
+async function startScheduler(_redisConfig) {
+    // Ensure system user exists
+    try {
+        await db('users')
+            .insert({ id: 'SYSTEM_IOT', email: 'iot@hotel.com', name: 'IoT Sensor System', role: 'ADMIN' })
+            .onConflict('id')
+            .ignore();
+    } catch (err) {
+        console.warn('⚠️ Could not ensure SYSTEM_IOT user:', err.message);
+    }
 
     cron.schedule('*/1 * * * *', async() => {
         try {
-            const incident = generateHotelIoTEvent();
+            const iotEvent = generateHotelIoTEvent();
 
-            await redis.publish('incidents', JSON.stringify({
-                type: 'created',
-                incident
-            }));
+            // Persist to DB using IncidentService
+            const incident = await IncidentService.create({
+                title: iotEvent.title,
+                description: iotEvent.description,
+                severity: iotEvent.severity,
+                category: iotEvent.category,
+                lat: iotEvent.location.coordinates[1],
+                lng: iotEvent.location.coordinates[0],
+                floorLevel: iotEvent.floor_level,
+                roomNumber: iotEvent.room_number,
+                wingId: iotEvent.wing_id,
+                reportedBy: 'SYSTEM_IOT', // We should ensure this exists or remove FK
+                preAnalysis: {
+                    spam_score: 0.0,
+                    auto_severity: iotEvent.severity,
+                    actionPlan: ['Automated IoT trigger – check sensor status'],
+                    requiredResources: ['Maintenance'],
+                    predictedCategory: iotEvent.category,
+                    hospitality_category: iotEvent.category,
+                }
+            });
 
-            console.log(`✅ Worker published 1 hotel IoT incident: ${incident.title}`);
+            console.log(`✅ Worker persisted and published 1 hotel IoT incident: ${incident.title}`);
         } catch (err) {
             console.error('🚨 Worker error:', err);
         }

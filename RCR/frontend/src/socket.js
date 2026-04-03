@@ -10,6 +10,7 @@ let socket = null;
 export async function getSocket() {
     if (socket) return socket;
 
+    // In demo mode or if no auth, we might still want a socket
     const token = await getAccessTokenSilently().catch(() => null);
 
     socket = io(process.env.REACT_APP_SOCKET_URL, {
@@ -22,3 +23,10 @@ export async function getSocket() {
 
     return socket;
 }
+
+export const joinHotelRoom = async (hotelId) => {
+    const s = await getSocket();
+    if (hotelId) {
+        s.emit('join-hotel', hotelId);
+    }
+};

@@ -13,19 +13,20 @@ const { ALLOWED_ORIGINS } = require('./config/env');
 app.use(
     cors({
         origin: function(origin, callback) {
-            if (!origin || ALLOWED_ORIGINS.length === 0) {
-                return callback(null, true);
-            }
+            // Allow server-to-server or locally-hosted requests without origin
+            if (!origin) return callback(null, true);
+            
             if (ALLOWED_ORIGINS.includes(origin)) {
                 return callback(null, true);
             }
-            return callback(new Error('CORS policy does not allow this origin.'), false);
+            
+            return callback(new Error('CORS policy: Origin not allowed.'), false);
         },
         credentials: true,
     })
 );
 app.use(helmet());
-app.use(morgan('dev'));
+app.use(morgan('combined'));
 app.use(express.json());
 
 // Public health check

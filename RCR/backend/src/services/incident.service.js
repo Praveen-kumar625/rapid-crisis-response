@@ -1,19 +1,20 @@
 // src/services/incident.service.js
 const db = require('../db');
 const SocketService = require('./socket.service');
-const AIService = require('../services/ai.service'); // new mock AI service
+const AIService = require('../services/ai.service');
 
 /**
  * Helper – converts PostGIS geometry to GeoJSON Point
  */
 function geometryToGeoJSON(geom) {
-    return JSON.parse(geom);
+    if (!geom) return null;
+    return typeof geom === 'string' ? JSON.parse(geom) : geom;
 }
 
 /**
- * List incidents – optional bbox filtering
+ * List incidents – optional bbox filtering and mandatory hotelId filtering
  */
-exports.list = async({ bbox, wingId, floorLevel, roomNumber } = {}) => {
+exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => {
     let query = db('incidents')
         .select(
             'id',
@@ -28,6 +29,7 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber } = {}) => {
             'hospitality_category as hospitalityCategory',
             'spam_score',
             'auto_severity',
+            'triage_method as triageMethod',
             'ai_action_plan as actionPlan',
             'ai_required_resources as requiredResources',
             'media_type as mediaType',
@@ -35,9 +37,15 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber } = {}) => {
             db.raw('ST_AsGeoJSON(location) as location'),
             db.raw('ST_AsGeoJSON(indoor_location) as indoorLocation'),
             'reported_by as reportedBy',
+            'hotel_id as hotelId',
             'created_at as createdAt',
             'updated_at as updatedAt'
         );
+
+    // Enforce Tenant Isolation
+    if (hotelId) {
+        query = query.where('hotel_id', hotelId);
+    }
 
     if (bbox) {
         const [minLng, minLat, maxLng, maxLat] = bbox.split(',').map(Number);
@@ -59,12 +67,16 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber } = {}) => {
 };
 
 /**
- * Get a single incident by ID
+ * Get a single incident by ID – scoped to hotelId
  */
-exports.getById = async(id) => {
-    const rows = await db('incidents')
-        .where({ id })
-        .select(
+exports.getById = async(id, hotelId) => {
+    const query = db('incidents').where({ id });
+    
+    if (hotelId) {
+        query.andWhere({ hotel_id: hotelId });
+    }
+
+    const rows = await query.select(
             'id',
             'title',
             'description',
@@ -77,6 +89,7 @@ exports.getById = async(id) => {
             'wing_id as wingId',
             'spam_score',
             'auto_severity',
+            'triage_method as triageMethod',
             'ai_action_plan as actionPlan',
             'ai_required_resources as requiredResources',
             'media_type as mediaType',
@@ -84,6 +97,7 @@ exports.getById = async(id) => {
             db.raw('ST_AsGeoJSON(location) as location'),
             db.raw('ST_AsGeoJSON(indoor_location) as indoorLocation'),
             'reported_by as reportedBy',
+            'hotel_id as hotelId',
             'created_at as createdAt',
             'updated_at as updatedAt'
         );
@@ -91,12 +105,12 @@ exports.getById = async(id) => {
     if (!rows.length) return null;
     const inc = rows[0];
     inc.location = geometryToGeoJSON(inc.location);
+    inc.indoorLocation = geometryToGeoJSON(inc.indoorLocation);
     return inc;
 };
 
 /**
- * Create a new incident (called by the controller).
- * Includes AI verification (spam score + auto severity) before persisting.
+ * Create a new incident – persisted with hotel_id
  */
 exports.create = async({
     title,
@@ -112,23 +126,16 @@ exports.create = async({
     reportedBy,
     mediaType,
     mediaBase64,
+    hotelId,
+    preAnalysis = null,
+    triageMethod = 'Cloud AI (Gemini)',
 }) => {
-    // enforce indoor context data
     const validatedFloor = Number.isInteger(Number(floorLevel)) ? Number(floorLevel) : 1;
     const validatedRoom = roomNumber ? String(roomNumber) : 'unknown';
     const validatedWing = wingId ? String(wingId) : 'unknown';
 
-    // -------------------------------------------------
-    // 1️⃣  Call the AI verification + recommendation service
-    // -------------------------------------------------
-    const {
-        spam_score,
-        auto_severity,
-        actionPlan,
-        requiredResources,
-        predictedCategory,
-        hospitality_category,
-    } = await AIService.analyzeReport({
+    // 1. AI Triage (Skip if pre-analyzed by Edge AI or Voice flow)
+    const analysis = preAnalysis || await AIService.analyzeReport({
         title,
         description,
         category,
@@ -140,30 +147,30 @@ exports.create = async({
         wingId: validatedWing,
     });
 
+    const {
+        spam_score = 0,
+        auto_severity = severity,
+        actionPlan,
+        requiredResources,
+        predictedCategory,
+        hospitality_category,
+    } = analysis;
+
     const finalCategory = predictedCategory || category;
     const finalHospitalityCategory = hospitality_category || (category ? category.toUpperCase() : 'INFRASTRUCTURE');
 
-    // -------------------------------------------------
-    // 2️⃣ Determine final status and severity
-    // -------------------------------------------------
+    // 2. Triage Logic
     let finalSeverity = severity;
     let status = 'OPEN';
 
     if (spam_score > 0.8) {
         status = 'REJECTED';
-        finalSeverity = severity;
-    } else {
-        if (auto_severity && auto_severity > severity) {
-            finalSeverity = auto_severity;
-        }
+    } else if (auto_severity && auto_severity > severity) {
+        finalSeverity = auto_severity;
     }
 
-    // -------------------------------------------------
-    // 3️⃣ Persist
-    // -------------------------------------------------
-    const location = db.raw(
-        `ST_SetSRID(ST_MakePoint(?, ?), 4326)::geometry`, [lng, lat]
-    );
+    // 3. PostGIS Persistence
+    const location = db.raw(`ST_SetSRID(ST_MakePoint(?, ?), 4326)::geometry`, [lng, lat]);
     const indoor = indoorLocation ?
         db.raw(`ST_SetSRID(ST_MakePoint(?, ?), 4326)::geometry`, [indoorLocation.lng, indoorLocation.lat]) :
         location;
@@ -181,9 +188,11 @@ exports.create = async({
             location,
             indoor_location: indoor,
             reported_by: reportedBy,
+            hotel_id: hotelId, // Persist Tenant ID
             status,
             spam_score,
             auto_severity,
+            triage_method: triageMethod,
             ai_action_plan: actionPlan,
             ai_required_resources: requiredResources || [],
             media_type: mediaType,
@@ -191,49 +200,31 @@ exports.create = async({
         })
         .returning('*');
 
-    // -------------------------------------------------
-    // 4️⃣ Publish to Redis (global and role-selected)
-    // -------------------------------------------------
-    await SocketService.publish('incidents', {
-        type: 'created',
-        incident,
-    });
+    // 4. Real-time Segregated Notifications
+    const tenantTopic = `hotel_${hotelId}`;
+    
+    // Notify general hotel channel
+    await SocketService.publish(`${tenantTopic}_incidents`, { type: 'created', incident });
 
+    // Notify specific role channels within the hotel
     const roleChannels = [];
     switch (finalHospitalityCategory) {
-        case 'FIRE':
-            roleChannels.push('staff_fire', 'staff_medical', 'staff_infrastructure');
-            break;
-        case 'MEDICAL':
-            roleChannels.push('staff_medical');
-            break;
-        case 'SECURITY':
-        case 'INTRUDER':
-            roleChannels.push('staff_security');
-            break;
-        default:
-            roleChannels.push('staff_general');
+        case 'FIRE': roleChannels.push('staff_fire', 'staff_medical', 'staff_infrastructure'); break;
+        case 'MEDICAL': roleChannels.push('staff_medical'); break;
+        case 'SECURITY': roleChannels.push('staff_security'); break;
+        default: roleChannels.push('staff_general');
     }
 
     for (const ch of roleChannels) {
-        await SocketService.publish(ch, {
-            type: 'created',
-            incident,
-        });
+        await SocketService.publish(`${tenantTopic}_${ch}`, { type: 'created', incident });
     }
 
     return incident;
 };
 
-/**
- * AI analysis endpoint (front-end prefill / sanity checks)
- */
-exports.analyze = async({ title, description, category, userSeverity, mediaType, mediaBase64 }) => {
-    return AIService.analyzeReport({ title, description, category, userSeverity, mediaType, mediaBase64 });
-};
+exports.analyzeReport = async(params) => AIService.analyzeReport(params);
 
-exports.analyzeVoice = async({ audioBase64, floorLevel, roomNumber, wingId, lat, lng, reportedBy }) => {
-    // Requires ai service to transcribe and materialize text
+exports.analyzeVoice = async({ audioBase64, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
     const analysis = await AIService.analyzeVoice({ audioBase64, floorLevel, roomNumber, wingId, lat, lng });
 
     const incident = await exports.create({
@@ -249,25 +240,22 @@ exports.analyzeVoice = async({ audioBase64, floorLevel, roomNumber, wingId, lat,
         mediaType: 'audio/base64',
         mediaBase64: audioBase64,
         reportedBy,
+        hotelId,
+        preAnalysis: analysis,
+        triageMethod: 'Cloud AI (Gemini Voice)'
     });
 
-    return {
-        analysis,
-        incident,
-    };
+    return { analysis, incident };
 };
 
-/**
- * Update incident status (used by resolver / admin)
- */
-exports.updateStatus = async(id, newStatus) => {
-    const [incident] = await db('incidents')
-        .where({ id })
-        .update({ status: newStatus })
-        .returning('*');
+exports.updateStatus = async(id, newStatus, hotelId) => {
+    const query = db('incidents').where({ id });
+    if (hotelId) query.andWhere({ hotel_id: hotelId });
+
+    const [incident] = await query.update({ status: newStatus }).returning('*');
 
     if (incident) {
-        await SocketService.publish('incidents', {
+        await SocketService.publish(`hotel_${hotelId}_incidents`, {
             type: 'status-updated',
             incident,
         });

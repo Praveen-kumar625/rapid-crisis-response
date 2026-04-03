@@ -62,6 +62,7 @@ async function syncReports() {
                     wingId: rpt.wingId || 'unknown',
                     mediaType: rpt.mediaType,
                     mediaBase64: rpt.mediaBase64,
+                    triageMethod: rpt.triageMethod || 'Edge AI (Offline)',
                 }),
             });
 

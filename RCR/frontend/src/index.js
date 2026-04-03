@@ -8,7 +8,7 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker
             .register(`${process.env.PUBLIC_URL}/service-worker.js`)
-            .then(reg => console.log('✅ Service Worker registered'))
+            .then(_reg => console.log('✅ Service Worker registered'))
             .catch(err => console.error('❌ SW failed:', err));
     });
 }

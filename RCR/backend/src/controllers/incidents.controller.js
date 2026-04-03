@@ -4,7 +4,8 @@ const IncidentService = require('../services/incident.service');
 exports.getAll = async(req, res) => {
     try {
         const { bbox, wingId, floorLevel, roomNumber } = req.query;
-        const incidents = await IncidentService.list({ bbox, wingId, floorLevel, roomNumber });
+        const hotelId = req.user?.hotelId;
+        const incidents = await IncidentService.list({ bbox, wingId, floorLevel, roomNumber, hotelId });
         res.json(incidents);
     } catch (err) {
         console.error('[IncidentsController] getAll failed:', err);
@@ -13,14 +14,14 @@ exports.getAll = async(req, res) => {
 };
 
 exports.getOne = async(req, res) => {
-    const incident = await IncidentService.getById(req.params.id);
+    const hotelId = req.user?.hotelId;
+    const incident = await IncidentService.getById(req.params.id, hotelId);
     if (!incident) return res.status(404).json({ message: 'Not found' });
     res.json(incident);
 };
 
 exports.create = async(req, res) => {
     try {
-        // 🚨 BUG FIX 2.3: VALIDATE req.user EXISTS
         if (!req.user || !req.user.sub) {
             return res.status(401).json({ error: 'Unauthorized: Missing or invalid JWT token' });
         }
@@ -37,6 +38,7 @@ exports.create = async(req, res) => {
             wingId,
             mediaType,
             mediaBase64,
+            triageMethod,
         } = req.body;
 
         // Validate required fields
@@ -45,6 +47,7 @@ exports.create = async(req, res) => {
         }
 
         const reporterId = req.user.sub;
+        const hotelId = req.user.hotelId;
 
         const incident = await IncidentService.create({
             title,
@@ -59,9 +62,10 @@ exports.create = async(req, res) => {
             mediaType,
             mediaBase64,
             reportedBy: reporterId,
+            hotelId,
+            triageMethod,
         });
 
-        // If the AI flagged the report as REJECTED, we still return it but with a 202 status
         if (incident.status === 'REJECTED') {
             return res.status(202).json({
                 message: 'Report received but flagged as spam – it will not be displayed publicly.',
@@ -69,7 +73,6 @@ exports.create = async(req, res) => {
             });
         }
 
-        // Normal case
         res.status(201).json(incident);
     } catch (err) {
         console.error('[IncidentsController] create failed:', err);
@@ -99,7 +102,7 @@ exports.analyze = async(req, res) => {
 
 exports.createFromVoice = async(req, res) => {
     try {
-        const { audioBase64, lat, lng, floorLevel, roomNumber, wingId, reportedBy } = req.body;
+        const { audioBase64, lat, lng, floorLevel, roomNumber, wingId } = req.body;
 
         if (!audioBase64) {
             return res.status(400).json({ error: 'audioBase64 is required' });
@@ -113,6 +116,7 @@ exports.createFromVoice = async(req, res) => {
             lat,
             lng,
             reportedBy: req.user ? req.user.sub : 'anonymous',
+            hotelId: req.user?.hotelId
         });
 
         res.status(201).json(analysis);
@@ -123,8 +127,45 @@ exports.createFromVoice = async(req, res) => {
 };
 
 exports.updateStatus = async(req, res) => {
-    const { status } = req.body;
-    const updated = await IncidentService.updateStatus(req.params.id, status);
-    if (!updated) return res.status(404).json({ message: 'Not found' });
-    res.json(updated);
+    try {
+        const { status } = req.body;
+        const hotelId = req.user?.hotelId;
+        const updated = await IncidentService.updateStatus(req.params.id, status, hotelId);
+        if (!updated) return res.status(404).json({ message: 'Not found' });
+        res.json(updated);
+    } catch (err) {
+        console.error('[IncidentsController] updateStatus failed:', err);
+        res.status(500).json({ error: 'Failed to update status' });
+    }
+};
+
+exports.updateSafetyStatus = async(req, res) => {
+    try {
+        const { status } = req.body;
+        const userId = req.user.sub;
+        const db = require('../db');
+        
+        const [user] = await db('users')
+            .where({ id: userId })
+            .update({ 
+                safety_status: status, 
+                last_pulse_at: new Date() 
+            })
+            .returning('*');
+
+        // Notify responders via socket
+        const { ioInstance } = require('../sockets');
+        if (ioInstance && user.hotel_id) {
+            ioInstance.to(`hotel_${user.hotel_id}`).emit('user.safety-pulse', {
+                userId: user.id,
+                status: user.safety_status,
+                name: user.name
+            });
+        }
+
+        res.json({ success: true, status: user.safety_status });
+    } catch (err) {
+        console.error('[IncidentsController] updateSafetyStatus failed:', err);
+        res.status(500).json({ error: 'Pulse failed' });
+    }
 };

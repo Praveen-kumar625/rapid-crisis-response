@@ -7,7 +7,7 @@ exports.up = async function(knex) {
 
     // Users (minimal – used only for FK)
     await knex.schema.createTable('users', (table) => {
-        table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
+        table.string('id').primary();
         table.string('email').unique().notNullable();
         table.string('name');
         table
@@ -34,7 +34,7 @@ exports.up = async function(knex) {
             .specificType('indoor_location', 'GEOMETRY(Point,4326)')
             .notNullable()
             .index('incidents_indoor_location_idx', null, 'GIST');
-        table.uuid('reported_by').references('id').inTable('users');
+        table.string('reported_by').references('id').inTable('users');
         table.float('spam_score').defaultTo(0.0);
         table.integer('auto_severity').defaultTo(1);
         table.text('ai_action_plan');
@@ -43,7 +43,7 @@ exports.up = async function(knex) {
         table.string('media_type');
         table.text('media_base64');
         table
-            .enu('status', ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'])
+            .enu('status', ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'])
             .defaultTo('OPEN');
         table.timestamp('created_at').defaultTo(knex.fn.now());
         table.timestamp('updated_at').defaultTo(knex.fn.now());

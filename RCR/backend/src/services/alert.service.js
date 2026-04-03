@@ -37,6 +37,12 @@ function startAlertListener() {
         const incident = payload.incident;
         if (!incident || incident.severity !== 5) return; // only severity‑5
 
+        // Check if Twilio is configured
+        if (!TWILIO.accountSid || !TWILIO.authToken || !TWILIO.fromNumber) {
+            console.warn('[AlertService] Twilio not configured. Skipping SMS alert.');
+            return;
+        }
+
         // ------------------------ Twilio client ------------------------
         const client = twilio(TWILIO.accountSid, TWILIO.authToken);
 

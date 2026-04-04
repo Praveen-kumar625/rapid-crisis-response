@@ -17,14 +17,17 @@ jobs:
         with:
           node-version: '22'
       - name: Install dependencies
+        # 🚀 FIX: Install from root to ensure workspaces are handled correctly
         run: npm install
-        working-directory: RCR/backend
+        working-directory: RCR
       - name: Run tests
-        # 🚀 FIX: --forceExit kills any remaining handles (Redis/DB) after tests pass
-        run: npm test -- --passWithNoTests --forceExit || true
-        working-directory: RCR/backend
+        # 🚀 FIX: Run via workspace command
+        run: npm test --workspace=backend -- --passWithNoTests --forceExit || true
+        working-directory: RCR
         env:
           NODE_ENV: test
+
+  test-frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,10 +37,10 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install
-        working-directory: RCR/frontend
+        working-directory: RCR
       - name: Run tests
-        run: CI=false npm test -- --passWithNoTests || true
-        working-directory: RCR/frontend
+        run: CI=false npm test --workspace=frontend -- --passWithNoTests || true
+        working-directory: RCR
 
   # -----------------------------------------------------------------
   # 2. Docker Builds (Push to DockerHub)

@@ -2,7 +2,7 @@
     "name": "rapid-crisis-response",
     "private": true,
     "version": "0.1.0",
-    "workspaces": ["RCR/backend", "RCR/frontend"],
+    "workspaces": ["backend", "frontend"],
     "scripts": {
         "dev": "concurrently \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:web\"",
         "dev:api": "npm --workspace=backend run dev",

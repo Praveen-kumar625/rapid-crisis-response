@@ -8,6 +8,11 @@ let ioInstance = null;
 const redisClient = new Redis({
     host: REDIS.host,
     port: REDIS.port,
+    retryStrategy: (times) => Math.min(times * 50, 2000), // Don't crash, just retry
+});
+
+redisClient.on('error', (err) => {
+    console.warn('⚠️ Redis Error: System will continue but real-time alerts may be delayed.');
 });
 
 function initSocket(httpServer) {

@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd RCR && npm install && npm run build:web",
+  "outputDirectory": "RCR/frontend/build",
+  "framework": "create-react-app",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

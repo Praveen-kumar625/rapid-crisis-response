@@ -4,11 +4,11 @@ require('dotenv').config();
 module.exports = {
     PORT: process.env.PORT || process.env.PORT_API || 3001,
     DB: {
-        host: process.env.DB_HOST,
-        port: Number(process.env.DB_PORT),
-        name: process.env.DB_NAME,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASS,
+        host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+        port: Number(process.env.DB_PORT || process.env.PGPORT || 5432),
+        name: process.env.DB_NAME || process.env.PGDATABASE,
+        user: process.env.DB_USER || process.env.PGUSER,
+        password: process.env.DB_PASS || process.env.PGPASSWORD,
     },
     REDIS: {
         host: process.env.REDIS_HOST || process.env.REDISHOST || 'localhost',

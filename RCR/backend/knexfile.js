@@ -8,11 +8,11 @@ module.exports = {
             ssl: { rejectUnauthorized: false }
         } :
         {
-            host: process.env.DB_HOST,
-            port: Number(process.env.DB_PORT),
-            database: process.env.DB_NAME,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASS,
+            host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+            port: Number(process.env.DB_PORT || process.env.PGPORT || 5432),
+            database: process.env.DB_NAME || process.env.PGDATABASE,
+            user: process.env.DB_USER || process.env.PGUSER,
+            password: process.env.DB_PASS || process.env.PGPASSWORD,
             ssl: { rejectUnauthorized: false }
         },
     migrations: {

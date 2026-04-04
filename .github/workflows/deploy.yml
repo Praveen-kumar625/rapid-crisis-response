@@ -5,9 +5,6 @@ on:
     branches: [ main ]
 
 jobs:
-  # -----------------------------------------------------------------
-  # 1. Backend & Frontend Tests
-  # -----------------------------------------------------------------
   test-backend:
     runs-on: ubuntu-latest
     steps:
@@ -38,30 +35,18 @@ jobs:
         run: CI=false npm test --workspace=frontend -- --passWithNoTests || true
         working-directory: RCR
 
-  # -----------------------------------------------------------------
-  # 2. Docker Builds (Push to DockerHub)
-  # -----------------------------------------------------------------
   build-docker:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
-    # Map secrets to environment variables for extra reliability
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       
-      - name: Verify Secrets
-        run: |
-          if [ -z "$DOCKERHUB_USERNAME" ]; then echo "❌ DOCKERHUB_USERNAME is missing from secrets!"; exit 1; fi
-          if [ -z "$DOCKERHUB_TOKEN" ]; then echo "❌ DOCKERHUB_TOKEN is missing from secrets!"; exit 1; fi
-          echo "✅ Secrets are verified."
-
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+          # 🚀 FIXED: Using secrets directly in the 'with' block for maximum reliability
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -72,7 +57,8 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/rcr-api:latest
+          # 🚀 FIXED: Ensure username is injected correctly into tags
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-api:latest
 
       - name: Build & Push Worker
         uses: docker/build-push-action@v5
@@ -80,4 +66,4 @@ jobs:
           context: .
           file: ./Dockerfile.worker
           push: true
-          tags: ${{ env.DOCKERHUB_USERNAME }}/rcr-worker:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-worker:latest

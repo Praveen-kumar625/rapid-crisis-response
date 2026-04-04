@@ -8,7 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install project dependencies
-RUN npm ci --only=production
+# Using npm install instead of ci because package-lock.json is at the workspace root
+RUN npm install --omit=dev
 
 # Copy the rest of the backend application code
 COPY . .

@@ -1,35 +1,26 @@
 require('dotenv').config();
 
-// Determine if we should use SSL (required for Railway/Render/AWS)
-const isProduction = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL;
+/**
+ * Robust Database Configuration for Railway/Render/Local
+ * Handles Monorepo pathing and slow DB wakeups
+ */
 
-// Deep Environment Variable Check
-const dbUrl = process.env.DATABASE_URL;
-const pgHost = process.env.PGHOST || process.env.DB_HOST;
+const isProduction = process.env.NODE_ENV === 'production' || !!process.env.DATABASE_URL || !!process.env.RAILWAY_ENVIRONMENT;
 
-if (dbUrl) {
-    console.log('[Knex] ✅ Found DATABASE_URL. Connection secured.');
-} else if (pgHost) {
-    console.log('[Knex] ⚠️ DATABASE_URL missing, using individual PG variables.');
-} else {
-    console.error('[Knex] ❌ CRITICAL: No database environment variables found!');
-    console.log('[Knex] Fallback to 127.0.0.1 (This will likely fail in production)');
-}
+// Log detection status for debugging (Safe, no secrets logged)
+console.log(`[Knex] Environment: ${process.env.NODE_ENV || 'development'}`);
+if (process.env.DATABASE_URL) console.log('[Knex] ✅ Using DATABASE_URL');
+else if (process.env.PGHOST) console.log('[Knex] ✅ Using PGHOST variables');
 
-const connection = dbUrl 
-    ? { connectionString: dbUrl }
+const connection = process.env.DATABASE_URL 
+    ? { connectionString: process.env.DATABASE_URL }
     : {
-        host: pgHost || '127.0.0.1',
-        port: Number(process.env.PGPORT || process.env.DB_PORT || 5432),
-        database: process.env.PGDATABASE || process.env.DB_NAME,
-        user: process.env.PGUSER || process.env.DB_USER,
-        password: process.env.PGPASSWORD || process.env.DB_PASS,
+        host: process.env.DB_HOST || process.env.PGHOST || '127.0.0.1',
+        port: Number(process.env.DB_PORT || process.env.PGPORT || 5432),
+        database: process.env.DB_NAME || process.env.PGDATABASE || 'rcr_db',
+        user: process.env.DB_USER || process.env.PGUSER || 'postgres',
+        password: process.env.DB_PASS || process.env.PGPASSWORD || 'postgres',
     };
-
-// Inject SSL configuration if in production environment
-if (isProduction) {
-    connection.ssl = { rejectUnauthorized: false };
-}
 
 module.exports = {
     client: 'pg',
@@ -37,11 +28,14 @@ module.exports = {
     pool: {
         min: 2,
         max: 10,
-        acquireTimeoutMillis: 60000, // Increased to 60s for slow DB wakeups
-        idleTimeoutMillis: 30000,
+        acquireTimeoutMillis: 60000,
     },
     migrations: {
         directory: __dirname + '/src/migrations',
         tableName: 'knex_migrations'
-    }
+    },
+    // Standard SSL config for cloud providers
+    ...(isProduction && {
+        ssl: { rejectUnauthorized: false }
+    })
 };

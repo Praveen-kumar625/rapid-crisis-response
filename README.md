@@ -105,7 +105,7 @@ cp backend/.env.example backend/.env
 # Run Dev Mode
 npm run dev
 ```
-
+## live link : https://rapid-crisis-response-f4yd.vercel.app/
 ---
 
 ## 🗺️ Product Roadmap

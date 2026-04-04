@@ -1,0 +1,10 @@
+{
+  "name": "rcr-root-proxy",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "cd RCR && npm install && npm run build:web"
+  }
+}

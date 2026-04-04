@@ -1,7 +1,6 @@
 {
-  "version": 2,
-  "installCommand": "cd RCR && npm install",
-  "buildCommand": "cd RCR && npm run build:web",
+  "installCommand": "cd RCR/frontend && npm install",
+  "buildCommand": "cd RCR/frontend && npm run build",
   "outputDirectory": "RCR/frontend/build",
   "framework": "create-react-app",
   "rewrites": [

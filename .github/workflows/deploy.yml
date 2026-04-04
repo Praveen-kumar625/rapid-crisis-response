@@ -53,15 +53,15 @@ jobs:
       - name: Build & Push API
         uses: docker/build-push-action@v5
         with:
-          context: ./RCR
-          file: ./RCR/Dockerfile
+          context: . # 🚀 FIXED: Run from ROOT context
+          file: ./Dockerfile # Use root Dockerfile for API
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-api:latest
 
       - name: Build & Push Worker
         uses: docker/build-push-action@v5
         with:
-          context: ./RCR
-          file: ./RCR/Dockerfile.worker
+          context: . # 🚀 FIXED: Run from ROOT context
+          file: ./Dockerfile.worker # Use root Dockerfile for Worker
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-worker:latest

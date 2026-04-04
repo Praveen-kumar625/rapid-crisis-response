@@ -1,29 +1,25 @@
-# Final Ultra-Robust Production Dockerfile for RCR Worker
+# Unified Production Dockerfile for RCR Worker
 FROM node:18-alpine
 
 WORKDIR /app
 
-# 1. Copy workspace root package files
+# 1. Copy root and workspace package files
 COPY RCR/package*.json ./
-
-# 2. Copy workspace definitions
 COPY RCR/backend/package*.json ./backend/
 COPY RCR/frontend/package*.json ./frontend/
 
-# 3. Install production dependencies for the backend workspace
-RUN npm install -w backend --omit=dev --no-audit --no-fund --legacy-peer-deps
+# 2. Install backend dependencies
+RUN npm install -w backend --omit=dev --no-audit --no-fund
 
-# 4. Copy the rest of the backend source code
+# 3. Copy source code
 COPY RCR/backend/ ./backend/
 
-# Set environment variables
+# Set environment
 ENV NODE_ENV=production
 
 # Use non-root user
 USER node
 
-# Start from backend directory
+# Start worker from backend directory
 WORKDIR /app/backend
-
-# Start the worker
 CMD ["npm", "run", "worker"]

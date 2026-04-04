@@ -1,26 +1,21 @@
-# Final Ultra-Robust Production Dockerfile for RCR Backend
+# Unified Production Dockerfile for RCR Backend
 FROM node:18-alpine
 
 WORKDIR /app
 
-# 1. Copy workspace root package files
+# 1. Copy root and workspace package files
 COPY RCR/package*.json ./
-
-# 2. Copy workspace definitions
-# npm needs these to resolve the workspace tree
 COPY RCR/backend/package*.json ./backend/
 COPY RCR/frontend/package*.json ./frontend/
 
-# 3. Install production dependencies for the backend workspace
-# Using --legacy-peer-deps to handle any potential conflicts in hackathon environments
-RUN npm install -w backend --omit=dev --no-audit --no-fund --legacy-peer-deps
+# 2. Install backend dependencies only
+RUN npm install -w backend --omit=dev --no-audit --no-fund
 
-# 4. Copy the rest of the backend source code
+# 3. Copy source code
 COPY RCR/backend/ ./backend/
 
-# Set environment variables
+# Set environment
 ENV NODE_ENV=production
-ENV PORT=5000
 EXPOSE 5000
 
 # Use non-root user
@@ -29,6 +24,5 @@ USER node
 # Start from backend directory
 WORKDIR /app/backend
 
-# 🚨 AUTO-MIGRATE & START:
-# Using 'npm run migrate' which points to 'knex migrate:latest' in package.json
+# 🚨 Auto-migrate and Start
 CMD ["sh", "-c", "npm run migrate && npm start"]

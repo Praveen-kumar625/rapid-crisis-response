@@ -5,6 +5,9 @@ on:
     branches: [ main ]
 
 jobs:
+  # -----------------------------------------------------------------
+  # 1. Backend & Frontend Tests
+  # -----------------------------------------------------------------
   test-backend:
     runs-on: ubuntu-latest
     steps:
@@ -35,6 +38,9 @@ jobs:
         run: CI=false npm test --workspace=frontend -- --passWithNoTests || true
         working-directory: RCR
 
+  # -----------------------------------------------------------------
+  # 2. Docker Builds (Push to DockerHub)
+  # -----------------------------------------------------------------
   build-docker:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
@@ -53,15 +59,15 @@ jobs:
       - name: Build & Push API
         uses: docker/build-push-action@v5
         with:
-          context: . # 🚀 FIXED: Run from ROOT context
-          file: ./Dockerfile # Use root Dockerfile for API
+          context: ./RCR
+          file: ./RCR/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-api:latest
 
       - name: Build & Push Worker
         uses: docker/build-push-action@v5
         with:
-          context: . # 🚀 FIXED: Run from ROOT context
-          file: ./Dockerfile.worker # Use root Dockerfile for Worker
+          context: ./RCR
+          file: ./RCR/Dockerfile.worker
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-worker:latest

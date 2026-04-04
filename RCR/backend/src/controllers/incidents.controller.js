@@ -111,7 +111,7 @@ exports.analyze = async(req, res) => {
 
 exports.createFromVoice = async(req, res) => {
     try {
-        const { audioBase64, lat, lng, floorLevel, roomNumber, wingId } = req.body;
+        const { audioBase64, audioMimeType, lat, lng, floorLevel, roomNumber, wingId } = req.body;
 
         if (!audioBase64) {
             return res.status(400).json({ error: 'audioBase64 is required' });
@@ -119,6 +119,7 @@ exports.createFromVoice = async(req, res) => {
 
         const analysis = await IncidentService.analyzeVoice({
             audioBase64,
+            audioMimeType,
             floorLevel,
             roomNumber,
             wingId,

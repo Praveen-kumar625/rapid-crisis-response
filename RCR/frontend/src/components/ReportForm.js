@@ -120,7 +120,8 @@ function ReportForm() {
             const chunks = [];
             recorder.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data);
             recorder.onstop = async() => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+                const currentMimeType = recorder.mimeType || 'audio/webm';
                 setIsAudioRecording(false);
                 setSosMessage('SOS: Processing...');
                 const reader = new FileReader();
@@ -129,6 +130,7 @@ function ReportForm() {
                     try {
                         await api.post('/incidents/voice', {
                             audioBase64: base64,
+                            audioMimeType: currentMimeType,
                             lat: position.lat,
                             lng: position.lng,
                             floorLevel: form.floorLevel,

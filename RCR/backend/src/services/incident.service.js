@@ -224,8 +224,8 @@ exports.create = async({
 
 exports.analyzeReport = async(params) => AIService.analyzeReport(params);
 
-exports.analyzeVoice = async({ audioBase64, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
-    const analysis = await AIService.analyzeVoice({ audioBase64, floorLevel, roomNumber, wingId, lat, lng });
+exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
+    const analysis = await AIService.analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng });
 
     const incident = await exports.create({
         title: analysis.translated_english_text ? `Voice report: ${analysis.hospitality_category}` : 'Voice Incident',

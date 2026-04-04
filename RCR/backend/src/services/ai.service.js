@@ -197,7 +197,7 @@ Required Output Fields:
 /**
  * Transcribe and triage voice reports
  */
-async function analyzeVoice({ audioBase64, floorLevel, roomNumber, wingId, lat, lng }) {
+async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng }) {
     const fallbackText = 'Voice report received but AI transcription failed.';
     const fallback = {
         translated_english_text: fallbackText,
@@ -213,13 +213,15 @@ async function analyzeVoice({ audioBase64, floorLevel, roomNumber, wingId, lat, 
 
     if (!genAI) return fallback;
 
+    const actualMimeType = audioMimeType || 'audio/webm';
+
     // Note: For actual audio processing, Gemini 1.5 requires specific data parts.
     // Assuming the user is passing base64 that we can send as an inlineData part.
     const prompt = {
         contents: [{
             parts: [
                 { text: `Transcribe this SOS emergency audio and provide triage in JSON. Location: Floor ${floorLevel}, Room ${roomNumber}, Wing ${wingId} (Lat/Lng: ${lat},${lng}). Output: translated_english_text, detected_language, panic_level, hospitality_category (MEDICAL/FIRE/SECURITY/INFRASTRUCTURE), actionPlan (string[]), spam_score, auto_severity, predicted_category, requiredResources.` },
-                { inlineData: { mimeType: "audio/webm", data: audioBase64 } }
+                { inlineData: { mimeType: actualMimeType, data: audioBase64 } }
             ]
         }]
     };

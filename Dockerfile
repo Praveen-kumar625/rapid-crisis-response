@@ -11,8 +11,9 @@ COPY RCR/frontend/package*.json ./frontend/
 # 2. Install backend dependencies only
 RUN npm install -w backend --omit=dev --no-audit --no-fund
 
-# 3. Copy source code
-COPY RCR/backend/ ./backend/
+# 3. Copy ONLY source code (SKIP LOCAL .ENV)
+COPY RCR/backend/src ./backend/src
+COPY RCR/backend/knexfile.js ./backend/
 
 # Set environment
 ENV NODE_ENV=production

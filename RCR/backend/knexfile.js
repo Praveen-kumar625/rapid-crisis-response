@@ -1,36 +1,42 @@
 require('dotenv').config();
 
 /**
- * PRODUCTION-GRADE KNEX CONFIG
- * Final Resilient Version for Railway/Render
+ * 🛡️ ULTRA-RESILIENT DATABASE CONFIG
+ * Scan all possible environment variables from Railway/Render/Docker
  */
 
-const isProduction = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
+const env = process.env;
 
-// Try all possible variable names injected by cloud providers
-const DB_URL = process.env.DATABASE_URL || 
-               process.env.INTERNAL_DATABASE_URL || 
-               process.env.PGURL;
+// Priority 1: Direct Connection URLs
+const DB_URL = env.DATABASE_URL || env.INTERNAL_DATABASE_URL || env.PGURL || env.URL;
 
-const pgHost = process.env.PGHOST || process.env.DB_HOST || '127.0.0.1';
+// Priority 2: Standard PG Variables
+const DB_HOST = env.PGHOST || env.DB_HOST || env.POSTGRES_HOST || '127.0.0.1';
+const DB_PORT = env.PGPORT || env.DB_PORT || env.POSTGRES_PORT || 5432;
+const DB_NAME = env.PGDATABASE || env.DB_NAME || env.POSTGRES_DB || 'railway';
+const DB_USER = env.PGUSER || env.DB_USER || env.POSTGRES_USER || 'postgres';
+const DB_PASS = env.PGPASSWORD || env.DB_PASS || env.POSTGRES_PASSWORD;
 
-console.log(`[Knex] 🚀 Booting in ${process.env.NODE_ENV || 'development'} mode`);
+console.log(`[Knex] 🚀 Production-Mode Check: ${env.NODE_ENV}`);
 
 if (DB_URL) {
-    console.log('[Knex] ✅ SUCCESS: DATABASE_URL is available.');
+    console.log('[Knex] ✅ Found DATABASE_URL connection string.');
+} else if (env.PGHOST) {
+    console.log(`[Knex] ✅ Using individual PG variables. Host: ${env.PGHOST}`);
 } else {
-    console.error('[Knex] ❌ ERROR: DATABASE_URL is missing from environment!');
-    console.log(`[Knex] Available variables: ${Object.keys(process.env).filter(k => k.includes('DB') || k.includes('PG')).join(', ')}`);
+    console.error('[Knex] ❌ CRITICAL WARNING: No database variables detected yet!');
 }
 
 const connection = DB_URL ? { connectionString: DB_URL } : {
-    host: pgHost,
-    port: Number(process.env.PGPORT || process.env.DB_PORT || 5432),
-    database: process.env.PGDATABASE || process.env.DB_NAME,
-    user: process.env.PGUSER || process.env.DB_USER,
-    password: process.env.PGPASSWORD || process.env.DB_PASS,
+    host: DB_HOST,
+    port: Number(DB_PORT),
+    database: DB_NAME,
+    user: DB_USER,
+    password: DB_PASS,
 };
 
+// SSL Configuration for Cloud Providers
+const isProduction = env.NODE_ENV === 'production' || !!env.RAILWAY_ENVIRONMENT;
 if (isProduction && typeof connection === 'object') {
     connection.ssl = { rejectUnauthorized: false };
 }

@@ -20,21 +20,47 @@ api.interceptors.request.use(async(config) => {
     return config;
 });
 
-// 🚨 ADDED: Response Interceptor for Token Expiration (401 Error)
+// 🚨 FIXED: Response Interceptor for Token Expiration (401 Error) with Race Condition Handling
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const subscribeTokenRefresh = (cb) => {
+    refreshSubscribers.push(cb);
+};
+
+const onRefreshed = (token) => {
+    refreshSubscribers.map((cb) => cb(token));
+    refreshSubscribers = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
     async(error) => {
         const originalRequest = error.config;
 
-        // Agar 401 Unauthorized aaye, aur user logged in ho, aur retry pehle na hua ho
         if (error.response && error.response.status === 401 && auth.currentUser && !originalRequest._retry) {
-            originalRequest._retry = true; // Infinite loop block karne ke liye
+            if (isRefreshing) {
+                return new Promise((resolve) => {
+                    subscribeTokenRefresh((token) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        resolve(api.request(originalRequest));
+                    });
+                });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
             try {
                 console.log('[API] Token expired, refreshing...');
-                const token = await auth.currentUser.getIdToken(true); // Force refresh token
+                const token = await auth.currentUser.getIdToken(true);
+                isRefreshing = false;
+                onRefreshed(token);
+                
                 originalRequest.headers.Authorization = `Bearer ${token}`;
-                return api.request(originalRequest); // Puraani request ko naye token ke sath dobara bhejein
+                return api.request(originalRequest);
             } catch (refreshError) {
+                isRefreshing = false;
                 console.error('[API] Token refresh failed:', refreshError);
                 return Promise.reject(refreshError);
             }

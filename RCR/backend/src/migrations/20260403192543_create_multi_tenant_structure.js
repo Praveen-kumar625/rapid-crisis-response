@@ -19,6 +19,8 @@ exports.up = async function(knex) {
     // 3. Add hotel_id to Incidents
     await knex.schema.alterTable('incidents', (table) => {
         table.uuid('hotel_id').references('id').inTable('hotels').onDelete('CASCADE');
+        // Dedicated index for pure multi-tenant filtering
+        table.index('hotel_id', 'incidents_hotel_id_idx');
         // Composite index for multi-tenant filtering
         table.index(['hotel_id', 'status'], 'incidents_hotel_status_idx');
     });
@@ -37,6 +39,7 @@ exports.up = async function(knex) {
 
 exports.down = async function(knex) {
     await knex.schema.alterTable('incidents', (table) => {
+        table.dropIndex('hotel_id', 'incidents_hotel_id_idx');
         table.dropIndex(['hotel_id', 'status'], 'incidents_hotel_status_idx');
         table.dropColumn('hotel_id');
     });

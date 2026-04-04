@@ -13,28 +13,74 @@ const redisClient = new Redis({
 function initSocket(httpServer) {
     const { ALLOWED_ORIGINS } = require('../config/env');
 
-    const corsOrigin = ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : '*';
+    const corsOrigin = ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : ['http://localhost:3000'];
 
     const io = new Server(httpServer, {
         cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
         path: '/crisis',
     });
 
+    // ------------------- WebSocket Authentication -------------------
+    const admin = require('firebase-admin');
+    const db = require('../db');
+
+    io.use(async (socket, next) => {
+        // In demo mode, bypass auth
+        if (process.env.DEMO_MODE === 'true') {
+            const demoUser = await db('users').first();
+            socket.user = { 
+                id: demoUser?.id || 'demo-admin-1', 
+                hotelId: demoUser?.hotel_id || null 
+            };
+            return next();
+        }
+
+        const token = socket.handshake.auth?.token;
+        if (!token) return next(new Error('Authentication error: Token missing'));
+
+        try {
+            const decodedToken = await admin.auth().verifyIdToken(token);
+            const userRecord = await db('users').where({ id: decodedToken.uid }).first();
+            
+            if (!userRecord) return next(new Error('Authentication error: User not found'));
+
+            socket.user = { id: userRecord.id, hotelId: userRecord.hotel_id };
+            next();
+        } catch (error) {
+            console.error('[Socket Auth] Failed:', error.message);
+            next(new Error('Authentication error: Invalid token'));
+        }
+    });
+
     // -----------------------------------------------------------------
     // WebSocket Logic with Tenant Isolation
     // -----------------------------------------------------------------
     io.on('connection', (socket) => {
-        console.log(`🔌 Socket ${socket.id} connected`);
+        console.log(`🔌 Socket ${socket.id} connected (User: ${socket.user.id})`);
         
-        // Joining Tenant-Specific Rooms
+        // Auto-join hotel room on connection based on authenticated user
+        if (socket.user.hotelId) {
+            socket.join(`hotel_${socket.user.hotelId}`);
+            console.log(`🏨 Socket ${socket.id} auto-joined hotel: ${socket.user.hotelId}`);
+        }
+
+        // Manual joining allowed if authorized (simplified for hackathon)
         socket.on('join-hotel', (hotelId) => {
-            if (hotelId) {
-                console.log(`🏨 Socket ${socket.id} joined hotel room: ${hotelId}`);
+            if (hotelId === String(socket.user.hotelId) || socket.user.id.startsWith('demo')) {
                 socket.join(`hotel_${hotelId}`);
             }
         });
 
-        socket.on('join-incident', (incId) => socket.join(`incident-${incId}`));
+        socket.on('join-incident', async (incId) => {
+            try {
+                const incident = await db('incidents').where({ id: incId, hotel_id: socket.user.hotelId }).first();
+                if (incident || socket.user.id.startsWith('demo')) {
+                    socket.join(`incident-${incId}`);
+                }
+            } catch (err) {
+                console.error('[Socket] Failed to join incident room', err);
+            }
+        });
         socket.on('leave-incident', (incId) => socket.leave(`incident-${incId}`));
     });
 

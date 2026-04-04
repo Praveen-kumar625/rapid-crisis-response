@@ -8,14 +8,19 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install project dependencies
-RUN npm install
+RUN npm ci --only=production
 
 # Copy the rest of the backend application code
 COPY . .
 
-# Expose the port that the API runs on (matches your PORT_API in .env)
+# Set environment to production
+ENV NODE_ENV=production
+
+# Expose the port that the API runs on
 EXPOSE 5000
 
+# Use non-root user for security
+USER node
+
 # Start the application
-# Make sure your package.json has a "start" script, e.g., "start": "node src/index.js"
 CMD ["npm", "start"]

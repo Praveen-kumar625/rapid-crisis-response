@@ -37,6 +37,14 @@ function startAlertListener() {
         const incident = payload.incident;
         if (!incident || incident.severity !== 5) return; // only severity‑5
 
+        // Distributed Lock: Ensure only one instance sends SMS for this incident
+        const lockKey = `alert_sent:${incident.id}`;
+        const locked = await redis.set(lockKey, 'true', 'NX', 'EX', 3600); // Lock for 1 hour
+        if (!locked) {
+            console.log(`[AlertService] Alert already processed for incident ${incident.id}, skipping duplicate.`);
+            return;
+        }
+
         // Check if Twilio is configured
         if (!TWILIO.accountSid || !TWILIO.authToken || !TWILIO.fromNumber) {
             console.warn('[AlertService] Twilio not configured. Skipping SMS alert.');

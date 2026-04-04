@@ -4,15 +4,18 @@ const incidentsController = require('../controllers/incidents.controller');
 const jwtAuth = require('../middleware/auth');
 const { aiVerificationLimiter } = require('../middleware/rateLimiter');
 
-// Public read endpoints
-router.get('/', incidentsController.getAll);
-router.get('/:id', incidentsController.getOne);
+// User profile
+router.get('/me', jwtAuth, incidentsController.getMe);
+
+// Public read endpoints (now protected for multi-tenancy safety)
+router.get('/', jwtAuth, incidentsController.getAll);
+router.get('/:id', jwtAuth, incidentsController.getOne);
 
 // Protected write endpoints (JWT required)
-router.post('/analyze', aiVerificationLimiter, jwtAuth, incidentsController.analyze);
-router.post('/voice', aiVerificationLimiter, jwtAuth, incidentsController.createFromVoice);
+router.post('/analyze', jwtAuth, aiVerificationLimiter, incidentsController.analyze);
+router.post('/voice', jwtAuth, aiVerificationLimiter, incidentsController.createFromVoice);
 router.post('/pulse', jwtAuth, incidentsController.updateSafetyStatus);
-router.post('/', aiVerificationLimiter, jwtAuth, incidentsController.create);
+router.post('/', jwtAuth, aiVerificationLimiter, incidentsController.create);
 router.patch('/:id/status', jwtAuth, incidentsController.updateStatus);
 
 module.exports = router;

@@ -8,6 +8,9 @@ const incidentRoutes = require('./routes/incidents.routes');
 
 const app = express();
 
+// Fix for reverse proxies so rate-limiter reads the real user IP
+app.set('trust proxy', 1);
+
 const { ALLOWED_ORIGINS } = require('./config/env');
 
 app.use(

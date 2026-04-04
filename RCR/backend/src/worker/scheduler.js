@@ -14,9 +14,23 @@ async function startScheduler(_redisConfig) {
         console.warn('⚠️ Could not ensure SYSTEM_IOT user:', err.message);
     }
 
+    const Redis = require('ioredis');
+    const { REDIS } = require('../config/env');
+    const redis = new Redis({ host: REDIS.host, port: REDIS.port });
+
     cron.schedule('*/1 * * * *', async() => {
+        // Distributed Lock: Ensure only one instance runs the scheduler for this minute
+        const lockKey = `cron_job_lock:${new Date().getMinutes()}`;
+        const locked = await redis.set(lockKey, 'true', 'NX', 'EX', 55); // Lock for 55 seconds
+        if (!locked) return;
+
         try {
             const iotEvent = generateHotelIoTEvent();
+            const defaultHotel = await db('hotels').first();
+            if (!defaultHotel) {
+                console.warn('⚠️ No hotels found in DB. Worker cannot create incidents.');
+                return;
+            }
 
             // Persist to DB using IncidentService
             const incident = await IncidentService.create({
@@ -29,7 +43,8 @@ async function startScheduler(_redisConfig) {
                 floorLevel: iotEvent.floor_level,
                 roomNumber: iotEvent.room_number,
                 wingId: iotEvent.wing_id,
-                reportedBy: 'SYSTEM_IOT', // We should ensure this exists or remove FK
+                reportedBy: 'SYSTEM_IOT',
+                hotelId: defaultHotel.id,
                 preAnalysis: {
                     spam_score: 0.0,
                     auto_severity: iotEvent.severity,

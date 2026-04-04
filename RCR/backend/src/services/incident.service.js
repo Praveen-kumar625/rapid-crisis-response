@@ -42,10 +42,9 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => 
             'updated_at as updatedAt'
         );
 
-    // Enforce Tenant Isolation
-    if (hotelId) {
-        query = query.where('hotel_id', hotelId);
-    }
+    // STRICT Tenant Isolation
+    if (!hotelId) throw new Error('Tenant Isolation Violation: hotelId is required.');
+    query = query.where('hotel_id', hotelId);
 
     if (bbox) {
         const [minLng, minLat, maxLng, maxLat] = bbox.split(',').map(Number);
@@ -72,9 +71,8 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => 
 exports.getById = async(id, hotelId) => {
     const query = db('incidents').where({ id });
     
-    if (hotelId) {
-        query.andWhere({ hotel_id: hotelId });
-    }
+    if (!hotelId) throw new Error('Tenant Isolation Violation: hotelId is required.');
+    query.andWhere({ hotel_id: hotelId });
 
     const rows = await query.select(
             'id',
@@ -133,6 +131,8 @@ exports.create = async({
     const validatedFloor = Number.isInteger(Number(floorLevel)) ? Number(floorLevel) : 1;
     const validatedRoom = roomNumber ? String(roomNumber) : 'unknown';
     const validatedWing = wingId ? String(wingId) : 'unknown';
+
+    if (!hotelId) throw new Error('Tenant ID is required to create an incident.');
 
     // 1. AI Triage (Skip if pre-analyzed by Edge AI or Voice flow)
     const analysis = preAnalysis || await AIService.analyzeReport({
@@ -250,7 +250,8 @@ exports.analyzeVoice = async({ audioBase64, floorLevel, roomNumber, wingId, lat,
 
 exports.updateStatus = async(id, newStatus, hotelId) => {
     const query = db('incidents').where({ id });
-    if (hotelId) query.andWhere({ hotel_id: hotelId });
+    if (!hotelId) throw new Error('Tenant Isolation Violation: hotelId is required.');
+    query.andWhere({ hotel_id: hotelId });
 
     const [incident] = await query.update({ status: newStatus }).returning('*');
 

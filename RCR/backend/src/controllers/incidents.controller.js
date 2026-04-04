@@ -1,6 +1,15 @@
 // src/controllers/incidents.controller.js
 const IncidentService = require('../services/incident.service');
 
+exports.getMe = async(req, res) => {
+    res.json({
+        id: req.user.sub,
+        email: req.user.email,
+        role: req.user.role,
+        hotelId: req.user.hotelId
+    });
+};
+
 exports.getAll = async(req, res) => {
     try {
         const { bbox, wingId, floorLevel, roomNumber } = req.query;

@@ -137,14 +137,14 @@ async function analyzeReport({
     // Default fallback object
     const fallback = {
         spam_score: 0.0,
-        auto_severity: userSeverity,
-        predictedCategory: normalizedCategory || 'INFRASTRUCTURE',
-        hospitality_category: ['MEDICAL', 'FIRE', 'SECURITY', 'INFRASTRUCTURE'].includes(normalizedCategory) ? normalizedCategory : 'INFRASTRUCTURE',
+        auto_severity: Math.max(userSeverity, 4), // Higher severity if AI fails to be safe
+        predictedCategory: 'UNVERIFIED',
+        hospitality_category: 'INFRASTRUCTURE',
         translated_english_text: description || title || '',
         detected_language: 'en',
-        panic_level: /panic|help|emergency|urgent/i.test(`${title} ${description}`) ? 'High' : 'Low',
-        action_plan: [inferActionByCategory(normalizedCategory)],
-        requiredResources: inferResourcesByCategory(normalizedCategory),
+        panic_level: 'High',
+        action_plan: ['Manual emergency verification required immediately.'],
+        requiredResources: ['Security Team', 'Management'],
     };
 
     if (!genAI) return fallback;

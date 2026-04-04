@@ -20,10 +20,10 @@ function App() {
             if (currentUser) {
                 // Fetch user profile to get hotelId
                 try {
-                    const { _data } = await api.get('/incidents'); // For demo, we just need any call to trigger user sync/fetch
-                    // In a real app, we'd have a /me endpoint. For now, let's assume the user is synced.
-                    // Let's mock fetching the hotel context
-                    joinHotelRoom('default-hotel-id'); // Replace with actual hotelId from user profile
+                    const { data } = await api.get('/incidents/me');
+                    if (data.hotelId) {
+                        joinHotelRoom(data.hotelId);
+                    }
                 } catch (err) {
                     console.error('Failed to sync user context', err);
                 }

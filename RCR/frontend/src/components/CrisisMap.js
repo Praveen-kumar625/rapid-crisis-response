@@ -11,34 +11,35 @@ function CrisisMap() {
     const [selectedIncident, setSelectedIncident] = useState(null);
 
     useEffect(() => {
-        let cancelled = false;
-        let socketRef = null;
+        let isMounted = true;
+        let socketInstance = null;
 
         api.get('/incidents').then((res) => {
-            if (!cancelled) setIncidents(res.data);
+            if (isMounted) setIncidents(res.data);
         }).catch(console.error);
 
         const handleCreated = (payload) => {
-            if (!cancelled) setIncidents((prev) => [payload.incident, ...prev]);
+            if (isMounted) setIncidents((prev) => [payload.incident, ...prev]);
         };
 
         const handleStatusUpdated = (payload) => {
-            if (!cancelled) {
+            if (isMounted) {
                 setIncidents((prev) => prev.map((i) => (i.id === payload.incident.id ? payload.incident : i)));
             }
         };
 
         (async() => {
-            socketRef = await getSocket();
-            socketRef.on('incident.created', handleCreated);
-            socketRef.on('incident.status-updated', handleStatusUpdated);
+            socketInstance = await getSocket();
+            if (!isMounted) return;
+            socketInstance.on('incident.created', handleCreated);
+            socketInstance.on('incident.status-updated', handleStatusUpdated);
         })();
 
         return () => { 
-            cancelled = true; 
-            if (socketRef) {
-                socketRef.off('incident.created', handleCreated);
-                socketRef.off('incident.status-updated', handleStatusUpdated);
+            isMounted = false; 
+            if (socketInstance) {
+                socketInstance.off('incident.created', handleCreated);
+                socketInstance.off('incident.status-updated', handleStatusUpdated);
             }
         };
     }, []);

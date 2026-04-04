@@ -80,6 +80,8 @@ jobs:
           file: ./RCR/backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-worker:latest
+      - name: Clean up old Docker images
+        run: docker system prune -f
 
   deploy-frontend-vercel:
     needs: test-frontend

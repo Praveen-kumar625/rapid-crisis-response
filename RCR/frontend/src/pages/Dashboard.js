@@ -43,7 +43,9 @@ function Dashboard() {
             setStats(computeAggregates(data));
         }).catch(console.error);
 
-        let socketRef = null;
+        let isMounted = true;
+        let socketInstance = null;
+
         const handlePulse = (data) => {
             setPulses(prev => ({ ...prev, [data.userId]: data }));
         };
@@ -53,15 +55,17 @@ function Dashboard() {
         };
 
         (async() => {
-            socketRef = await getSocket();
-            socketRef.on('user.safety-pulse', handlePulse);
-            socketRef.on('incident.created', handleIncidentCreated);
+            socketInstance = await getSocket();
+            if (!isMounted) return;
+            socketInstance.on('user.safety-pulse', handlePulse);
+            socketInstance.on('incident.created', handleIncidentCreated);
         })();
 
         return () => {
-            if (socketRef) {
-                socketRef.off('user.safety-pulse', handlePulse);
-                socketRef.off('incident.created', handleIncidentCreated);
+            isMounted = false;
+            if (socketInstance) {
+                socketInstance.off('user.safety-pulse', handlePulse);
+                socketInstance.off('incident.created', handleIncidentCreated);
             }
         };
     }, []);

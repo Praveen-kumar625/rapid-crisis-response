@@ -20,7 +20,7 @@ function ReportForm() {
     });
     const [position, setPosition] = useState({ lng: 0, lat: 0 });
     const [mediaType, setMediaType] = useState('');
-    const [mediaBase64, setMediaBase64] = useState('');
+    const [mediaFile, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
@@ -63,8 +63,17 @@ function ReportForm() {
                 if (!pending.length) return;
                 for (const rpt of pending) {
                     try {
-                        await api.post('/incidents', { ...rpt });
-                        await markReportSynced(rpt.localId);
+                        let mediaBase64 = '';
+                        if (rpt.mediaFile) {
+                            mediaBase64 = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(rpt.mediaFile);
+                            });
+                        }
+                        const { localId, mediaFile, ...cleanRpt } = rpt;
+                        await api.post('/incidents', { ...cleanRpt, mediaBase64 });
+                        await markReportSynced(localId);
                         toast.success(`✅ Offline report synced: ${rpt.title}`);
                     } catch (err) {
                         console.error('⛔ Sync failed', err);
@@ -144,35 +153,42 @@ function ReportForm() {
         const file = event.target.files[0];
         if (!file) return;
         setMediaType(file.type);
-        const reader = new FileReader();
-        reader.onload = async(e) => {
-            const base64data = e.target.result;
-            setMediaBase64(base64data);
-            setMediaPreview(base64data);
-            try {
-                const { data } = await api.post('/incidents/analyze', {
-                    ...form,
-                    mediaType: file.type,
-                    mediaBase64: base64data,
-                });
-                if (data.predictedCategory || data.auto_severity) {
-                    setAiResult({
-                        category: data.predictedCategory || 'UNCATEGORIZED',
-                        severity: data.auto_severity || 3,
-                        method: 'Cloud AI (Gemini)'
+        setMediaFile(file);
+        
+        // Create object URL for preview instead of huge base64
+        const previewUrl = URL.createObjectURL(file);
+        setMediaPreview(previewUrl);
+
+        // We still need base64 for Cloud AI analysis call if online
+        if (navigator.onLine) {
+            const reader = new FileReader();
+            reader.onload = async(e) => {
+                const base64data = e.target.result;
+                try {
+                    const { data } = await api.post('/incidents/analyze', {
+                        ...form,
+                        mediaType: file.type,
+                        mediaBase64: base64data,
                     });
-                    setForm(prev => ({
-                        ...prev,
-                        category: data.predictedCategory || prev.category,
-                        severity: data.auto_severity || prev.severity
-                    }));
-                    setShowAiModal(true);
+                    if (data.predictedCategory || data.auto_severity) {
+                        setAiResult({
+                            category: data.predictedCategory || 'UNCATEGORIZED',
+                            severity: data.auto_severity || 3,
+                            method: 'Cloud AI (Gemini)'
+                        });
+                        setForm(prev => ({
+                            ...prev,
+                            category: data.predictedCategory || prev.category,
+                            severity: data.auto_severity || prev.severity
+                        }));
+                        setShowAiModal(true);
+                    }
+                } catch (err) {
+                    console.warn('AI analysis failed', err);
                 }
-            } catch (err) {
-                console.warn('AI analysis failed', err);
-            }
-        };
-        reader.readAsDataURL(file);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleSubmit = async(e) => {
@@ -201,22 +217,31 @@ function ReportForm() {
             lng: position.lng,
             lat: position.lat,
             mediaType,
-            mediaBase64,
             triageMethod
         };
 
         if (navigator.onLine) {
             try {
-                await api.post('/incidents', payload);
+                let mediaBase64 = '';
+                if (mediaFile) {
+                    mediaBase64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(mediaFile);
+                    });
+                }
+                await api.post('/incidents', { ...payload, mediaBase64 });
                 toast.success('Incident reported successfully');
                 setForm({ title: '', description: '', severity: 3, category: '', floorLevel: 1, roomNumber: '', wingId: '' });
                 setMediaPreview('');
+                setMediaFile(null);
             } catch (err) {
                 toast.error('Failed to report incident');
             }
         } else {
-            await queueReport({...payload, synced: false });
-            toast.success('Report queued offline');
+            // SAFE: IndexedDB handles Blob/File objects natively and efficiently
+            await queueReport({...payload, mediaFile, synced: false });
+            toast.success('Report queued offline (Safe Storage)');
         }
     };
 

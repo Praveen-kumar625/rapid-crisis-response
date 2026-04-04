@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { getAccessTokenSilently } from '@auth0/auth0-react';
+import { auth } from './firebase';
 
 let socket = null;
 
@@ -10,8 +10,10 @@ let socket = null;
 export async function getSocket() {
     if (socket) return socket;
 
-    // In demo mode or if no auth, we might still want a socket
-    const token = await getAccessTokenSilently().catch(() => null);
+    let token = null;
+    if (auth.currentUser) {
+        token = await auth.currentUser.getIdToken();
+    }
 
     socket = io(process.env.REACT_APP_SOCKET_URL, {
         path: '/crisis',

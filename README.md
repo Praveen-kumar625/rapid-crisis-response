@@ -132,10 +132,6 @@ npm run dev
 
 [![Follow on GitHub](https://img.shields.io/github/followers/Praveen-kumar625?label=Follow&style=social)](https://github.com/Praveen-kumar625)
 
-<<<<<<< HEAD
 ### Jay Shree Shyam! 🦚
-=======
-### Jay Shree Shyam🦚
->>>>>>> 23d77ea8556ce2647bcfbcb3b3e26cca426e292c
 
 </div>

@@ -237,21 +237,53 @@ function ReportForm() {
 
         if (navigator.onLine) {
             try {
-                let mediaBase64 = '';
+                const toastId = toast.loading('Encrypting and dispatching signal...');
+                
+                let mediaUrl = null;
+                
+                // Direct-to-Cloud Upload via Presigned URL
                 if (mediaFile) {
-                    mediaBase64 = await new Promise((resolve) => {
+                    toast.loading('Uploading visual evidence...', { id: toastId });
+                    
+                    const fileName = mediaFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                    const { data: urlData } = await api.get(`/incidents/upload-url?fileName=${fileName}&mimeType=${mediaType}`);
+                    
+                    if (urlData && urlData.uploadUrl) {
+                        await fetch(urlData.uploadUrl, {
+                            method: 'PUT',
+                            body: mediaFile,
+                            headers: {
+                                'Content-Type': mediaType
+                            }
+                        });
+                        mediaUrl = urlData.fileUrl;
+                    }
+                }
+                
+                toast.loading('Transmitting intel...', { id: toastId });
+                
+                // We send mediaUrl instead of mediaBase64. If analysis needs it, it can fetch from S3
+                // Or we can send mediaBase64 just for the initial analysis if it's small enough, but let's 
+                // just rely on mediaUrl for the db insertion to save bandwidth.
+                let base64ForAi = undefined;
+                if (mediaFile && mediaFile.size < 5 * 1024 * 1024) {
+                    base64ForAi = await new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.onloadend = () => resolve(reader.result);
                         reader.readAsDataURL(mediaFile);
                     });
                 }
-                await api.post('/incidents', { ...payload, mediaBase64 });
-                toast.success('Incident Signal Dispatched');
+
+                await api.post('/incidents', { ...payload, mediaUrl, mediaBase64: base64ForAi });
+                
+                toast.success('Incident Signal Dispatched', { id: toastId });
                 setForm({ title: '', description: '', severity: 3, category: '', floorLevel: 1, roomNumber: '', wingId: '' });
                 setMediaPreview('');
                 setMediaFile(null);
             } catch (err) {
-                toast.error('Dispatch Failure');
+                toast.dismiss();
+                toast.error('Dispatch Failure: ' + (err.response?.data?.error || err.message));
+                console.error('Dispatch error:', err);
             }
         } else {
             await queueReport({...payload, mediaFile, synced: false });

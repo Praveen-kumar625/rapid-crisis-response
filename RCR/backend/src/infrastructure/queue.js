@@ -6,6 +6,17 @@ const connection = {
     port: REDIS.port
 };
 
-const incidentQueue = new Queue('incident-tasks', { connection });
+const incidentQueue = new Queue('incident-tasks', { 
+    connection,
+    defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+            type: 'exponential',
+            delay: 2000
+        },
+        removeOnComplete: true,
+        removeOnFail: false
+    }
+});
 
 module.exports = { incidentQueue, connection };

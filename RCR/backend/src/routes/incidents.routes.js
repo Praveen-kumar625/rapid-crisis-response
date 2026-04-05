@@ -8,6 +8,7 @@ const { aiVerificationLimiter } = require('../middleware/rateLimiter');
 
 // User profile
 router.get('/me', jwtAuth, incidentsController.getMe);
+router.get('/upload-url', jwtAuth, incidentsController.getUploadUrl);
 
 // Public read endpoints (now protected for multi-tenancy safety)
 router.get('/', jwtAuth, incidentsController.getAll);

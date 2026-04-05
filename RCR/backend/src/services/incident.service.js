@@ -49,14 +49,14 @@ const StorageService = require('../infrastructure/storage');
 exports.create = async({
     title, description, severity, category, lat, lng,
     floorLevel, roomNumber, wingId, indoorLocation,
-    reportedBy, mediaType, mediaBase64, hotelId,
+    reportedBy, mediaType, mediaBase64, mediaUrl, hotelId,
     triageMethod = 'Cloud AI'
 }) => {
-    // 1. Upload to Cloud Storage if media exists
-    let mediaUrl = null;
-    if (mediaBase64) {
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${mediaType.split('/')[1] || 'bin'}`;
-        mediaUrl = await StorageService.uploadBase64(mediaBase64, mediaType, fileName);
+    // 1. Upload to Cloud Storage if media exists and wasn't already uploaded via presigned URL
+    let finalMediaUrl = mediaUrl;
+    if (!finalMediaUrl && mediaBase64) {
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${mediaType ? mediaType.split('/')[1] : 'bin'}`;
+        finalMediaUrl = await StorageService.uploadBase64(mediaBase64, mediaType, fileName);
     }
 
     // 2. Insert minimal incident record immediately for fast response
@@ -74,7 +74,7 @@ exports.create = async({
             status: 'OPEN',
             triage_method: triageMethod,
             media_type: mediaType,
-            media_url: mediaUrl
+            media_url: finalMediaUrl
         })
         .returning('*');
 
@@ -88,6 +88,7 @@ exports.create = async({
         data: { 
             incidentId: incident.id,
             mediaBase64, // Pass through for AI analysis to avoid DB/S3 roundtrip in worker
+            mediaUrl: finalMediaUrl, // Also pass the URL just in case
             mediaType
         } 
     });

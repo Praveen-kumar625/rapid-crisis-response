@@ -11,7 +11,8 @@ const incidentSchema = z.object({
     roomNumber: z.string().min(1),
     wingId: z.string().min(1),
     mediaType: z.string().optional(),
-    mediaBase64: z.string().optional(), // In production, this would be a multipart/form-data or S3 URL
+    mediaBase64: z.string().optional(),
+    mediaUrl: z.string().url().optional(),
     triageMethod: z.string().optional(),
 });
 

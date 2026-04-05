@@ -1,4 +1,5 @@
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { S3 } = require('../config/env');
 
 const s3Client = new S3Client({
@@ -11,7 +12,40 @@ const s3Client = new S3Client({
 });
 
 /**
+ * Generates a presigned URL for direct client-to-S3 uploads
+ * @param {string} fileName - Destination filename
+ * @param {string} mimeType - e.g. 'image/jpeg'
+ * @returns {Promise<{uploadUrl: string, fileUrl: string}>}
+ */
+async function getPresignedUploadUrl(fileName, mimeType) {
+    if (!S3.bucketName || !S3.accessKeyId || !S3.secretAccessKey) {
+        console.warn('[Storage] AWS S3 not configured. Cannot generate presigned URL.');
+        return null;
+    }
+
+    const command = new PutObjectCommand({
+        Bucket: S3.bucketName,
+        Key: `incidents/${fileName}`,
+        ContentType: mimeType,
+    });
+
+    try {
+        const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        
+        const fileUrl = S3.endpoint 
+            ? `${S3.endpoint}/${S3.bucketName}/incidents/${fileName}`
+            : `https://${S3.bucketName}.s3.${S3.region}.amazonaws.com/incidents/${fileName}`;
+            
+        return { uploadUrl, fileUrl };
+    } catch (err) {
+        console.error('[Storage] S3 Presigned URL Generation Failed:', err);
+        throw new Error('Failed to generate secure upload link');
+    }
+}
+
+/**
  * Uploads a base64 encoded file to S3
+
  * @param {string} base64Data - Full data URI or raw base64
  * @param {string} mimeType - e.g. 'image/jpeg'
  * @param {string} fileName - Destination filename
@@ -55,4 +89,4 @@ async function uploadBase64(base64Data, mimeType, fileName) {
     }
 }
 
-module.exports = { uploadBase64 };
+module.exports = { uploadBase64, getPresignedUploadUrl };

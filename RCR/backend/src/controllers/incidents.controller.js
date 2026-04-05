@@ -1,5 +1,27 @@
 // src/controllers/incidents.controller.js
 const IncidentService = require('../services/incident.service');
+const StorageService = require('../infrastructure/storage');
+
+exports.getUploadUrl = async(req, res) => {
+    try {
+        const { fileName, mimeType } = req.query;
+        if (!fileName || !mimeType) {
+            return res.status(400).json({ error: 'Missing fileName or mimeType query parameters' });
+        }
+
+        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${fileName}`;
+        const urls = await StorageService.getPresignedUploadUrl(uniqueFileName, mimeType);
+        
+        if (!urls) {
+            return res.status(503).json({ error: 'Storage service unavailable' });
+        }
+        
+        res.json(urls);
+    } catch (err) {
+        console.error('[IncidentsController] getUploadUrl failed:', err);
+        res.status(500).json({ error: 'Failed to generate upload URL', details: err.message });
+    }
+};
 
 exports.getMe = async(req, res) => {
     res.json({
@@ -47,6 +69,7 @@ exports.create = async(req, res) => {
             wingId,
             mediaType,
             mediaBase64,
+            mediaUrl,
             triageMethod,
         } = req.body;
 
@@ -65,6 +88,7 @@ exports.create = async(req, res) => {
             wingId,
             mediaType,
             mediaBase64,
+            mediaUrl,
             reportedBy: reporterId,
             hotelId,
             triageMethod,

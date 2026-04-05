@@ -4,19 +4,20 @@
 
 @layer base {
   body {
-    @apply bg-navy-950 text-slate-200 font-sans antialiased selection:bg-electric/30 selection:text-white;
+    @apply bg-gradient-to-br from-primary via-navy-900 to-gray-950 text-softWhite font-body antialiased selection:bg-accent selection:text-white;
     margin: 0;
     overflow-x: hidden;
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight text-white;
+    @apply font-sans tracking-tight text-white;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-surface backdrop-blur-xl border border-surfaceBorder rounded-3xl shadow-glass transition-all duration-500;
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl shadow-glass transition-all duration-500;
   }
   
   .glass-panel {
@@ -24,23 +25,19 @@
   }
 
   .glass-nav {
-    @apply bg-navy-950/50 backdrop-blur-2xl border-b border-white/5;
+    @apply bg-primary/40 backdrop-blur-2xl border-b border-white/10;
   }
 
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-500;
   }
 
-  .text-gradient-danger {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-danger via-red-500 to-amber-500;
+  .text-gradient-accent {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent via-yellow-500 to-amber-600;
   }
 
-  .btn-primary {
-    @apply relative overflow-hidden bg-electric text-navy-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all shadow-electric hover:shadow-[0_0_30px_rgba(0,240,255,0.5)] transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3;
-  }
-
-  .btn-danger {
-    @apply relative overflow-hidden bg-danger text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all shadow-danger hover:shadow-[0_0_30px_rgba(255,51,102,0.5)] transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3;
+  .btn-accent {
+    @apply relative overflow-hidden bg-accent text-primary px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all shadow-lg hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3;
   }
 
   .btn-secondary {
@@ -54,18 +51,18 @@
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-navy-950;
+  @apply bg-primary;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-navy-800 rounded-full border-2 border-navy-950;
+  @apply bg-secondary rounded-full border-2 border-primary;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-navy-700;
+  @apply bg-accent;
 }
 
 /* Layout Helpers */
 .app-container {
-  @apply max-w-7xl mx-auto px-6 lg:px-16 w-full;
+  @apply container mx-auto px-6 lg:px-16 w-full;
 }
 
 .hero-min-height {

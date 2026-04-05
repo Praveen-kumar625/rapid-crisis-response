@@ -51,8 +51,8 @@ function CrisisMap() {
 
     const getMarkerColor = (severity, category) => {
         if (severity === 5) return 'bg-danger border-danger shadow-[0_0_20px_rgba(255,51,102,0.6)] animate-pulse';
-        if (severity >= 4) return 'bg-amber border-amber shadow-[0_0_15px_rgba(245,158,11,0.5)]';
-        if (category === 'MEDICAL') return 'bg-electric border-electric shadow-[0_0_15px_rgba(0,240,255,0.4)]';
+        if (severity >= 4) return 'bg-accent border-accent shadow-[0_0_15px_rgba(245,158,11,0.5)]';
+        if (category === 'MEDICAL') return 'bg-secondary border-secondary shadow-[0_0_15px_rgba(13,148,136,0.4)]';
         return 'bg-emerald border-emerald shadow-[0_0_10px_rgba(16,185,129,0.3)]';
     };
 
@@ -80,9 +80,9 @@ function CrisisMap() {
                 >
                     <AdvancedMarker position={RESPONDER_HQ}>
                         <div className="relative flex items-center justify-center">
-                            <div className="absolute w-12 h-12 bg-electric/20 rounded-full animate-ping"></div>
-                            <div className="w-6 h-6 bg-navy-950 rounded-full border-2 border-electric flex items-center justify-center shadow-electric z-10">
-                                <div className="w-2 h-2 bg-electric rounded-full"></div>
+                            <div className="absolute w-12 h-12 bg-secondary/20 rounded-full animate-ping"></div>
+                            <div className="w-6 h-6 bg-navy-950 rounded-full border-2 border-secondary flex items-center justify-center shadow-lg z-10">
+                                <div className="w-2 h-2 bg-secondary rounded-full"></div>
                             </div>
                         </div>
                     </AdvancedMarker>
@@ -107,12 +107,12 @@ function CrisisMap() {
                 <Card variant="panel" className="flex items-center px-5 py-3 gap-4 border border-white/10 shadow-2xl backdrop-blur-2xl">
                     <div className="flex items-center gap-2">
                         <Shield size={18} className="text-danger" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Active Operational Zones</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Operational Zones</span>
                     </div>
                     <div className="w-px h-4 bg-white/10"></div>
                     <div className="flex items-center gap-2">
-                        <LocateFixed size={16} className="text-electric" />
-                        <span className="text-xs font-mono font-bold text-electric">{incidents.length}</span>
+                        <LocateFixed size={16} className="text-secondary" />
+                        <span className="text-xs font-mono font-bold text-secondary">{incidents.length}</span>
                     </div>
                 </Card>
             </div>
@@ -120,7 +120,7 @@ function CrisisMap() {
             {/* Premium Overlay Info */}
             {selectedIncident && (
                 <div className="absolute top-6 right-6 w-full max-w-[400px] z-20 px-6 sm:px-0 animate-in slide-in-from-right-8 fade-in duration-500">
-                    <Card className="p-8 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border-t-2 border-t-white/10 relative overflow-hidden">
+                    <Card className="p-8 shadow-[0_30px_60px_rgba(0,0,0,0.5)] border-t-2 border-t-white/10 relative overflow-hidden" glowing={selectedIncident.severity >= 4}>
                         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
                             <Shield size={160} strokeWidth={1} />
                         </div>
@@ -128,8 +128,8 @@ function CrisisMap() {
                         <div className="flex justify-between items-start mb-6 relative z-10">
                             <div className="flex flex-col gap-3">
                                 <div className="flex gap-2">
-                                    <Badge variant={selectedIncident.severity >= 4 ? 'danger' : 'amber'}>LVL {selectedIncident.severity} IMPACT</Badge>
-                                    <Badge>{selectedIncident.category}</Badge>
+                                    <Badge variant={selectedIncident.severity >= 4 ? 'danger' : 'accent'}>LVL {selectedIncident.severity} IMPACT</Badge>
+                                    <Badge variant="neutral" className="uppercase">{selectedIncident.category}</Badge>
                                 </div>
                                 <h3 className="text-2xl font-black tracking-tight text-white uppercase leading-tight">{selectedIncident.title}</h3>
                             </div>
@@ -152,18 +152,18 @@ function CrisisMap() {
                         </div>
 
                         <div className="space-y-4 mb-8 relative z-10">
-                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-electric flex items-center gap-2">
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-secondary flex items-center gap-2">
                                 <Zap size={12} className="animate-pulse" /> Edge AI Resolution Plan
                             </p>
-                            <div className="bg-electric/5 border border-electric/20 p-5 rounded-2xl shadow-inner">
-                                <p className="text-xs text-electric/90 leading-relaxed font-mono italic">
+                            <div className="bg-secondary/5 border border-secondary/20 p-5 rounded-2xl shadow-inner">
+                                <p className="text-xs text-secondary/90 leading-relaxed font-mono italic">
                                     {selectedIncident.actionPlan || "ANALYZING OPTIMAL DEPLOYMENT ROUTE..."}
                                 </p>
                             </div>
                         </div>
 
                         <Button 
-                            className="w-full py-5 text-xs font-black shadow-electric"
+                            className="btn-accent w-full py-5 text-xs font-black"
                             onClick={() => navigate(`/incidents/${selectedIncident.id}`)}
                         >
                             Review Full Intel
@@ -176,8 +176,8 @@ function CrisisMap() {
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex p-1 rounded-2xl z-10 glass-card bg-navy-950/80">
                 {[
                     { color: 'bg-danger', label: 'Fire / Critical', shadow: 'shadow-danger' },
-                    { color: 'bg-electric', label: 'Medical', shadow: 'shadow-electric' },
-                    { color: 'bg-amber', label: 'Security', shadow: 'shadow-amber/50' },
+                    { color: 'bg-secondary', label: 'Medical', shadow: 'shadow-secondary/50' },
+                    { color: 'bg-accent', label: 'Security', shadow: 'shadow-accent/50' },
                 ].map((item, i) => (
                     <div key={i} className={`flex items-center gap-3 px-5 py-2.5 ${i !== 2 ? 'border-r border-white/5' : ''}`}>
                         <div className={`w-2.5 h-2.5 ${item.color} rounded-full ${item.shadow}`}></div>

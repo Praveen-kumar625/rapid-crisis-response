@@ -68,7 +68,7 @@ function ReportForm() {
                                 reader.readAsDataURL(rpt.mediaFile);
                             });
                         }
-                        const { localId, mediaFile, ...cleanRpt } = rpt;
+                        const { localId, ...cleanRpt } = rpt;
                         await api.post('/incidents', { ...cleanRpt, mediaBase64 });
                         await markReportSynced(localId);
                         toast.success(`✅ Offline report synced: ${rpt.title}`);
@@ -293,7 +293,7 @@ function ReportForm() {
 
     const Label = ({ children }) => (
         <label className="block text-[10px] uppercase tracking-[0.3em] font-black text-slate-500 mb-3 flex items-center gap-2">
-            <span className="w-1 h-1 bg-electric rounded-full"></span> {children}
+            <span className="w-1 h-1 bg-accent rounded-full"></span> {children}
         </label>
     );
 
@@ -489,7 +489,7 @@ function ReportForm() {
                                         {[1, 2, 3, 4, 5].map((s) => (
                                             <div 
                                                 key={s} 
-                                                className={`flex-1 rounded-full transition-all duration-700 ${s <= aiResult.severity ? (aiResult.severity >= 4 ? 'bg-danger shadow-danger' : 'bg-electric shadow-electric') : 'bg-white/5'}`}
+                                                className={`flex-1 rounded-full transition-all duration-700 ${s <= aiResult.severity ? (aiResult.severity >= 4 ? 'bg-danger shadow-danger' : 'bg-accent shadow-[0_0_15px_rgba(245,158,11,0.3)]') : 'bg-white/5'}`}
                                                 style={{ transitionDelay: `${s * 100}ms` }}
                                             />
                                         ))}

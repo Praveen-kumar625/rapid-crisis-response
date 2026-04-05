@@ -5,8 +5,17 @@ module.exports = {
     "./public/index.html"
   ],
   theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+    },
     extend: {
       colors: {
+        primary: '#031D44',   // Deep Navy
+        secondary: '#0D9488', // Teal
+        'secondary-light': '#2DD4BF', // Bright Teal for text
+        accent: '#F59E0B',    // Amber
+        softWhite: '#F8FAFC',
         navy: {
           950: '#050810',
           900: '#0a0f1c',
@@ -22,23 +31,21 @@ module.exports = {
           DEFAULT: '#10b981',
           glow: 'rgba(16, 185, 129, 0.3)'
         },
-        amber: {
-          DEFAULT: '#f59e0b',
-          glow: 'rgba(245, 158, 11, 0.3)'
-        },
         danger: {
           DEFAULT: '#ff3366',
           hover: '#e62e5c',
           glow: 'rgba(255, 51, 102, 0.3)'
         },
-        cyan: '#22d3ee',
-        teal: '#14b8a6',
-        surface: 'rgba(15, 23, 42, 0.6)',
-        surfaceBorder: 'rgba(255, 255, 255, 0.08)'
+        surface: 'rgba(255, 255, 255, 0.1)',
+        surfaceBorder: 'rgba(255, 255, 255, 0.2)'
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Montserrat', 'Inter', 'system-ui', 'sans-serif'],
+        body: ['Source Sans Pro', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+      },
+      backdropBlur: {
+        xs: '2px',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

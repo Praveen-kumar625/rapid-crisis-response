@@ -34,7 +34,7 @@ function computeAggregates(incidents) {
     };
 }
 
-const COLORS = ['#00f0ff', '#10b981', '#f59e0b', '#f97316', '#ff3366'];
+const COLORS = ['#0D9488', '#00f0ff', '#F59E0B', '#f97316', '#ff3366'];
 
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -98,22 +98,22 @@ function Dashboard() {
                     <header className="mb-12 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
                         <div>
                             <div className="flex items-center gap-3 mb-4">
-                                <Badge variant="electric" className="px-3 py-1.5">
+                                <Badge variant="secondary" className="px-3 py-1.5 border-secondary/30 text-secondary bg-secondary/10">
                                     <Zap size={12} className="animate-pulse" /> Live Operational View
                                 </Badge>
                             </div>
-                            <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tight">Intelligence <span className="text-electric">Terminal</span></h2>
+                            <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tight">Intelligence <span className="text-gradient-accent">Terminal</span></h2>
                             <p className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase mt-3">Node: DC-EAST-01 {'//'} Auth: Administrator</p>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {[
                                 { label: 'Total Signal', val: incidents.length, color: 'text-white' },
-                                { label: 'Active Crisis', val: activeCount, color: 'text-amber' },
+                                { label: 'Active Crisis', val: activeCount, color: 'text-accent' },
                                 { label: 'L5 Critical', val: criticalCount, color: 'text-danger' },
-                                { label: 'Uptime', val: '99.9%', color: 'text-emerald' },
+                                { label: 'Uptime', val: '99.9%', color: 'text-secondary' },
                             ].map((s, i) => (
-                                <Card key={i} variant="panel" className="px-6 py-4 flex flex-col items-center justify-center min-w-[120px]">
+                                <Card key={i} variant="panel" className="px-6 py-4 flex flex-col items-center justify-center min-w-[120px] border-white/5">
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{s.label}</span>
                                     <span className={`text-xl font-black font-mono ${s.color}`}>{s.val}</span>
                                 </Card>

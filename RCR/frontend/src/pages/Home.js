@@ -58,16 +58,16 @@ function Home() {
                         className="text-4xl sm:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.95] mb-8 lg:mb-12"
                     >
                         <span className="block text-white">THE GOLDEN</span>
-                        <span className="block text-gradient-danger drop-shadow-[0_0_40px_rgba(255,51,102,0.4)]">
+                        <span className="block text-gradient-accent drop-shadow-[0_0_40px_rgba(245,158,11,0.4)]">
                             HOUR RECLAIMED.
                         </span>
                     </motion.h1>
 
                     <motion.p 
                         variants={fadeInUp}
-                        className="max-w-3xl mx-auto text-lg md:text-2xl text-slate-400 font-light leading-relaxed mb-12 lg:mb-16"
+                        className="max-w-3xl mx-auto text-lg md:text-2xl text-slate-300 font-light leading-relaxed mb-12 lg:mb-16"
                     >
-                        Rapid Crisis Response (RCR) leverages <span className="text-electric font-medium">Edge AI</span> to orchestrate safety in high-stakes hospitality. Zero-latency triage when seconds define outcomes.
+                        Rapid Crisis Response (RCR) leverages <span className="text-secondary-light font-medium">Edge AI</span> to orchestrate safety in high-stakes hospitality. Zero-latency triage when seconds define outcomes.
                     </motion.p>
 
                     <motion.div 
@@ -75,15 +75,15 @@ function Home() {
                         className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full sm:w-auto"
                     >
                         <Link to="/report" className="w-full sm:w-auto">
-                            <Button variant="danger" className="w-full sm:w-auto px-12 py-6 text-base">
+                            <Button variant="primary" className="btn-accent w-full sm:w-auto px-12 py-6 text-base" aria-label="Initiate SOS Report">
                                 <ShieldAlert size={20} />
                                 Initiate SOS Report
                             </Button>
                         </Link>
                         
                         <Link to="/map" className="w-full sm:w-auto">
-                            <Button variant="secondary" className="w-full sm:w-auto px-12 py-6 text-base group">
-                                <MapIcon size={20} className="group-hover:text-electric transition-colors" />
+                            <Button variant="secondary" className="w-full sm:w-auto px-12 py-6 text-base group" aria-label="View Live Command Map">
+                                <MapIcon size={20} className="group-hover:text-secondary-light transition-colors" />
                                 Command Map
                                 <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                             </Button>
@@ -106,25 +106,25 @@ function Home() {
                 <Container>
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-16 lg:mb-24 gap-8">
                         <div className="max-w-2xl">
-                            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-electric mb-4 flex items-center gap-3">
-                                <span className="w-8 h-px bg-electric"></span> Intelligence Core
+                            <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary-light mb-4 flex items-center gap-3">
+                                <span className="w-8 h-px bg-secondary"></span> Intelligence Core
                             </h2>
                             <h3 className="text-4xl lg:text-6xl font-black tracking-tight text-white leading-tight uppercase">
                                 Redefining the <br />
                                 <span className="text-slate-500 text-gradient">Security Stack.</span>
                             </h3>
                         </div>
-                        <p className="max-w-sm text-slate-400 font-light leading-relaxed border-l border-white/10 pl-6">
+                        <p className="max-w-sm text-slate-300 font-light leading-relaxed border-l border-white/10 pl-6">
                             Modern hospitality requires more than reactive reporting. It requires proactive AI orchestration.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <Card className="group p-10 lg:p-12 hover:bg-white/[0.07] border-t-2 border-t-electric/30 hover:border-t-electric">
+                        <Card className="group p-10 lg:p-12 hover:bg-white/[0.07] border-t-2 border-t-secondary/30 hover:border-t-secondary">
                             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <Activity size={120} strokeWidth={1} />
                             </div>
-                            <div className="w-16 h-16 bg-electric/10 text-electric rounded-2xl flex items-center justify-center mb-10 border border-electric/20 group-hover:scale-110 transition-all duration-500 shadow-electric">
+                            <div className="w-16 h-16 bg-secondary/10 text-secondary-light rounded-2xl flex items-center justify-center mb-10 border border-secondary/20 group-hover:scale-110 transition-all duration-500 shadow-[0_0_20px_rgba(13,148,136,0.3)]">
                                 <Fingerprint size={32} strokeWidth={1.5} />
                             </div>
                             <h4 className="text-2xl font-bold mb-4 text-white tracking-wide uppercase">Multimodal Triage</h4>
@@ -133,11 +133,11 @@ function Home() {
                             </p>
                         </Card>
 
-                        <Card className="group p-10 lg:p-12 hover:bg-white/[0.07] border-t-2 border-t-emerald/30 hover:border-t-emerald">
+                        <Card className="group p-10 lg:p-12 hover:bg-white/[0.07] border-t-2 border-t-accent/30 hover:border-t-accent">
                             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <MapIcon size={120} strokeWidth={1} />
                             </div>
-                            <div className="w-16 h-16 bg-emerald/10 text-emerald rounded-2xl flex items-center justify-center mb-10 border border-emerald/20 group-hover:scale-110 transition-all duration-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                            <div className="w-16 h-16 bg-accent/10 text-accent rounded-2xl flex items-center justify-center mb-10 border border-accent/20 group-hover:scale-110 transition-all duration-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
                                 <Activity size={32} strokeWidth={1.5} />
                             </div>
                             <h4 className="text-2xl font-bold mb-4 text-white tracking-wide uppercase">Indoor PostGIS</h4>
@@ -146,11 +146,11 @@ function Home() {
                             </p>
                         </Card>
 
-                        <Card className="group p-10 lg:p-12 hover:bg-white/[0.07] border-t-2 border-t-amber/30 hover:border-t-amber">
+                        <Card className="group p-10 lg:p-12 hover:bg-white/[0.07] border-t-2 border-t-electric/30 hover:border-t-electric">
                             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <WifiOff size={120} strokeWidth={1} />
                             </div>
-                            <div className="w-16 h-16 bg-amber/10 text-amber rounded-2xl flex items-center justify-center mb-10 border border-amber/20 group-hover:scale-110 transition-all duration-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                            <div className="w-16 h-16 bg-electric/10 text-electric rounded-2xl flex items-center justify-center mb-10 border border-electric/20 group-hover:scale-110 transition-all duration-500 shadow-electric">
                                 <WifiOff size={32} strokeWidth={1.5} />
                             </div>
                             <h4 className="text-2xl font-bold mb-4 text-white tracking-wide uppercase">Offline Edge</h4>

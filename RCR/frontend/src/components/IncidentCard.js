@@ -14,14 +14,14 @@ function IncidentCard({ incident }) {
         <Card className="group relative overflow-hidden flex flex-col justify-between p-8 hover:bg-white/[0.03]">
             {/* Left Accent Line */}
             <div className={`absolute top-0 left-0 w-1 h-full transition-all duration-500 ${
-                isCritical ? 'bg-danger shadow-[0_0_20px_rgba(255,51,102,0.6)]' : 'bg-electric shadow-electric'
+                isCritical ? 'bg-danger shadow-[0_0_20px_rgba(255,51,102,0.6)]' : 'bg-secondary shadow-[0_0_20px_rgba(13,148,136,0.4)]'
             } group-hover:w-2`}></div>
             
             <div className="relative z-10">
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex flex-col gap-2">
                         <StatusBadge status={status} />
-                        <h3 className="text-xl font-black text-white group-hover:text-electric transition-colors uppercase tracking-tight leading-tight line-clamp-2">
+                        <h3 className="text-xl font-black text-white group-hover:text-secondary transition-colors uppercase tracking-tight leading-tight line-clamp-2">
                             {title}
                         </h3>
                     </div>
@@ -32,7 +32,7 @@ function IncidentCard({ incident }) {
                         {category}
                     </span>
                     <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-lg border ${
-                        isCritical ? 'text-danger bg-danger/10 border-danger/20' : 'text-amber bg-amber/10 border-amber/20'
+                        isCritical ? 'text-danger bg-danger/10 border-danger/20' : 'text-accent bg-accent/10 border-accent/20'
                     }`}>
                         LVL {severity}
                     </span>
@@ -56,7 +56,7 @@ function IncidentCard({ incident }) {
                     {triageMethod || 'Cloud AI'}
                 </div>
                 <Link to={`/incidents/${id}`} className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                    isCritical ? 'text-danger hover:text-red-400' : 'text-electric hover:text-cyan'
+                    isCritical ? 'text-danger hover:text-red-400' : 'text-secondary hover:text-teal-400'
                 }`}>
                     INTEL <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </Link>

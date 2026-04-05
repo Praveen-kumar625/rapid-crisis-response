@@ -13,8 +13,23 @@ api.interceptors.request.use(async(config) => {
         return config;
     }
 
-    if (auth.currentUser) {
-        const token = await auth.currentUser.getIdToken();
+    // 🚨 RESILIENCE FIX: Ensure we wait for Firebase to initialize if it's in progress
+    const getCurrentUser = () => {
+        return new Promise((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged((user) => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
+    };
+
+    let user = auth.currentUser;
+    if (!user) {
+        user = await getCurrentUser();
+    }
+
+    if (user) {
+        const token = await user.getIdToken();
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

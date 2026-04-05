@@ -9,6 +9,25 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 
+// 🚨 PERFORMANCE FIX: Components defined outside render to prevent re-mounting on every keystroke
+const Label = ({ children, htmlFor }) => (
+    <label 
+        htmlFor={htmlFor}
+        className="block text-[10px] uppercase tracking-[0.3em] font-black text-slate-500 mb-3 flex items-center gap-2 cursor-pointer"
+    >
+        <span className="w-1 h-1 bg-accent rounded-full"></span> {children}
+    </label>
+);
+
+const Input = React.forwardRef(({ className = '', ...props }, ref) => (
+    <input 
+        {...props}
+        ref={ref}
+        className={`w-full bg-navy-900/50 border border-white/5 rounded-2xl focus:border-electric focus:ring-1 focus:ring-electric/50 transition-all py-4 px-5 outline-none text-slate-200 placeholder-slate-600 ${className}`}
+    />
+));
+Input.displayName = 'Input';
+
 function ReportForm() {
     const [form, setForm] = useState({
         title: '',
@@ -31,11 +50,10 @@ function ReportForm() {
     const [aiResult, setAiResult] = useState({ category: '', severity: 0, method: 'Cloud AI (Gemini)' });
     
     const mediaRecorderRef = useRef(null);
-
     const titleRef = useRef(null);
     const descriptionRef = useRef(null);
 
-    // Debounced state for expensive re-renders or validation (demonstrative)
+    // Debounced state for expensive re-renders or validation
     const [debouncedTitle, setDebouncedTitle] = useState('');
     const updateDebouncedTitle = useMemo(() => debounce((val) => setDebouncedTitle(val), 300), []);
 
@@ -316,26 +334,16 @@ function ReportForm() {
                 toast.dismiss();
                 toast.error('Dispatch Failure: ' + (err.response?.data?.error || err.message));
                 console.error('Dispatch error:', err);
+                
+                // 🚨 RELIABILITY FIX: Fallback to offline queue on S3/API failure
+                await queueReport({...payload, mediaFile, synced: false });
+                toast('Queued for secure retry sync', { icon: '🔄' });
             }
         } else {
             await queueReport({...payload, mediaFile, synced: false });
             toast.success('Queued for secure sync');
         }
     };
-
-    const Label = ({ children }) => (
-        <label className="block text-[10px] uppercase tracking-[0.3em] font-black text-slate-500 mb-3 flex items-center gap-2">
-            <span className="w-1 h-1 bg-accent rounded-full"></span> {children}
-        </label>
-    );
-
-    const Input = React.forwardRef((props, ref) => (
-        <input 
-            {...props}
-            ref={ref}
-            className={`w-full bg-navy-900/50 border border-white/5 rounded-2xl focus:border-electric focus:ring-1 focus:ring-electric/50 transition-all py-4 px-5 outline-none text-slate-200 placeholder-slate-600 ${props.className || ''}`}
-        />
-    ));
 
     return (
         <Card className="w-full overflow-hidden shadow-2xl">
@@ -356,6 +364,7 @@ function ReportForm() {
                     <Button 
                         type="button"
                         variant="danger"
+                        aria-label="Trigger SOS Audio"
                         onClick={handleAudioSOS}
                         className={`py-5 text-[10px] ${isAudioRecording ? 'animate-pulse shadow-danger' : ''}`}
                     >
@@ -367,6 +376,7 @@ function ReportForm() {
                         <Button 
                             type="button"
                             variant="secondary"
+                            aria-label="Voice Dictation"
                             onClick={handleVoiceToggle}
                             className={`py-5 text-[10px] ${isRecording ? 'border-electric text-electric animate-pulse' : ''}`}
                         >
@@ -385,7 +395,7 @@ function ReportForm() {
                 {/* TEXT INPUTS */}
                 <div className="space-y-8">
                     <div>
-                        <Label>Incident Identifier</Label>
+                        <Label htmlFor="incident-title">Incident Identifier</Label>
                         <Input 
                             ref={titleRef}
                             id="incident-title"
@@ -399,7 +409,7 @@ function ReportForm() {
                     </div>
 
                     <div>
-                        <Label>Operational Narrative</Label>
+                        <Label htmlFor="incident-description">Operational Narrative</Label>
                         <textarea 
                             ref={descriptionRef}
                             id="incident-description"
@@ -417,15 +427,15 @@ function ReportForm() {
                 {/* LOCATION COORDINATES */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-navy-900/30 p-6 rounded-3xl border border-white/5">
                     <div>
-                        <Label>Wing / Sector</Label>
+                        <Label htmlFor="wing-id">Wing / Sector</Label>
                         <Input id="wing-id" name="wingId" aria-label="Wing or Sector" placeholder="e.g., NORTH" value={form.wingId} onChange={(e) => setForm(prev => ({...prev, wingId: e.target.value.toUpperCase() }))} required />
                     </div>
                     <div>
-                        <Label>Floor Level</Label>
+                        <Label htmlFor="floor-level">Floor Level</Label>
                         <Input id="floor-level" name="floorLevel" aria-label="Floor Level" type="number" value={form.floorLevel} onChange={(e) => setForm(prev => ({...prev, floorLevel: Number(e.target.value) }))} required />
                     </div>
                     <div>
-                        <Label>Room / Area</Label>
+                        <Label htmlFor="room-number">Room / Area</Label>
                         <Input id="room-number" name="roomNumber" aria-label="Room or Area" placeholder="e.g., SUITE 402" value={form.roomNumber} onChange={(e) => setForm(prev => ({...prev, roomNumber: e.target.value.toUpperCase() }))} required />
                     </div>
                 </div>
@@ -433,7 +443,7 @@ function ReportForm() {
                 {/* CATEGORY & SEVERITY */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div>
-                        <Label>Classification Protocol</Label>
+                        <Label htmlFor="incident-category">Classification Protocol</Label>
                         <div className="relative">
                             <select 
                                 id="incident-category"
@@ -447,8 +457,8 @@ function ReportForm() {
                                 <option value="" disabled>Select Category</option>
                                 <option value="MEDICAL">Medical Emergency</option>
                                 <option value="FIRE">Fire Incident</option>
-                                <option value="INTRUDER">Security Breach</option>
-                                <option value="MAINTENANCE">Utility / Maintenance</option>
+                                <option value="SECURITY">Security Breach</option>
+                                <option value="INFRASTRUCTURE">Utility / Maintenance</option>
                             </select>
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-30">
                                 <Info size={16} />
@@ -458,7 +468,7 @@ function ReportForm() {
 
                     <div>
                         <div className="flex justify-between items-center mb-4">
-                            <Label>Severity Matrix</Label>
+                            <Label htmlFor="severity-slider">Severity Matrix</Label>
                             <Badge variant={form.severity >= 4 ? 'danger' : 'electric'} className="py-1">LEVEL {form.severity}</Badge>
                         </div>
                         <input 
@@ -479,7 +489,7 @@ function ReportForm() {
 
                 {/* VISUAL EVIDENCE */}
                 <div className="border-2 border-dashed border-white/5 bg-navy-900/20 hover:bg-white/[0.03] transition-all p-10 rounded-3xl text-center group cursor-pointer relative overflow-hidden">
-                    <input type="file" accept="image/*,video/*" capture="environment" onChange={handleMediaChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                    <input id="media-upload" name="mediaFile" aria-label="Attach Visual Evidence" type="file" accept="image/*,video/*" capture="environment" onChange={handleMediaChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
                     <div className="flex flex-col items-center justify-center">
                         <div className="w-16 h-16 bg-white/5 group-hover:bg-electric/10 rounded-full flex items-center justify-center mb-6 transition-all duration-500 border border-white/5 group-hover:border-electric/30 shadow-2xl">
                             <Camera size={28} className="text-slate-500 group-hover:text-electric transition-colors" />
@@ -501,6 +511,7 @@ function ReportForm() {
 
                 <Button 
                     type="submit"
+                    aria-label="Submit Terminal Dispatch"
                     className="w-full py-6 text-base font-black shadow-[0_0_40px_rgba(0,240,255,0.2)]"
                 >
                     <ShieldCheck size={20} />
@@ -546,6 +557,7 @@ function ReportForm() {
                             
                             <Button 
                                 onClick={() => setShowAiModal(false)}
+                                aria-label="Confirm AI Data"
                                 className="mt-12 w-full py-5"
                             >
                                 Confirm AI Data

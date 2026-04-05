@@ -1,17 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import { MapPin, Cpu, ArrowRight, Navigation } from 'lucide-react';
 import { Card } from './ui/Card';
 
 function IncidentCard({ incident }) {
+    const navigate = useNavigate();
     const { id, title, severity, category, status, location, triageMethod, wingId, floorLevel } = incident;
     const [lng, lat] = location.coordinates;
     
     const isCritical = severity >= 4;
     
     return (
-        <Card className="group relative overflow-hidden flex flex-col justify-between p-8 hover:bg-white/[0.03]">
+        <Card 
+            className="group relative overflow-hidden flex flex-col justify-between p-8 hover:bg-white/[0.03] cursor-pointer"
+            onClick={() => navigate(`/incidents/${id}`)}
+        >
             {/* Left Accent Line */}
             <div className={`absolute top-0 left-0 w-1 h-full transition-all duration-500 ${
                 isCritical ? 'bg-danger shadow-[0_0_20px_rgba(255,51,102,0.6)]' : 'bg-secondary shadow-[0_0_20px_rgba(13,148,136,0.4)]'

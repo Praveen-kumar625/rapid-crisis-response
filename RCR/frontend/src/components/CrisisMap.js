@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { X, Navigation, Info, LocateFixed, Zap, Shield } from 'lucide-react';
@@ -56,6 +56,19 @@ function CrisisMap() {
         return 'bg-emerald border-emerald shadow-[0_0_10px_rgba(16,185,129,0.3)]';
     };
 
+    const memoizedMarkers = useMemo(() => incidents.map((inc) => (
+        <AdvancedMarker 
+            key={inc.id}
+            position={{ lat: inc.location?.coordinates[1] || RESPONDER_HQ.lat, lng: inc.location?.coordinates[0] || RESPONDER_HQ.lng }}
+            onClick={() => setSelectedIncident(inc)}
+            className="z-10"
+        >
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-125 cursor-pointer border-2 ${getMarkerColor(inc.severity, inc.category)}`}>
+                <span className="text-white text-[10px] font-black uppercase">{inc.category?.[0] || '!'}</span>
+            </div>
+        </AdvancedMarker>
+    )), [incidents]);
+
     return (
         <div className="relative w-full h-full bg-navy-950 overflow-hidden flex-1 flex">
             <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
@@ -87,18 +100,7 @@ function CrisisMap() {
                         </div>
                     </AdvancedMarker>
 
-                    {incidents.map((inc) => (
-                        <AdvancedMarker 
-                            key={inc.id}
-                            position={{ lat: inc.location?.coordinates[1] || RESPONDER_HQ.lat, lng: inc.location?.coordinates[0] || RESPONDER_HQ.lng }}
-                            onClick={() => setSelectedIncident(inc)}
-                            className="z-10"
-                        >
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transform transition-all duration-300 hover:scale-125 cursor-pointer border-2 ${getMarkerColor(inc.severity, inc.category)}`}>
-                                <span className="text-white text-[10px] font-black uppercase">{inc.category?.[0] || '!'}</span>
-                            </div>
-                        </AdvancedMarker>
-                    ))}
+                    {memoizedMarkers}
                 </Map>
             </APIProvider>
 

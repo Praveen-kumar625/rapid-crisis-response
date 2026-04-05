@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api';
 import { getSocket } from '../socket';
@@ -51,7 +51,7 @@ const CustomTooltip = ({ active, payload }) => {
 function Dashboard() {
     const navigate = useNavigate();
     const [incidents, setIncidents] = useState([]);
-    const [stats, setStats] = useState({ categoryData: [], severityData: [], timelineData: [] });
+    const stats = useMemo(() => computeAggregates(incidents), [incidents]);
     const [pulses, setPulses] = useState({});
 
     useEffect(() => {

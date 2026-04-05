@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogIn, LogOut, Wifi, WifiOff, DatabaseZap } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
@@ -24,6 +24,35 @@ const NavLink = ({ to, icon: Icon, children, currentPath, onClick }) => {
     );
 };
 
+const NetworkStatus = () => {
+    const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+
+    React.useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    return (
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-500 ${
+            isOnline 
+            ? 'bg-emerald/5 border-emerald/20 text-emerald' 
+            : 'bg-danger/5 border-danger/20 text-danger animate-pulse'
+        }`}>
+            {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
+            <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">
+                {isOnline ? 'Cloud Sync Active' : 'Edge Mode Active'}
+            </span>
+            {!isOnline && <DatabaseZap size={12} className="text-amber" />}
+        </div>
+    );
+};
+
 export const Navbar = ({ user, login }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
@@ -32,17 +61,23 @@ export const Navbar = ({ user, login }) => {
         <header className="sticky top-0 z-50 glass-nav">
             <div className="max-w-screen-2xl mx-auto px-4 md:px-8 h-20 flex justify-between items-center">
                 
-                <Link to="/" className="flex items-center gap-4 group">
-                    <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-danger to-red-900 rounded-xl border border-danger/30 shadow-danger group-hover:shadow-[0_0_30px_rgba(255,51,102,0.5)] transition-all duration-500">
-                        <Shield className="text-white w-5 h-5" />
+                <div className="flex items-center gap-8">
+                    <Link to="/" className="flex items-center gap-4 group text-decoration-none">
+                        <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-danger to-red-900 rounded-xl border border-danger/30 shadow-danger group-hover:shadow-[0_0_30px_rgba(255,51,102,0.5)] transition-all duration-500">
+                            <Shield className="text-white w-5 h-5" />
+                        </div>
+                        <div className="hidden md:flex flex-col">
+                            <h1 className="text-lg font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                Rapid <span className="text-danger font-black">Crisis</span> Response
+                            </h1>
+                            <span className="text-[10px] text-electric tracking-[0.2em] font-mono opacity-80 uppercase">Command Center</span>
+                        </div>
+                    </Link>
+
+                    <div className="hidden xl:block">
+                        <NetworkStatus />
                     </div>
-                    <div className="hidden md:flex flex-col">
-                        <h1 className="text-lg font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                            Rapid <span className="text-danger font-black">Crisis</span> Response
-                        </h1>
-                        <span className="text-[10px] text-electric tracking-[0.2em] font-mono opacity-80 uppercase">Command Center</span>
-                    </div>
-                </Link>
+                </div>
 
                 <nav className="hidden lg:flex items-center gap-2">
                     <NavLink to="/" icon={Activity} currentPath={location.pathname}>Overview</NavLink>

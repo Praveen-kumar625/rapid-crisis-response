@@ -38,6 +38,15 @@ module.exports = {
     // ------------------- Demo Mode -------------------
     DEMO_MODE: process.env.DEMO_MODE === 'true',
 
+    // ------------------- AWS S3 Storage --------------
+    S3: {
+        bucketName: process.env.AWS_S3_BUCKET,
+        region: process.env.AWS_REGION || 'us-east-1',
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        endpoint: process.env.AWS_S3_ENDPOINT, // Optional for S3-compatible like Minio/DigitalOcean
+    },
+
     // ------------------- Responder HQ (optional) -----
     // If you want to change the base location without rebuilding the UI,
     // you can also read it from environment variables in the frontend.

@@ -121,7 +121,8 @@ function initSocket(httpServer) {
     });
 
     // Start Twilio Alert Listener
-    startAlertListener();
+    // AI & SMS Alerts are now handled by BullMQ worker processors
+    // startAlertListener();
 
     ioInstance = io;
     return io;

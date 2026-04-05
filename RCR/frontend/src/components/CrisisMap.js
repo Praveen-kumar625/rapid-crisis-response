@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
-import { X, Navigation, AlertCircle, Info, LocateFixed, Zap, Shield } from 'lucide-react';
+import { X, Navigation, Info, LocateFixed, Zap, Shield } from 'lucide-react';
 import api from '../api';
 import { getSocket } from '../socket';
 import { Card } from './ui/Card';
@@ -10,6 +11,7 @@ import { Button } from './ui/Button';
 const RESPONDER_HQ = { lat: 28.6139, lng: 77.2090 };
 
 function CrisisMap() {
+    const navigate = useNavigate();
     const [incidents, setIncidents] = useState([]);
     const [selectedIncident, setSelectedIncident] = useState(null);
 
@@ -145,7 +147,7 @@ function CrisisMap() {
                             </div>
                             <div className="bg-navy-950/50 p-4 rounded-2xl border border-white/5 shadow-inner">
                                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Info size={10} /> COORDS</p>
-                                <p className="text-xs font-bold uppercase text-slate-200 font-mono">FL_{selectedIncident.floorLevel} // RM_{selectedIncident.roomNumber}</p>
+                                <p className="text-xs font-bold uppercase text-slate-200 font-mono">FL_{selectedIncident.floorLevel} {'//'} RM_{selectedIncident.roomNumber}</p>
                             </div>
                         </div>
 
@@ -160,8 +162,11 @@ function CrisisMap() {
                             </div>
                         </div>
 
-                        <Button className="w-full py-5 text-xs font-black shadow-electric">
-                            Acknowledge & Deploy
+                        <Button 
+                            className="w-full py-5 text-xs font-black shadow-electric"
+                            onClick={() => navigate(`/incidents/${selectedIncident.id}`)}
+                        >
+                            Review Full Intel
                         </Button>
                     </Card>
                 </div>

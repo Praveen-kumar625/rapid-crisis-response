@@ -50,11 +50,6 @@ exports.create = async(req, res) => {
             triageMethod,
         } = req.body;
 
-        // Validate required fields
-        if (!title || !category || typeof lat === 'undefined' || typeof lng === 'undefined') {
-            return res.status(400).json({ error: 'Missing required fields: title, category, lat, lng' });
-        }
-
         const reporterId = req.user.sub;
         const hotelId = req.user.hotelId;
 

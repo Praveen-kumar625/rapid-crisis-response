@@ -3,7 +3,7 @@ import api from '../api';
 import toast from 'react-hot-toast';
 import { queueReport, getPendingReports, markReportSynced } from '../idb';
 import { localAnalyze } from '../utils/edgeAi';
-import { Mic, MicOff, Camera, AlertTriangle, Cpu, Info, Navigation, ShieldCheck } from 'lucide-react';
+import { Mic, MicOff, Camera, AlertTriangle, Cpu, Info, ShieldCheck } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
@@ -197,7 +197,23 @@ function ReportForm() {
         let triageMethod = 'Cloud AI (Gemini)';
 
         if (!navigator.onLine) {
-            const localResult = localAnalyze(form.title, form.description);
+            const toastId = toast.loading('Initializing Edge AI for offline triage...', {
+                icon: '🧠'
+            });
+
+            // Progress callback to show loading state if model is being cached/downloaded for the first time
+            const progressCb = (info) => {
+                if (info.status === 'progress') {
+                    toast.loading(`Loading NLP model: ${Math.round(info.progress)}%`, { id: toastId });
+                } else if (info.status === 'ready') {
+                    toast.loading('Analyzing incident...', { id: toastId });
+                }
+            };
+
+            const localResult = await localAnalyze(form.title, form.description, progressCb);
+            
+            toast.dismiss(toastId);
+            
             finalForm.category = localResult.category;
             finalForm.severity = localResult.severity;
             triageMethod = localResult.triageMethod;
@@ -208,7 +224,7 @@ function ReportForm() {
                 method: localResult.triageMethod
             });
             setShowAiModal(true);
-            toast.success('Offline Edge AI Active');
+            toast.success(`${localResult.triageMethod} Active`);
         }
 
         const payload = {

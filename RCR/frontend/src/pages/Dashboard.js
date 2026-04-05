@@ -4,7 +4,7 @@ import { getSocket } from '../socket';
 import {
     PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { Activity, AlertTriangle, CheckCircle2, Clock, Zap, Target, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Zap, Target, TrendingUp } from 'lucide-react';
 import { Container } from '../components/layout/Container';
 import { Section } from '../components/layout/Section';
 import { Card } from '../components/ui/Card';
@@ -248,7 +248,7 @@ function Dashboard() {
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-slate-200 text-xs font-mono font-bold uppercase">Wing {inc.wingId} // LVL {inc.floorLevel}</span>
+                                                    <span className="text-slate-200 text-xs font-mono font-bold uppercase">Wing {inc.wingId} {'//'} LVL {inc.floorLevel}</span>
                                                     <span className="text-[10px] text-slate-500 font-mono">ROOM_ID: {inc.roomNumber}</span>
                                                 </div>
                                             </td>

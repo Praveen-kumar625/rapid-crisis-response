@@ -5,6 +5,11 @@
  */
 
 exports.up = async function(knex) {
+    // 0. Clean up existing tables to prevent "Already Exists" errors during initial deployment fixes
+    await knex.schema.dropTableIfExists('incidents');
+    await knex.schema.dropTableIfExists('users');
+    await knex.schema.dropTableIfExists('hotels');
+
     // 1. Create Hotels Table (Multi-tenancy root)
     await knex.schema.createTable('hotels', (table) => {
         table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));

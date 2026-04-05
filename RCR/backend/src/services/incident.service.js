@@ -39,6 +39,10 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => 
     }));
 };
 
+const { incidentQueue } = require('../infrastructure/queue');
+
+const StorageService = require('../infrastructure/storage');
+
 /**
  * Create a new incident
  */
@@ -46,26 +50,19 @@ exports.create = async({
     title, description, severity, category, lat, lng,
     floorLevel, roomNumber, wingId, indoorLocation,
     reportedBy, mediaType, mediaBase64, hotelId,
-    preAnalysis = null, triageMethod = 'Cloud AI'
+    triageMethod = 'Cloud AI'
 }) => {
-    const analysis = preAnalysis || await AIService.analyzeReport({
-        title, description, category, userSeverity: severity,
-        mediaType, mediaBase64, floorLevel, roomNumber, wingId
-    });
+    // 1. Upload to Cloud Storage if media exists
+    let mediaUrl = null;
+    if (mediaBase64) {
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${mediaType.split('/')[1] || 'bin'}`;
+        mediaUrl = await StorageService.uploadBase64(mediaBase64, mediaType, fileName);
+    }
 
-    const { spam_score = 0, auto_severity = severity, hospitality_category } = analysis;
-
-    // TODO: Integrate with S3/GCS here. For now, we simulate a URL storage.
-    const mediaUrl = mediaBase64 ? `https://storage.rcr-platform.com/incidents/${Date.now()}.bin` : null;
-
-    let finalSeverity = severity;
-    let status = 'OPEN';
-    if (spam_score > 0.8) status = 'REJECTED';
-    else if (auto_severity > severity) finalSeverity = auto_severity;
-
+    // 2. Insert minimal incident record immediately for fast response
     const [incident] = await db('incidents')
         .insert({
-            title, description, severity: finalSeverity, category,
+            title, description, severity, category,
             lat, lng, 
             indoor_lat: indoorLocation ? indoorLocation.lat : lat,
             indoor_lng: indoorLocation ? indoorLocation.lng : lng,
@@ -74,23 +71,54 @@ exports.create = async({
             wing_id: wingId || 'unknown',
             reported_by: reportedBy,
             hotel_id: hotelId,
-            status,
-            spam_score,
-            auto_severity,
-            hospitality_category: hospitality_category || 'INFRASTRUCTURE',
+            status: 'OPEN',
             triage_method: triageMethod,
-            ai_action_plan: analysis.actionPlan,
-            ai_required_resources: analysis.requiredResources || [],
             media_type: mediaType,
             media_url: mediaUrl
         })
         .returning('*');
 
-    // Notify via Sockets
+    // 3. Notify via Sockets (Fast path)
     const tenantTopic = `hotel_${hotelId}`;
     await SocketService.publish(`${tenantTopic}_incidents`, { type: 'created', incident });
 
+    // 4. Queue Background Tasks (AI Triage, which will later trigger SMS if needed)
+    await incidentQueue.add('AI_TRIAGE', { 
+        type: 'AI_TRIAGE', 
+        data: { 
+            incidentId: incident.id,
+            mediaBase64, // Pass through for AI analysis to avoid DB/S3 roundtrip in worker
+            mediaType
+        } 
+    });
+
     return incident;
+};
+
+exports.getById = async(id, hotelId) => {
+    let query = db('incidents')
+        .select(
+            'id', 'title', 'description', 'severity', 'category', 'status',
+            'floor_level as floorLevel', 'room_number as roomNumber', 'wing_id as wingId',
+            'hospitality_category as hospitalityCategory', 'spam_score', 'auto_severity',
+            'triage_method as triageMethod', 'ai_action_plan as actionPlan',
+            'ai_required_resources as requiredResources', 'media_type as mediaType', 'media_url as mediaUrl',
+            'lat', 'lng', 'indoor_lat as indoorLat', 'indoor_lng as indoorLng',
+            'reported_by as reportedBy', 'hotel_id as hotelId',
+            'created_at as createdAt', 'updated_at as updatedAt'
+        )
+        .where({ id });
+
+    if (hotelId) query = query.where('hotel_id', hotelId);
+
+    const row = await query.first();
+    if (!row) return null;
+
+    return {
+        ...row,
+        location: { type: 'Point', coordinates: [row.lng, row.lat] },
+        indoorLocation: row.indoorLat ? { type: 'Point', coordinates: [row.indoorLng, row.indoorLat] } : null
+    };
 };
 
 exports.updateStatus = async(id, newStatus, hotelId) => {
@@ -105,7 +133,10 @@ exports.updateStatus = async(id, newStatus, hotelId) => {
 };
 
 exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
+    // Note: For voice, we still do in-line transcription to show the user immediate feedback,
+    // but the incident creation now follows the async pattern for everything else.
     const analysis = await AIService.analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng });
+    
     const incident = await exports.create({
         title: analysis.translated_english_text ? `Voice report: ${analysis.hospitality_category}` : 'Voice Incident',
         description: analysis.translated_english_text || '',
@@ -114,8 +145,9 @@ exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumbe
         lat, lng, floorLevel, roomNumber, wingId,
         mediaType: audioMimeType || 'audio/webm',
         mediaBase64: audioBase64,
-        reportedBy, hotelId, preAnalysis: analysis,
+        reportedBy, hotelId,
         triageMethod: 'Cloud AI (Voice)'
     });
+
     return { analysis, incident };
 };

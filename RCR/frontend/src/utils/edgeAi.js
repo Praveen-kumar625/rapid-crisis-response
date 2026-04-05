@@ -1,62 +1,110 @@
+import { pipeline, env } from '@huggingface/transformers';
+
+// Configure environment for browser
+env.allowLocalModels = false;
+env.useBrowserCache = true;
+
 /**
- * Edge AI Engine - Offline Triage for RCR
- * Performs semantic analysis on device without network connectivity.
+ * Singleton pattern to load and cache the model in the browser.
+ * This prevents re-downloading/re-initializing the model on every inference.
  */
+class EdgeAIEngine {
+    static instance = null;
 
-const CATEGORY_KEYWORDS = {
-    FIRE: ['fire', 'smoke', 'burning', 'explosion', 'flame', 'spark', 'gas leak'],
-    MEDICAL: ['hurt', 'blood', 'bleeding', 'unconscious', 'faint', 'pain', 'breathing', 'heart', 'injury', 'attack', 'stroke'],
-    SECURITY: ['intruder', 'gun', 'weapon', 'fight', 'theft', 'stolen', 'broken', 'suspicious', 'threat', 'assault'],
-    INFRASTRUCTURE: ['leak', 'water', 'pipe', 'electric', 'power', 'elevator', 'lift', 'ac', 'hvac', 'structural', 'collapse']
+    static async getInstance(progressCallback) {
+        if (this.instance === null) {
+            // Using a very small, fast distilled model for edge classification
+            this.instance = pipeline('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli', {
+                dtype: 'q4', // 4-bit quantization for extremely fast loading & low memory footprint
+                progress_callback: progressCallback
+            });
+        }
+        return this.instance;
+    }
+}
+
+const LABELS = {
+    'Fire Incident': 'FIRE',
+    'Medical Emergency': 'MEDICAL',
+    'Security Threat': 'SECURITY',
+    'Infrastructure Issue': 'INFRASTRUCTURE'
 };
 
-const SEVERITY_KEYWORDS = {
-    5: ['trapped', 'explosion', 'unconscious', 'active', 'immediate', 'dying', 'cannot breathe', 'weapon', 'gun', 'fire'],
-    4: ['bleeding', 'large', 'major', 'urgent', 'danger', 'broken', 'stroke', 'attack'],
-    3: ['pain', 'stolen', 'leak', 'issue', 'malfunction'],
-    2: ['slow', 'small', 'minor', 'checking', 'maintenance'],
-    1: ['test', 'check', 'normal', 'drill']
+const SEVERITY_LABELS = {
+    'Critical life-threatening danger': 5,
+    'Major urgent problem': 4,
+    'Moderate issue': 3,
+    'Minor routine check': 2,
+    'False alarm or test': 1
 };
 
-export function localAnalyze(title, description) {
+export async function localAnalyze(title, description, progressCallback) {
+    const text = `${title}. ${description}`;
+    let category = 'INFRASTRUCTURE';
+    let severity = 3;
+
+    try {
+        const classifier = await EdgeAIEngine.getInstance(progressCallback);
+
+        // 1. Classify Category
+        const catResult = await classifier(text, Object.keys(LABELS));
+        if (catResult && catResult.labels && catResult.labels.length > 0) {
+            const topLabel = catResult.labels[0];
+            // Only assign if confidence is reasonably high, else fallback to Infrastructure
+            if (catResult.scores[0] > 0.3) {
+                category = LABELS[topLabel];
+            }
+        }
+
+        // 2. Classify Severity
+        const sevResult = await classifier(text, Object.keys(SEVERITY_LABELS));
+        if (sevResult && sevResult.labels && sevResult.labels.length > 0) {
+            const topSevLabel = sevResult.labels[0];
+            if (sevResult.scores[0] > 0.3) {
+                severity = SEVERITY_LABELS[topSevLabel];
+            }
+        }
+
+        // Emergency heuristic override (always enforce safe floors)
+        const textLower = text.toLowerCase();
+        const emergencyMarkers = ['help', 'sos', 'emergency', 'now', 'quick', 'fast', 'blood', 'gun', 'fire'];
+        if (emergencyMarkers.some(m => textLower.includes(m))) {
+            severity = Math.max(4, severity); // Push up to at least 4
+        }
+        if ((category === 'FIRE' || category === 'MEDICAL') && severity < 4) {
+            severity = 4; // Floor for critical categories
+        }
+
+        return {
+            category,
+            severity,
+            isLocal: true,
+            triageMethod: 'Edge AI (WASM NLP)'
+        };
+
+    } catch (err) {
+        console.error('[Edge AI] Inference failed. Falling back to Basic Heuristics.', err);
+        // Extremely basic fallback if WebGL/WASM fails entirely
+        return fallbackAnalyze(title, description);
+    }
+}
+
+// Fallback just in case the browser blocks WASM or storage
+function fallbackAnalyze(title, description) {
     const text = `${title} ${description}`.toLowerCase();
-    
-    let predictedCategory = 'INFRASTRUCTURE';
-    let maxCatMatches = 0;
-
-    for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-        const matches = keywords.filter(kw => text.includes(kw)).length;
-        if (matches > maxCatMatches) {
-            maxCatMatches = matches;
-            predictedCategory = cat;
-        }
-    }
-
     let autoSeverity = 3;
-    let maxSevMatches = 0;
+    let predictedCategory = 'INFRASTRUCTURE';
+    
+    if (text.includes('fire') || text.includes('smoke')) predictedCategory = 'FIRE';
+    else if (text.includes('blood') || text.includes('hurt') || text.includes('pain')) predictedCategory = 'MEDICAL';
+    else if (text.includes('gun') || text.includes('intruder') || text.includes('stolen')) predictedCategory = 'SECURITY';
 
-    for (const [sev, keywords] of Object.entries(SEVERITY_KEYWORDS)) {
-        const matches = keywords.filter(kw => text.includes(kw)).length;
-        if (matches > maxSevMatches) {
-            maxSevMatches = matches;
-            autoSeverity = parseInt(sev);
-        }
-    }
-
-    // Heuristic boost: High-risk categories with emergency markers
-    const emergencyMarkers = ['help', 'sos', 'emergency', 'now', 'quick', 'fast'];
-    if (emergencyMarkers.some(m => text.includes(m))) {
-        autoSeverity = Math.min(5, autoSeverity + 1);
-    }
-
-    if ((predictedCategory === 'FIRE' || predictedCategory === 'MEDICAL') && autoSeverity < 4) {
-        autoSeverity = 4; // Floor for critical categories
-    }
+    if (text.includes('help') || text.includes('emergency') || text.includes('sos')) autoSeverity = 5;
 
     return {
         category: predictedCategory,
         severity: autoSeverity,
         isLocal: true,
-        triageMethod: 'Edge AI (Heuristic V2)'
+        triageMethod: 'Edge AI (Heuristic Fallback)'
     };
 }

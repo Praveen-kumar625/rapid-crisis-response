@@ -12,6 +12,7 @@ const Home = lazy(() => import('./pages/Home'));
 const MapPage = lazy(() => import('./pages/MapPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ReportPage = lazy(() => import('./pages/ReportPage'));
+const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 
 const PageLoader = () => (
     <div className="flex-1 flex items-center justify-center bg-navy-950">
@@ -68,6 +69,7 @@ function App() {
                         <Route path="/map" element={<MapPage />} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/report" element={<ReportPage />} />
+                        <Route path="/incidents/:id" element={<IncidentDetail />} />
                     </Routes>
                 </Suspense>
             </AppLayout>

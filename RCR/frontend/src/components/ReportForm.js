@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import toast from 'react-hot-toast';
-import {
-    queueReport,
-    getPendingReports,
-    markReportSynced,
-} from '../idb';
+import { queueReport, getPendingReports, markReportSynced } from '../idb';
 import { localAnalyze } from '../utils/edgeAi';
+import { Mic, MicOff, Camera, Video, AlertTriangle, ShieldCheck, ShieldAlert, Cpu } from 'lucide-react';
 
 function ReportForm() {
     const [form, setForm] = useState({
@@ -40,14 +37,11 @@ function ReportForm() {
         if ('geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    setPosition({
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                    });
+                    setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
                 },
                 (err) => {
                     console.warn('[ReportForm] Geolocation FAILED:', err.message);
-                    toast.error(`📍 Unable to get location: ${err.message}.`);
+                    toast.error(`📍 Location Error: ${err.message}`);
                 }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
             );
         }
@@ -108,11 +102,11 @@ function ReportForm() {
 
     const handleAudioSOS = async() => {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            toast.error('Audio recording is not supported.');
+            toast.error('Audio recording not supported');
             return;
         }
         if (!isAudioRecording) {
-            setSosMessage('SOS: Recording...');
+            setSosMessage('SOS: Recording Protocol Active...');
             setIsAudioRecording(true);
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const recorder = new MediaRecorder(stream);
@@ -123,7 +117,7 @@ function ReportForm() {
                 const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
                 const currentMimeType = recorder.mimeType || 'audio/webm';
                 setIsAudioRecording(false);
-                setSosMessage('SOS: Processing...');
+                setSosMessage('SOS: Encrypting & Dispatching...');
                 const reader = new FileReader();
                 reader.onloadend = async() => {
                     const base64 = reader.result.split(',')[1];
@@ -137,10 +131,11 @@ function ReportForm() {
                             roomNumber: form.roomNumber,
                             wingId: form.wingId,
                         });
-                        setSosMessage('SOS Sent Successfully');
-                        toast.success('Emergency alert dispatched.');
+                        setSosMessage('');
+                        toast.success('Emergency Audio Dispatched');
                     } catch (err) {
-                        toast.error('SOS triage failed.');
+                        toast.error('SOS triage failed');
+                        setSosMessage('');
                     }
                 };
                 reader.readAsDataURL(blob);
@@ -157,12 +152,11 @@ function ReportForm() {
         setMediaType(file.type);
         setMediaFile(file);
         
-        // Create object URL for preview instead of huge base64
         const previewUrl = URL.createObjectURL(file);
         setMediaPreview(previewUrl);
 
-        // We still need base64 for Cloud AI analysis call if online
         if (navigator.onLine) {
+            toast('Processing Evidence...', { icon: '🧠', duration: 2000 });
             const reader = new FileReader();
             reader.onload = async(e) => {
                 const base64data = e.target.result;
@@ -211,7 +205,7 @@ function ReportForm() {
                 method: localResult.triageMethod
             });
             setShowAiModal(true);
-            toast.success('🛡️ Edge AI: Offline Triage Complete');
+            toast.success('Offline Edge AI Active');
         }
 
         const payload = {
@@ -233,7 +227,7 @@ function ReportForm() {
                     });
                 }
                 await api.post('/incidents', { ...payload, mediaBase64 });
-                toast.success('Incident reported successfully');
+                toast.success('Incident Reported');
                 setForm({ title: '', description: '', severity: 3, category: '', floorLevel: 1, roomNumber: '', wingId: '' });
                 setMediaPreview('');
                 setMediaFile(null);
@@ -241,26 +235,86 @@ function ReportForm() {
                 toast.error('Failed to report incident');
             }
         } else {
-            // SAFE: IndexedDB handles Blob/File objects natively and efficiently
             await queueReport({...payload, mediaFile, synced: false });
-            toast.success('Report queued offline (Safe Storage)');
+            toast.success('Queued offline (Secure Storage)');
         }
     };
 
+    const InputLabel = ({ children }) => (
+        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400 mb-2 flex items-center gap-2">
+            <span className="w-1 h-1 bg-electric rounded-full"></span>
+            {children}
+        </label>
+    );
+
+    const PremiumInput = (props) => (
+        <input 
+            {...props}
+            className={`w-full bg-navy-900/50 border border-surfaceBorder rounded-xl focus:border-electric focus:ring-1 focus:ring-electric/50 transition-all py-3 px-4 outline-none text-sm text-slate-200 placeholder-slate-600 ${props.className || ''}`}
+        />
+    );
+
     return (
-        <div className="max-w-2xl mx-auto bg-white shadow-2xl rounded-[2rem] border border-gray-100 overflow-hidden font-sans">
-            <div className="bg-[#1a1a1a] p-8 text-white">
-                <h2 className="text-3xl font-light tracking-tight mb-2 uppercase">Incident Report</h2>
-                <p className="text-gray-400 text-sm font-medium tracking-widest italic">Hospitality Excellence & Security</p>
+        <div className="w-full glass-card overflow-hidden">
+            <div className="bg-navy-800/80 p-6 md:p-8 border-b border-surfaceBorder flex justify-between items-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-danger via-amber to-electric"></div>
+                <div>
+                    <h2 className="text-xl md:text-2xl font-bold tracking-tight text-slate-100 uppercase">System Input</h2>
+                    <p className="text-electric text-[10px] font-mono tracking-widest mt-1">Intelligence Collection Form</p>
+                </div>
+                {!navigator.onLine && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-amber/10 border border-amber/30 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse"></span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-amber">Edge Mode</span>
+                    </div>
+                )}
             </div>
 
-            <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8 bg-surface backdrop-blur-md">
+                
+                {/* Voice / SOS Controls */}
+                <div className="flex flex-col sm:flex-row gap-4 p-4 bg-navy-900/40 border border-surfaceBorder rounded-2xl">
+                    <button 
+                        type="button"
+                        onClick={handleAudioSOS}
+                        className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-xl transition-all duration-500 font-bold text-[10px] uppercase tracking-[0.15em] ${
+                            isAudioRecording 
+                            ? 'bg-danger text-white shadow-[0_0_20px_rgba(255,51,102,0.5)] animate-pulse border border-danger/50' 
+                            : 'bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 hover:border-danger/50'
+                        }`}
+                    >
+                        {isAudioRecording ? <MicOff size={18} /> : <AlertTriangle size={18} />}
+                        {isAudioRecording ? 'Recording SOS...' : 'Trigger SOS Audio'}
+                    </button>
+                    
+                    {isSpeechSupported && (
+                        <button 
+                            type="button"
+                            onClick={handleVoiceToggle}
+                            className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 font-bold text-[10px] uppercase tracking-[0.15em] border ${
+                                isRecording 
+                                ? 'bg-electric/20 border-electric/50 text-electric shadow-[0_0_15px_rgba(0,240,255,0.3)] animate-pulse' 
+                                : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                            }`}
+                        >
+                            {isRecording ? <Mic size={18} /> : <Mic size={18} />}
+                            {isRecording ? 'Listening...' : 'Voice Dictation'}
+                        </button>
+                    )}
+                </div>
+
+                {sosMessage && (
+                    <div className="bg-danger/10 border-l-2 border-danger px-4 py-2 text-xs font-mono text-danger animate-pulse">
+                        &gt; {sosMessage}
+                    </div>
+                )}
+
+                {/* Core Narrative */}
                 <div className="space-y-6">
                     <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">Subject of Incident</label>
-                        <input 
-                            className="w-full bg-gray-50 border-b-2 border-gray-200 focus:border-black transition-colors py-3 outline-none text-lg font-light"
-                            placeholder="e.g., Suite 402 Maintenance Requirement"
+                        <InputLabel>Subject Identifier</InputLabel>
+                        <PremiumInput 
+                            placeholder="e.g., Uncontained Fire in Kitchen Area"
                             value={form.title}
                             onChange={(e) => setForm(prev => ({...prev, title: e.target.value }))}
                             required 
@@ -268,157 +322,148 @@ function ReportForm() {
                     </div>
 
                     <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">Detailed Narrative</label>
+                        <InputLabel>Detailed Narrative</InputLabel>
                         <textarea 
-                            className="w-full bg-gray-50 border-b-2 border-gray-200 focus:border-black transition-colors py-3 outline-none text-lg font-light min-h-[120px]"
-                            placeholder="Please provide a comprehensive description of the occurrence..."
+                            className="w-full bg-navy-900/50 border border-surfaceBorder rounded-xl focus:border-electric focus:ring-1 focus:ring-electric/50 transition-all py-4 px-4 outline-none text-sm text-slate-200 placeholder-slate-600 min-h-[120px] resize-y"
+                            placeholder="Provide operational details..."
                             value={form.description}
                             onChange={(e) => setForm(prev => ({...prev, description: e.target.value }))}
                             required 
                         />
                     </div>
+                </div>
 
-                    <div className="flex flex-wrap gap-4 items-center">
-                        {isSpeechSupported && (
-                            <button 
-                                type="button"
-                                onClick={handleVoiceToggle}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-full border transition-all duration-300 ${isRecording ? 'bg-red-50 border-red-200 text-red-600 animate-pulse' : 'bg-white border-gray-200 text-gray-600 hover:border-black'}`}
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                                <span className="text-xs uppercase font-bold tracking-widest">{isRecording ? 'Stop Recording' : 'Voice Dictation'}</span>
-                            </button>
-                        )}
-
-                        <button 
-                            type="button"
-                            onClick={handleAudioSOS}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-full transition-all duration-500 shadow-lg ${isAudioRecording ? 'bg-red-600 text-white animate-pulse shadow-[0_0_20px_rgba(220,38,38,0.6)]' : 'bg-[#c5a059] text-white hover:bg-[#b08d4a]'}`}
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" /></svg>
-                            <span className="text-xs uppercase font-bold tracking-[0.2em]">{isAudioRecording ? 'Emergency Recording...' : 'SOS Audio Alert'}</span>
-                        </button>
-                        {sosMessage && <span className="text-[10px] italic text-red-500 font-medium">{sosMessage}</span>}
+                {/* Location Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-navy-900/30 p-6 rounded-2xl border border-surfaceBorder">
+                    <div>
+                        <InputLabel>Sector / Wing</InputLabel>
+                        <PremiumInput placeholder="e.g., WEST" value={form.wingId} onChange={(e) => setForm(prev => ({...prev, wingId: e.target.value.toUpperCase() }))} required />
+                    </div>
+                    <div>
+                        <InputLabel>Level</InputLabel>
+                        <PremiumInput type="number" value={form.floorLevel} onChange={(e) => setForm(prev => ({...prev, floorLevel: Number(e.target.value) }))} required />
+                    </div>
+                    <div>
+                        <InputLabel>Room</InputLabel>
+                        <PremiumInput placeholder="e.g., 402" value={form.roomNumber} onChange={(e) => setForm(prev => ({...prev, roomNumber: e.target.value }))} required />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Classification & Severity */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">Wing / Sector</label>
-                        <input className="w-full bg-gray-50 border-b-2 border-gray-200 py-2 outline-none font-light uppercase" placeholder="e.g., North" value={form.wingId} onChange={(e) => setForm(prev => ({...prev, wingId: e.target.value.toUpperCase() }))} required />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">Level</label>
-                        <input type="number" className="w-full bg-gray-50 border-b-2 border-gray-200 py-2 outline-none font-light" value={form.floorLevel} onChange={(e) => setForm(prev => ({...prev, floorLevel: Number(e.target.value) }))} required />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-2">Room / Area</label>
-                        <input className="w-full bg-gray-50 border-b-2 border-gray-200 py-2 outline-none font-light" placeholder="e.g., 402" value={form.roomNumber} onChange={(e) => setForm(prev => ({...prev, roomNumber: e.target.value }))} required />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 mb-4">Classification</label>
+                        <InputLabel>Classification Protocol</InputLabel>
                         <select 
-                            className="w-full bg-white border-2 border-gray-100 p-4 rounded-xl outline-none appearance-none cursor-pointer hover:border-black transition-all font-light"
+                            className="w-full bg-navy-900/80 border border-surfaceBorder text-slate-200 p-3.5 rounded-xl outline-none appearance-none cursor-pointer focus:border-electric transition-all text-sm font-medium uppercase tracking-wide"
                             value={form.category}
                             onChange={(e) => setForm(prev => ({...prev, category: e.target.value }))}
                             required
                         >
-                            <option value="">Select Category</option>
-                            <option value="MEDICAL">MEDICAL EMERGENCY</option>
-                            <option value="FIRE">FIRE INCIDENT</option>
-                            <option value="INTRUDER">SECURITY BREACH</option>
-                            <option value="MAINTENANCE">MAINTENANCE</option>
+                            <option value="" disabled>Select Category</option>
+                            <option value="MEDICAL">Medical Emergency</option>
+                            <option value="FIRE">Fire Incident</option>
+                            <option value="INTRUDER">Security Breach</option>
+                            <option value="MAINTENANCE">Maintenance</option>
                         </select>
                     </div>
 
                     <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Severity Assessment</label>
-                            <span className="text-xs font-bold px-3 py-1 bg-black text-white rounded-full">LEVEL {form.severity}</span>
+                        <div className="flex justify-between items-center mb-3">
+                            <InputLabel>Severity</InputLabel>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-widest ${
+                                form.severity >= 4 ? 'bg-danger/20 text-danger border-danger/30' : 'bg-electric/20 text-electric border-electric/30'
+                            }`}>Level {form.severity}</span>
                         </div>
                         <input 
                             type="range" min="1" max="5" 
-                            className="w-full accent-black cursor-pointer"
+                            className="w-full h-2 bg-navy-900 rounded-lg appearance-none cursor-pointer border border-surfaceBorder"
+                            style={{ accentColor: form.severity >= 4 ? '#ff3366' : '#00f0ff' }}
                             value={form.severity}
                             onChange={(e) => setForm(prev => ({...prev, severity: Number(e.target.value) }))}
                         />
-                        <div className="flex justify-between text-[8px] uppercase tracking-tighter text-gray-400 mt-2 font-bold">
+                        <div className="flex justify-between text-[9px] uppercase tracking-widest text-slate-500 mt-2 font-bold">
                             <span>Minimal</span>
                             <span>Critical</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gray-50 p-8 rounded-[2rem] border-2 border-dashed border-gray-200">
-                    <label className="flex flex-col items-center justify-center cursor-pointer">
-                        <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Digital Evidence Capture</span>
+                {/* Media Upload */}
+                <div className="border border-dashed border-surfaceBorder bg-navy-900/30 hover:bg-navy-900/50 transition-colors p-8 rounded-2xl text-center group">
+                    <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
+                        <div className="w-12 h-12 bg-white/5 group-hover:bg-white/10 rounded-full flex items-center justify-center mb-4 transition-colors">
+                            <Camera size={24} className="text-slate-400 group-hover:text-electric transition-colors" />
+                        </div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-slate-300">Upload Visual Evidence</span>
+                        <span className="text-[10px] text-slate-500 mt-2">Images or Video for AI Analysis</span>
                         <input type="file" accept="image/*,video/*" capture="environment" onChange={handleMediaChange} className="hidden" />
                     </label>
+                    
                     {mediaPreview && (
-                        <div className="mt-6 rounded-2xl overflow-hidden shadow-xl border-4 border-white">
+                        <div className="mt-6 rounded-xl overflow-hidden border border-surfaceBorder bg-black shadow-lg relative">
                             {mediaType.startsWith('image/') 
-                                ? <img src={mediaPreview} alt="Evidence" className="w-full h-auto" />
-                                : <video controls src={mediaPreview} className="w-full" />
+                                ? <img src={mediaPreview} alt="Evidence" className="w-full max-h-[300px] object-contain opacity-90" />
+                                : <video controls src={mediaPreview} className="w-full max-h-[300px] bg-black" />
                             }
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[8px] font-mono text-electric uppercase border border-white/10">Attached</div>
                         </div>
                     )}
                 </div>
 
                 <button 
                     type="submit"
-                    className="w-full py-6 bg-black text-white text-xs font-bold uppercase tracking-[0.4em] rounded-full hover:bg-gray-800 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:translate-y-0"
+                    className="w-full py-4.5 bg-electric hover:bg-cyan text-navy-900 text-xs font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:shadow-[0_0_30px_rgba(0,240,255,0.5)] transform hover:-translate-y-0.5 active:translate-y-0"
                 >
-                    Submit Formal Report
+                    Dispatch Protocol
                 </button>
             </form>
 
-            {/* AI Glassmorphism Modal */}
+            {/* AI Modal */}
             {showAiModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md transition-all duration-500">
-                    <div className="relative w-full max-w-md p-10 backdrop-blur-2xl bg-white/10 rounded-[2.5rem] border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-white overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#c5a059]/20 rounded-full blur-[80px]" />
-                        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-red-500/10 rounded-full blur-[80px]" />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy-900/80 backdrop-blur-md">
+                    <div className="w-full max-w-md p-8 glass-card border border-surfaceBorder shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                        {/* Decorative glow */}
+                        <div className="absolute -top-20 -right-20 w-40 h-40 bg-electric/20 rounded-full blur-[50px]"></div>
                         
                         <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-                                    <svg className="w-5 h-5 text-[#c5a059]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-8 h-8 rounded-lg bg-electric/10 flex items-center justify-center border border-electric/20">
+                                    <Cpu size={16} className="text-electric" />
                                 </div>
-                                <h3 className="text-xl font-light tracking-wide uppercase">{aiResult.method} Result</h3>
+                                <h3 className="text-xs font-bold tracking-[0.15em] uppercase text-slate-300">Analysis Result</h3>
                             </div>
                             
-                            <div className="space-y-10">
+                            <div className="space-y-6 bg-navy-900/50 p-6 rounded-xl border border-surfaceBorder">
                                 <div>
-                                    <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em] mb-3">Predicted Category</p>
-                                    <p className="text-4xl font-extralight tracking-tight text-white">{aiResult.category}</p>
+                                    <p className="text-slate-500 text-[9px] uppercase font-bold tracking-[0.15em] mb-1">Predicted Category</p>
+                                    <p className="text-2xl font-bold tracking-tight text-white">{aiResult.category}</p>
                                 </div>
                                 
                                 <div>
-                                    <div className="flex justify-between items-end mb-4">
-                                        <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.2em]">Risk Severity</p>
-                                        <span className="text-2xl font-light">{aiResult.severity}<span className="text-white/30 text-sm">/5</span></span>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <p className="text-slate-500 text-[9px] uppercase font-bold tracking-[0.15em]">Assessed Risk Level</p>
+                                        <span className="text-xl font-bold text-white">{aiResult.severity}<span className="text-slate-500 text-sm">/5</span></span>
                                     </div>
-                                    <div className="flex gap-2 h-1.5">
+                                    <div className="flex gap-1.5 h-1.5">
                                         {[1, 2, 3, 4, 5].map((s) => (
                                             <div 
                                                 key={s} 
-                                                className={`flex-1 rounded-full transition-all duration-1000 ${s <= aiResult.severity ? 'bg-white' : 'bg-white/10'}`}
-                                                style={{ transitionDelay: `${s * 100}ms` }}
+                                                className={`flex-1 rounded-full ${s <= aiResult.severity ? (aiResult.severity >= 4 ? 'bg-danger' : 'bg-electric') : 'bg-surfaceBorder'}`}
                                             />
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-surfaceBorder">
+                                    <p className="text-[9px] font-mono text-slate-400 uppercase">Engine: {aiResult.method}</p>
                                 </div>
                             </div>
                             
                             <button 
                                 onClick={() => setShowAiModal(false)}
-                                className="mt-12 w-full py-5 bg-white text-black text-[10px] font-bold uppercase tracking-[0.3em] rounded-2xl hover:bg-[#c5a059] hover:text-white transition-all duration-300 shadow-lg"
+                                className="mt-8 w-full py-3 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl border border-white/10 transition-all duration-300"
                             >
-                                Confirm & Close
+                                Confirm & Proceed
                             </button>
                         </div>
                     </div>

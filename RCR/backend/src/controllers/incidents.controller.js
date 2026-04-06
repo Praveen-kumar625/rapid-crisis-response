@@ -173,7 +173,6 @@ exports.updateSafetyStatus = async(req, res) => {
     try {
         const { status } = req.body;
         const userId = req.user.sub;
-        const db = require('../db');
         
         const [user] = await db('users')
             .where({ id: userId })
@@ -199,6 +198,10 @@ exports.updateSafetyStatus = async(req, res) => {
         res.json({ success: true, status: user.safety_status });
     } catch (err) {
         console.error('[IncidentsController] updateSafetyStatus failed:', err);
+        res.status(500).json({ error: 'Pulse failed' });
+    }
+};
+nsole.error('[IncidentsController] updateSafetyStatus failed:', err);
         res.status(500).json({ error: 'Pulse failed' });
     }
 };

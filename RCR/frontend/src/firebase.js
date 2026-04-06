@@ -12,7 +12,24 @@ const firebaseConfig = {
     measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-export const analytics = getAnalytics(app);
+// FIXED: Robust initialization to prevent React crashing on missing env variables
+let app;
+let auth;
+let googleProvider;
+let analytics;
+
+try {
+    if (!firebaseConfig.apiKey) {
+        throw new Error("REACT_APP_FIREBASE_API_KEY is undefined. Please verify your environment variables or rebuild the application.");
+    }
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+    analytics = getAnalytics(app);
+} catch (error) {
+    console.error("⚠️ Firebase Initialization Error:", error.message);
+    // Mock objects to prevent complete application crash before UI can show error states
+    auth = { currentUser: null, onAuthStateChanged: () => () => {} };
+}
+
+export { app, auth, googleProvider, analytics };

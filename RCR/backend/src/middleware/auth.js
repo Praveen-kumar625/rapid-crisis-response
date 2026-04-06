@@ -4,9 +4,13 @@ const db = require('../db');
 const { NODE_ENV, DEMO_MODE } = require('../config/env');
 
 if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.applicationDefault(), // Relies on GOOGLE_APPLICATION_CREDENTIALS env var
-    });
+    try {
+        admin.initializeApp({
+            credential: admin.credential.applicationDefault(), // Relies on GOOGLE_APPLICATION_CREDENTIALS env var
+        });
+    } catch (err) {
+        console.warn('⚠️ Firebase Admin Initialization Warning: Missing or invalid GOOGLE_APPLICATION_CREDENTIALS. Auth may fail.');
+    }
 }
 
 async function jwtAuth(req, res, next) {

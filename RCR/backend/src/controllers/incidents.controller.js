@@ -1,6 +1,7 @@
 // src/controllers/incidents.controller.js
 const IncidentService = require('../services/incident.service');
 const StorageService = require('../infrastructure/storage');
+const SocketService = require('../services/socket.service'); // Added import for scaling fix
 
 exports.getUploadUrl = async(req, res) => {
     try {
@@ -182,13 +183,16 @@ exports.updateSafetyStatus = async(req, res) => {
             })
             .returning('*');
 
-        // Notify responders via socket
-        const { ioInstance } = require('../sockets');
-        if (ioInstance && user.hotel_id) {
-            ioInstance.to(`hotel_${user.hotel_id}`).emit('user.safety-pulse', {
-                userId: user.id,
-                status: user.safety_status,
-                name: user.name
+        // FIXED: Scaling Bypass - Publish to Redis instead of direct ioInstance emit
+        // This ensures all backend instances receive and forward the pulse to connected clients
+        if (user.hotel_id) {
+            await SocketService.publish(`hotel_${user.hotel_id}_safety`, {
+                type: 'safety-pulse',
+                data: {
+                    userId: user.id,
+                    status: user.safety_status,
+                    name: user.name
+                }
             });
         }
 

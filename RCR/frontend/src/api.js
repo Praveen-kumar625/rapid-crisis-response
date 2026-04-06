@@ -1,6 +1,7 @@
 // frontend/src/api.js
 import axios from 'axios';
 import { auth } from './firebase';
+import { updateSocketToken } from './socket'; // FIXED: Import socket helper
 
 const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL,
@@ -44,6 +45,9 @@ const subscribeTokenRefresh = (cb) => {
 };
 
 const onRefreshed = (token) => {
+    // FIXED: Update socket singleton with new token
+    updateSocketToken(token);
+    
     refreshSubscribers.map((cb) => cb(token));
     refreshSubscribers = [];
 };

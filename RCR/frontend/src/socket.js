@@ -26,6 +26,15 @@ export async function getSocket() {
     return socket;
 }
 
+// FIXED: Export function to update socket token on refresh
+export const updateSocketToken = (newToken) => {
+    if (socket) {
+        console.log('[Socket] Updating auth token and reconnecting...');
+        socket.auth.token = newToken;
+        socket.disconnect().connect();
+    }
+};
+
 export const joinHotelRoom = async (hotelId) => {
     const s = await getSocket();
     if (hotelId) {

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react'; // 🚨 FIXED: Removed unused useCallback
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow } from '@vis.gl/react-google-maps';
-import { Shield, AlertCircle } from 'lucide-react'; // 🚨 FIXED: Removed unused X, Navigation, LocateFixed, Zap
+import { Shield, AlertCircle } from 'lucide-react';
 import api from '../api';
 import { getSocket } from '../socket';
 import { Card } from './ui/Card';
@@ -30,8 +30,15 @@ function CrisisMap() {
         }).catch(err => console.error('[Map] Data fetch failed:', err));
 
         // Real-time Updates
+        // FIXED: Deduplication logic - don't add if already exists
         const handleCreated = (payload) => {
-            if (isMounted) setIncidents((prev) => [payload.incident, ...prev]);
+            if (isMounted) {
+                setIncidents((prev) => {
+                    const exists = prev.some(inc => inc.id === payload.incident.id);
+                    if (exists) return prev;
+                    return [payload.incident, ...prev];
+                });
+            }
         };
         const handleStatusUpdated = (payload) => {
             if (isMounted) {
@@ -39,7 +46,8 @@ function CrisisMap() {
             }
         };
 
-        (async() => {
+        // FIXED: Async cleanup pattern
+        const initSocket = async() => {
             try {
                 socketInstance = await getSocket();
                 if (!isMounted || !socketInstance) return;
@@ -48,7 +56,9 @@ function CrisisMap() {
             } catch (err) {
                 console.error('[Map] Socket failed:', err);
             }
-        })();
+        };
+        
+        initSocket();
 
         return () => { 
             isMounted = false; 
@@ -61,9 +71,9 @@ function CrisisMap() {
 
     // Memoize markers for performance and to prevent re-renders
     const markers = useMemo(() => incidents.map((inc) => {
-        // 🚨 STRICT TYPE CONVERSION: Google Maps requires strict Numbers
-        const lat = Number(inc.location?.coordinates[1] || inc.lat);
-        const lng = Number(inc.location?.coordinates[0] || inc.lng);
+        // FIXED: STRICT TYPE CONVERSION - Ensure absolute Numbers for Maps API
+        const lat = parseFloat(inc.location?.coordinates[1] || inc.lat);
+        const lng = parseFloat(inc.location?.coordinates[0] || inc.lng);
 
         if (isNaN(lat) || isNaN(lng)) return null;
 
@@ -125,8 +135,8 @@ function CrisisMap() {
                     {selectedIncident && (
                         <InfoWindow
                             position={{ 
-                                lat: Number(selectedIncident.location?.coordinates[1] || selectedIncident.lat), 
-                                lng: Number(selectedIncident.location?.coordinates[0] || selectedIncident.lng) 
+                                lat: parseFloat(selectedIncident.location?.coordinates[1] || selectedIncident.lat), 
+                                lng: parseFloat(selectedIncident.location?.coordinates[0] || selectedIncident.lng) 
                             }}
                             onCloseClick={() => setSelectedIncident(null)}
                         >

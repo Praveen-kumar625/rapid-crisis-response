@@ -94,26 +94,33 @@ function initSocket(httpServer) {
     // -----------------------------------------------------------------
     const subscriber = redisClient.duplicate();
     
-    // Subscribe to all incident channels (Pattern subscribe if needed, but here we listen to 'incidents' and dispatch)
-    subscriber.subscribe('incidents', (err) => {
-        if (err) console.error('Redis subscribe error', err);
+    // FIXED: Use pattern subscription to support dynamic hotel channels and safety pulses
+    subscriber.psubscribe('hotel_*', (err) => {
+        if (err) console.error('Redis psubscribe error', err);
     });
 
-    subscriber.on('message', (_chan, msg) => {
+    // FIXED: Handle pattern messages correctly
+    subscriber.on('pmessage', (pattern, channel, msg) => {
         try {
             const payload = JSON.parse(msg);
-            if (!payload || !payload.type || !payload.incident) return;
+            if (!payload || !payload.type) return;
 
-            const incident = payload.incident;
-            const hotelId = incident.hotel_id;
+            // Extract hotelId from channel (hotel_123_incidents -> 123)
+            const parts = channel.split('_');
+            const hotelId = parts[1];
 
-            // Broadcast to the specific hotel room
-            if (hotelId) {
+            if (channel.endsWith('_incidents')) {
+                const incident = payload.incident;
+                // Broadcast to the specific hotel room
                 io.to(`hotel_${hotelId}`).emit(`incident.${payload.type}`, payload);
+                // Also emit to specific incident room for deep-dive tracking
+                if (incident?.id) {
+                    io.to(`incident-${incident.id}`).emit(`incident.${payload.type}`, payload);
+                }
+            } else if (channel.endsWith('_safety')) {
+                // FIXED: Handle safety pulses via Redis bridge for horizontal scaling
+                io.to(`hotel_${hotelId}`).emit('user.safety-pulse', payload.data);
             }
-
-            // Also emit to specific incident room for deep-dive tracking
-            io.to(`incident-${incident.id}`).emit(`incident.${payload.type}`, payload);
 
         } catch (err) {
             console.error('[Socket Bridge] Ignored malformed Redis message:', err.message);

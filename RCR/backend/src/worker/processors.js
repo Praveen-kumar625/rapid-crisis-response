@@ -5,6 +5,7 @@ const db = require('../db');
 const twilio = require('twilio');
 const { TWILIO } = require('../config/env');
 const SocketService = require('../services/socket.service');
+const StorageService = require('../infrastructure/storage');
 
 const worker = new Worker('incident-tasks', async (job) => {
     const { type, data } = job.data;
@@ -12,9 +13,20 @@ const worker = new Worker('incident-tasks', async (job) => {
     console.log(`[Worker] Processing job ${job.id} of type ${type}`);
 
     if (type === 'AI_TRIAGE') {
-        const { incidentId, mediaBase64, mediaType } = data;
+        const { incidentId, mediaBase64, mediaType, mediaUrl } = data;
         const incident = await db('incidents').where({ id: incidentId }).first();
         if (!incident) return;
+
+        let finalBase64 = mediaBase64;
+        
+        // 🚨 RESILIENCE: If mediaBase64 is missing (optimized out by service), fetch from Storage
+        if (!finalBase64 && mediaUrl && StorageService.downloadToBase64) {
+            try {
+                finalBase64 = await StorageService.downloadToBase64(mediaUrl);
+            } catch (err) {
+                console.warn(`[Worker] Failed to download media for incident ${incidentId}:`, err.message);
+            }
+        }
 
         // Perform AI Analysis
         const analysis = await AIService.analyzeReport({
@@ -26,7 +38,7 @@ const worker = new Worker('incident-tasks', async (job) => {
             roomNumber: incident.room_number,
             wingId: incident.wing_id,
             mediaType,
-            mediaBase64
+            mediaBase64: finalBase64
         });
 
         // Update Incident with AI results
@@ -34,8 +46,8 @@ const worker = new Worker('incident-tasks', async (job) => {
             .where({ id: incidentId })
             .update({
                 auto_severity: analysis.auto_severity,
-                ai_action_plan: analysis.actionPlan.join('\n'),
-                ai_required_resources: JSON.stringify(analysis.requiredResources),
+                ai_action_plan: (analysis.actionPlan || []).join('\n'),
+                ai_required_resources: JSON.stringify(analysis.requiredResources || []),
                 hospitality_category: analysis.hospitality_category,
                 spam_score: analysis.spam_score,
                 status: analysis.spam_score > 0.8 ? 'REJECTED' : incident.status,
@@ -51,10 +63,15 @@ const worker = new Worker('incident-tasks', async (job) => {
 
         // If severity is 5, queue an SMS alert
         if (updated.severity === 5 || updated.auto_severity === 5) {
+            // 🚨 CIRCULAR DEP FIX: Use global incidentQueue if possible or require just-in-time
             const { incidentQueue } = require('../infrastructure/queue');
             await incidentQueue.add('SEND_SMS', { 
                 type: 'SEND_SMS', 
                 data: { incidentId: updated.id } 
+            }, { 
+                removeOnComplete: true,
+                attempts: 3,
+                backoff: { type: 'exponential', delay: 1000 }
             });
         }
     }
@@ -82,7 +99,10 @@ const worker = new Worker('incident-tasks', async (job) => {
             }
         }
     }
-}, { connection });
+}, { 
+    connection,
+    concurrency: 5 // 🚨 PERFORMANCE: Allow parallel processing
+});
 
 worker.on('completed', job => {
     console.log(`[Worker] Job ${job.id} completed`);

@@ -94,31 +94,6 @@ async function generateContentWithRetry(prompt, maxRetries = 3) {
 // -----------------------------------------------------------------
 
 /**
- * Simple verification for spam and severity
- */
-async function verify({ title, description, userSeverity }) {
-    if (!genAI) return { spam_score: 0.0, auto_severity: userSeverity };
-
-    const prompt = `You are an incident-verification assistant. Analyze the following and respond in JSON.
-Title: "${title}"
-Description: "${description}"
-User Severity: ${userSeverity}
-
-Output Format: { "spam_score": float(0-1), "auto_severity": int(1-5) }`;
-
-    try {
-        const data = await generateContentWithRetry(prompt);
-        return {
-            spam_score: typeof data.spam_score === 'number' ? data.spam_score : 0.0,
-            auto_severity: typeof data.auto_severity === 'number' ? Math.round(data.auto_severity) : userSeverity
-        };
-    } catch (err) {
-        console.error('[AI Service] verify failed:', err.message);
-        return { spam_score: 0.0, auto_severity: userSeverity };
-    }
-}
-
-/**
  * Comprehensive triage for hospitality incidents
  */
 async function analyzeReport({
@@ -134,16 +109,16 @@ async function analyzeReport({
 }) {
     const normalizedCategory = (category || '').toUpperCase();
     
-    // Default fallback object
+    // Default fallback object (🚨 STANDARDIZED FIELD NAMES)
     const fallback = {
         spam_score: 0.0,
-        auto_severity: Math.max(userSeverity, 4), // Higher severity if AI fails to be safe
+        auto_severity: Math.max(userSeverity, 4),
         predictedCategory: 'UNVERIFIED',
         hospitality_category: 'INFRASTRUCTURE',
         translated_english_text: description || title || '',
         detected_language: 'en',
         panic_level: 'High',
-        action_plan: ['Manual emergency verification required immediately.'],
+        actionPlan: ['Manual emergency verification required immediately.'],
         requiredResources: ['Security Team', 'Management'],
     };
 
@@ -185,8 +160,8 @@ Required Output Fields:
             translated_english_text: String(data.translated_english_text || description || title || ''),
             detected_language: String(data.detected_language || 'en'),
             panic_level: ['High', 'Medium', 'Low'].includes(data.panic_level) ? data.panic_level : fallback.panic_level,
-            actionPlan: Array.isArray(data.action_plan) && data.action_plan.length ? data.action_plan : fallback.action_plan,
-            requiredResources: Array.isArray(data.required_resources) ? data.required_resources : fallback.requiredResources,
+            actionPlan: Array.isArray(data.action_plan) ? data.action_plan : (Array.isArray(data.actionPlan) ? data.actionPlan : fallback.actionPlan),
+            requiredResources: Array.isArray(data.required_resources) ? data.required_resources : (Array.isArray(data.requiredResources) ? data.requiredResources : fallback.requiredResources),
         };
     } catch (err) {
         console.error('[AI Service] analyzeReport failed:', err.message);
@@ -207,7 +182,7 @@ async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber
         actionPlan: ['Manual verification required'],
         spam_score: 0.0,
         auto_severity: 3,
-        predicted_category: 'INFRASTRUCTURE',
+        predictedCategory: 'INFRASTRUCTURE',
         requiredResources: ['Security Team'],
     };
 
@@ -215,8 +190,6 @@ async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber
 
     const actualMimeType = audioMimeType || 'audio/webm';
 
-    // Note: For actual audio processing, Gemini 1.5 requires specific data parts.
-    // Assuming the user is passing base64 that we can send as an inlineData part.
     const prompt = {
         contents: [{
             parts: [
@@ -235,8 +208,8 @@ async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber
             hospitality_category: data.hospitality_category || 'INFRASTRUCTURE',
             actionPlan: Array.isArray(data.actionPlan) ? data.actionPlan : (Array.isArray(data.action_plan) ? data.action_plan : fallback.actionPlan),
             spam_score: typeof data.spam_score === 'number' ? data.spam_score : 0.0,
-            auto_severity: typeof data.auto_severity === 'number' ? data.auto_severity : 5,
-            predicted_category: data.predicted_category || data.hospitality_category || 'INFRASTRUCTURE',
+            auto_severity: typeof data.auto_severity === 'number' ? Math.round(data.auto_severity) : 5,
+            predictedCategory: String(data.predicted_category || data.hospitality_category || 'INFRASTRUCTURE').toUpperCase(),
             requiredResources: Array.isArray(data.requiredResources) ? data.requiredResources : (Array.isArray(data.required_resources) ? data.required_resources : fallback.requiredResources),
         };
     } catch (err) {
@@ -245,28 +218,4 @@ async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber
     }
 }
 
-// -----------------------------------------------------------------
-// 3️⃣  Heuristic Fallbacks
-// -----------------------------------------------------------------
-
-function inferActionByCategory(category) {
-    const c = (category || '').toUpperCase();
-    switch (c) {
-        case 'FIRE': return 'Initiate immediate evacuation, activate fire suppression systems, and notify fire department.';
-        case 'MEDICAL': return 'Dispatch medical response team with AED and first aid kit immediately.';
-        case 'SECURITY': return 'Deploy security personnel to secure the area and investigate threat.';
-        default: return 'Assess situation, notify relevant department, and maintain guest safety.';
-    }
-}
-
-function inferResourcesByCategory(category) {
-    const c = (category || '').toUpperCase();
-    switch (c) {
-        case 'FIRE': return ['Fire Response Team', 'Evacuation Marshals'];
-        case 'MEDICAL': return ['Paramedics', 'First Aid Response'];
-        case 'SECURITY': return ['Security Officers', 'Management'];
-        default: return ['Maintenance Team', 'Guest Services'];
-    }
-}
-
-module.exports = { verify, analyzeReport, analyzeVoice };
+module.exports = { analyzeReport, analyzeVoice };

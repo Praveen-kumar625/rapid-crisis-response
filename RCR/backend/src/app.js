@@ -6,7 +6,6 @@ require('express-async-errors'); // auto‑forward async errors
 const healthRoutes = require('./routes/health.routes');
 const incidentRoutes = require('./routes/incidents.routes');
 
-const { aiVerificationLimiter } = require('./middleware/rateLimiter');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
@@ -29,9 +28,7 @@ const { ALLOWED_ORIGINS } = require('./config/env');
 app.use(
     cors({
         origin: function(origin, callback) {
-            // Allow server-to-server or locally-hosted requests without origin
-            if (!origin) return callback(null, true);
-            
+            // Strictly validate against ALLOWED_ORIGINS to prevent bypasses
             if (ALLOWED_ORIGINS.includes(origin)) {
                 return callback(null, true);
             }

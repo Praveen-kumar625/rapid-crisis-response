@@ -12,6 +12,6 @@ module.exports = {
     ecmaVersion: 12
   },
   rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
   }
 };

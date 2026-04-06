@@ -1,6 +1,7 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { S3 } = require('../config/env');
+const axios = require('axios');
 
 const s3Client = new S3Client({
     region: S3.region,
@@ -13,9 +14,6 @@ const s3Client = new S3Client({
 
 /**
  * Generates a presigned URL for direct client-to-S3 uploads
- * @param {string} fileName - Destination filename
- * @param {string} mimeType - e.g. 'image/jpeg'
- * @returns {Promise<{uploadUrl: string, fileUrl: string}>}
  */
 async function getPresignedUploadUrl(fileName, mimeType) {
     if (!S3.bucketName || !S3.accessKeyId || !S3.secretAccessKey) {
@@ -45,11 +43,6 @@ async function getPresignedUploadUrl(fileName, mimeType) {
 
 /**
  * Uploads a base64 encoded file to S3
-
- * @param {string} base64Data - Full data URI or raw base64
- * @param {string} mimeType - e.g. 'image/jpeg'
- * @param {string} fileName - Destination filename
- * @returns {Promise<string>} - The public URL of the uploaded file
  */
 async function uploadBase64(base64Data, mimeType, fileName) {
     if (!S3.bucketName || !S3.accessKeyId || !S3.secretAccessKey) {
@@ -57,7 +50,6 @@ async function uploadBase64(base64Data, mimeType, fileName) {
         return null;
     }
 
-    // Extract raw base64 if it's a data URI
     const base64String = base64Data.includes('base64,') 
         ? base64Data.split('base64,')[1] 
         : base64Data;
@@ -69,19 +61,13 @@ async function uploadBase64(base64Data, mimeType, fileName) {
         Key: `incidents/${fileName}`,
         Body: buffer,
         ContentType: mimeType,
-        // In a real production app, you might want to use signed URLs 
-        // instead of public-read, but for a demo, public-read is simpler.
-        // ACL: 'public-read', 
     });
 
     try {
         await s3Client.send(command);
-        
-        // Construct the URL
         const url = S3.endpoint 
             ? `${S3.endpoint}/${S3.bucketName}/incidents/${fileName}`
             : `https://${S3.bucketName}.s3.${S3.region}.amazonaws.com/incidents/${fileName}`;
-            
         return url;
     } catch (err) {
         console.error('[Storage] S3 Upload Failed:', err);
@@ -89,4 +75,17 @@ async function uploadBase64(base64Data, mimeType, fileName) {
     }
 }
 
-module.exports = { uploadBase64, getPresignedUploadUrl };
+/**
+ * 🚨 NEW: Downloads a file from S3 or URL and returns base64
+ */
+async function downloadToBase64(url) {
+    try {
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        return Buffer.from(response.data, 'binary').toString('base64');
+    } catch (err) {
+        console.error('[Storage] Download to base64 failed:', err.message);
+        throw new Error('Could not retrieve media for processing');
+    }
+}
+
+module.exports = { uploadBase64, getPresignedUploadUrl, downloadToBase64 };

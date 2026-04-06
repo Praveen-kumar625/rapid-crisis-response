@@ -40,7 +40,6 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => 
 };
 
 const { incidentQueue } = require('../infrastructure/queue');
-
 const StorageService = require('../infrastructure/storage');
 
 /**
@@ -82,13 +81,15 @@ exports.create = async({
     const tenantTopic = `hotel_${hotelId}`;
     await SocketService.publish(`${tenantTopic}_incidents`, { type: 'created', incident });
 
-    // 4. Queue Background Tasks (AI Triage, which will later trigger SMS if needed)
+    // 4. Queue Background Tasks (AI Triage)
+    // 🚨 OPTIMIZATION: Only pass mediaBase64 if small, otherwise worker should use mediaUrl
+    const shouldPassBase64 = mediaBase64 && mediaBase64.length < 500000; // ~500KB limit for Redis safety
     await incidentQueue.add('AI_TRIAGE', { 
         type: 'AI_TRIAGE', 
         data: { 
             incidentId: incident.id,
-            mediaBase64, // Pass through for AI analysis to avoid DB/S3 roundtrip in worker
-            mediaUrl: finalMediaUrl, // Also pass the URL just in case
+            mediaBase64: shouldPassBase64 ? mediaBase64 : null, 
+            mediaUrl: finalMediaUrl,
             mediaType
         } 
     });
@@ -126,7 +127,12 @@ exports.updateStatus = async(id, newStatus, hotelId) => {
     const query = db('incidents').where({ id });
     if (hotelId) query.andWhere({ hotel_id: hotelId });
 
-    const [incident] = await query.update({ status: newStatus }).returning('*');
+    // 🚨 FIXED: Manually update updated_at
+    const [incident] = await query.update({ 
+        status: newStatus,
+        updated_at: new Date()
+    }).returning('*');
+
     if (incident) {
         await SocketService.publish(`hotel_${hotelId}_incidents`, { type: 'status-updated', incident });
     }
@@ -134,10 +140,9 @@ exports.updateStatus = async(id, newStatus, hotelId) => {
 };
 
 exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
-    // Note: For voice, we still do in-line transcription to show the user immediate feedback,
-    // but the incident creation now follows the async pattern for everything else.
     const analysis = await AIService.analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng });
     
+    // 🚨 CONSISTENCY: Use standardized field names from AI service
     const incident = await exports.create({
         title: analysis.translated_english_text ? `Voice report: ${analysis.hospitality_category}` : 'Voice Incident',
         description: analysis.translated_english_text || '',

@@ -1,7 +1,8 @@
 /**
  * 🛡️ CONSOLIDATED MASTER MIGRATION
- * Version: 1.0.0
+ * Version: 1.1.0
  * Includes: Users, Hotels, Incidents (Standard PG, No PostGIS required)
+ * Fixes: Added missing columns and performance indexes
  */
 
 exports.up = async function(knex) {
@@ -26,8 +27,12 @@ exports.up = async function(knex) {
         table.string('name');
         table.enu('role', ['CITIZEN', 'RESPONDER', 'ADMIN']).defaultTo('CITIZEN');
         table.string('safety_status').defaultTo('SAFE');
+        table.timestamp('last_pulse_at'); // 🚨 FIXED: Added missing column
         table.uuid('hotel_id').references('id').inTable('hotels').onDelete('SET NULL');
         table.timestamp('created_at').defaultTo(knex.fn.now());
+
+        // Performance Indices
+        table.index('hotel_id', 'users_hotel_id_idx');
     });
 
     // 3. Create Incidents Table
@@ -72,6 +77,7 @@ exports.up = async function(knex) {
         // Indices for Performance
         table.index('hotel_id', 'incidents_hotel_id_idx');
         table.index(['hotel_id', 'status'], 'incidents_hotel_status_idx');
+        table.index('reported_by', 'incidents_reported_by_idx'); // 🚨 FIXED: Performance index
     });
 
     // 4. Seed Default Data for Hackathon

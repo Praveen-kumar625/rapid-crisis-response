@@ -7,6 +7,7 @@ import { joinHotelRoom } from './socket';
 import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
+import ErrorBoundary from './components/ErrorBoundary'; // 🚨 NEW: Import ErrorBoundary
 
 // Lazy loaded pages
 const Home = lazy(() => import('./pages/Home'));
@@ -81,21 +82,23 @@ function App() {
     };
 
     return (
-        <Router>
-            <Toaster 
-                position="top-center" 
-                toastOptions={{ 
-                    className: 'glass-card border border-white/10 text-white text-xs font-bold uppercase tracking-widest py-4 px-6 shadow-2xl',
-                    style: { background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(16px)' }
-                }} 
-            />
-            
-            <AppLayout user={user} login={login}>
-                <Suspense fallback={<PageLoader />}>
-                    <AnimatedRoutes />
-                </Suspense>
-            </AppLayout>
-        </Router>
+        <ErrorBoundary> {/* 🚨 FIXED: Wrapped app in ErrorBoundary */}
+            <Router>
+                <Toaster 
+                    position="top-center" 
+                    toastOptions={{ 
+                        className: 'glass-card border border-white/10 text-white text-xs font-bold uppercase tracking-widest py-4 px-6 shadow-2xl',
+                        style: { background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(16px)' }
+                    }} 
+                />
+                
+                <AppLayout user={user} login={login}>
+                    <Suspense fallback={<PageLoader />}>
+                        <AnimatedRoutes />
+                    </Suspense>
+                </AppLayout>
+            </Router>
+        </ErrorBoundary>
     );
 }
 

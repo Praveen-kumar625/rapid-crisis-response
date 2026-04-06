@@ -1,6 +1,7 @@
 // backend/src/middleware/auth.js
 const admin = require('firebase-admin');
 const db = require('../db');
+const { NODE_ENV, DEMO_MODE } = require('../config/env');
 
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -10,7 +11,8 @@ if (!admin.apps.length) {
 
 async function jwtAuth(req, res, next) {
     // ------------------- Demo Mode (Guard Protected) -------------------
-    if (process.env.DEMO_MODE === 'true' && process.env.NODE_ENV !== 'production') {
+    // Only allow demo mode in non-production environments
+    if (DEMO_MODE && NODE_ENV !== 'production') {
         const demoUser = await db('users').first();
         req.user = { 
             sub: demoUser?.id || 'demo-admin-1', 
@@ -22,7 +24,9 @@ async function jwtAuth(req, res, next) {
     }
 
     const authHeader = req.headers.authorization || '';
-    if (!authHeader.startsWith('Bearer ')) return res.status(401).json({ message: 'Missing token' });
+    if (!authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized', message: 'Missing or malformed token' });
+    }
 
     const token = authHeader.split(' ')[1];
 
@@ -54,8 +58,8 @@ async function jwtAuth(req, res, next) {
         
         next();
     } catch (error) {
-        console.error('[Auth] Firebase token verification failed:', error);
-        return res.status(401).json({ message: 'Invalid token' });
+        console.error('[Auth] Firebase token verification failed:', error.message);
+        return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or expired token' });
     }
 }
 

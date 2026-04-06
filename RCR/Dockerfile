@@ -1,5 +1,5 @@
 # Robust Workspace-aware Dockerfile for Backend
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY backend/ ./backend/
 
 # Set environment
 ENV NODE_ENV=production
-EXPOSE 5000
+EXPOSE 3001
 
 # Use non-root user
 USER node

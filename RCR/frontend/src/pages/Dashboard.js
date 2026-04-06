@@ -5,11 +5,12 @@ import { getSocket } from '../socket';
 import {
     PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area
 } from 'recharts';
-import { Activity, AlertTriangle, CheckCircle2, Zap, Target, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Zap, Target, TrendingUp, Info, ArrowRight } from 'lucide-react';
 import { Container } from '../components/layout/Container';
 import { Section } from '../components/layout/Section';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 
 function computeAggregates(incidents) {
     const categoryCounts = {};
@@ -53,6 +54,7 @@ function Dashboard() {
     const [incidents, setIncidents] = useState([]);
     const stats = useMemo(() => computeAggregates(incidents), [incidents]);
     const [pulses, setPulses] = useState({});
+    const [selectedGuest, setSelectedGuest] = useState(null);
 
     useEffect(() => {
         api.get('/incidents').then(({ data }) => {
@@ -107,12 +109,19 @@ function Dashboard() {
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {[
-                                { label: 'Total Signal', val: incidents.length, color: 'text-white' },
-                                { label: 'Active Crisis', val: activeCount, color: 'text-accent' },
-                                { label: 'L5 Critical', val: criticalCount, color: 'text-danger' },
-                                { label: 'Uptime', val: '99.9%', color: 'text-secondary' },
+                                { label: 'Total Signal', val: incidents.length, color: 'text-white', link: '/map' },
+                                { label: 'Active Crisis', val: activeCount, color: 'text-accent', link: '/map' },
+                                { label: 'L5 Critical', val: criticalCount, color: 'text-danger', link: '/map' },
+                                { label: 'Uptime', val: '99.9%', color: 'text-secondary', link: null },
                             ].map((s, i) => (
-                                <Card key={i} variant="panel" className="px-6 py-4 flex flex-col items-center justify-center min-w-[120px] border-white/5">
+                                <Card 
+                                    key={i} 
+                                    variant="panel" 
+                                    className={`px-6 py-4 flex flex-col items-center justify-center min-w-[120px] border-white/5 transition-all duration-300 ${s.link ? 'hover:bg-white/5 hover:scale-105 cursor-pointer active:scale-95' : ''}`}
+                                    onClick={() => s.link && navigate(s.link)}
+                                    role={s.link ? "button" : "presentation"}
+                                    aria-label={s.link ? `View ${s.label}` : undefined}
+                                >
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{s.label}</span>
                                     <span className={`text-xl font-black font-mono ${s.color}`}>{s.val}</span>
                                 </Card>
@@ -137,11 +146,16 @@ function Dashboard() {
                             
                             <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-4 gap-4">
                                 {Object.values(pulses).length > 0 ? Object.values(pulses).map(p => (
-                                    <div key={p.userId} className={`aspect-square rounded-2xl flex items-center justify-center text-xs font-black text-white transition-all transform hover:scale-110 shadow-lg border-2 ${
-                                        p.status === 'SAFE' ? 'bg-emerald/10 border-emerald shadow-emerald/20' : 'bg-danger/20 border-danger animate-pulse shadow-danger/40'
-                                    }`} title={`${p.name}: ${p.status}`}>
+                                    <button 
+                                        key={p.userId} 
+                                        className={`aspect-square rounded-2xl flex items-center justify-center text-xs font-black text-white transition-all transform hover:scale-110 hover:-translate-y-1 shadow-lg border-2 outline-none focus:ring-2 focus:ring-electric ${
+                                            p.status === 'SAFE' ? 'bg-emerald/10 border-emerald shadow-emerald/20' : 'bg-danger/20 border-danger animate-pulse shadow-danger/40'
+                                        }`} 
+                                        title={`${p.name}: ${p.status}`}
+                                        onClick={() => setSelectedGuest(p)}
+                                    >
                                         {p.name[0].toUpperCase()}
-                                    </div>
+                                    </button>
                                 )) : (
                                     <div className="col-span-full py-12 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-white/5 rounded-3xl">
                                         <Activity size={32} className="text-slate-500 mb-4" />
@@ -149,6 +163,19 @@ function Dashboard() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Mini Pulse Detail Overlay */}
+                            {selectedGuest && (
+                                <div className="absolute inset-0 bg-navy-900/95 backdrop-blur-md p-8 flex flex-col justify-center animate-in fade-in duration-300 z-10">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <Badge variant={selectedGuest.status === 'SAFE' ? 'emerald' : 'danger'}>{selectedGuest.status}</Badge>
+                                        <button onClick={() => setSelectedGuest(null)} className="text-slate-500 hover:text-white"><X size={16}/></button>
+                                    </div>
+                                    <h4 className="text-xl font-black text-white uppercase tracking-tight mb-1">{selectedGuest.name}</h4>
+                                    <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mb-6">User ID: {selectedGuest.userId.substring(0,8)}...</p>
+                                    <Button size="sm" variant="secondary" className="w-full text-[10px] py-3" onClick={() => setSelectedGuest(null)}>Dismiss Info</Button>
+                                </div>
+                            )}
                         </Card>
 
                         {/* Severity Distribution */}
@@ -168,7 +195,7 @@ function Dashboard() {
                                             stroke="none"
                                         >
                                             {stats.severityData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none" />
                                             ))}
                                         </Pie>
                                         <Tooltip content={<CustomTooltip />} />
@@ -227,7 +254,7 @@ function Dashboard() {
                                         <th className="px-8 py-5 border-b border-white/5">Signal Status</th>
                                         <th className="px-8 py-5 border-b border-white/5">Identifier & Category</th>
                                         <th className="px-8 py-5 border-b border-white/5">Indoor Coordinates</th>
-                                        <th className="px-8 py-5 border-b border-white/5 text-right">Timestamp</th>
+                                        <th className="px-8 py-5 border-b border-white/5 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -240,7 +267,7 @@ function Dashboard() {
                                             <td className="px-8 py-6">
                                                 <Badge 
                                                     variant={inc.status === 'OPEN' ? 'danger' : inc.status === 'IN_PROGRESS' ? 'amber' : 'emerald'}
-                                                    className="group-hover:scale-105"
+                                                    className="group-hover:scale-105 transition-transform"
                                                 >
                                                     {inc.status}
                                                 </Badge>
@@ -258,8 +285,10 @@ function Dashboard() {
                                                     <span className="text-[10px] text-slate-500 font-mono">ROOM_ID: {inc.roomNumber}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-right font-mono text-slate-500 text-[11px] group-hover:text-slate-300 transition-colors">
-                                                {new Date(inc.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                                            <td className="px-8 py-6 text-right">
+                                                <div className="flex items-center justify-end gap-2 text-slate-500 group-hover:text-electric transition-all text-[10px] font-black uppercase tracking-widest">
+                                                    View Intel <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -273,7 +302,7 @@ function Dashboard() {
                                 <Link 
                                     key={inc.id} 
                                     to={`/incidents/${inc.id}`}
-                                    className="block p-6 hover:bg-white/[0.02] active:bg-white/[0.05] transition-colors"
+                                    className="block p-6 hover:bg-white/[0.02] active:bg-white/[0.05] transition-colors group"
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <Badge variant={inc.status === 'OPEN' ? 'danger' : inc.status === 'IN_PROGRESS' ? 'amber' : 'emerald'}>
@@ -283,10 +312,12 @@ function Dashboard() {
                                             {new Date(inc.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm font-bold text-white uppercase tracking-tight mb-2">{inc.title}</h4>
+                                    <h4 className="text-sm font-bold text-white uppercase tracking-tight mb-2 group-hover:text-electric transition-colors">{inc.title}</h4>
                                     <div className="flex items-center justify-between">
                                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Wing {inc.wingId} {'//'} L{inc.floorLevel}</span>
-                                        <span className={`text-[9px] font-black uppercase tracking-widest ${inc.severity >= 4 ? 'text-danger' : 'text-slate-400'}`}>Lvl {inc.severity}</span>
+                                        <div className="flex items-center gap-1 text-electric text-[9px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                            Open <ArrowRight size={10} />
+                                        </div>
                                     </div>
                                 </Link>
                             ))}
@@ -303,5 +334,7 @@ function Dashboard() {
         </div>
     );
 }
+
+const X = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 export default Dashboard;

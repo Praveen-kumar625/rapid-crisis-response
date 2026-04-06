@@ -17,7 +17,14 @@ jobs:
         run: npm install
         working-directory: RCR
       - name: Run tests
+        # 🚨 FIXED: Inject placeholder env vars so zod schema and startup checks pass
         run: npm test --workspace=backend -- --passWithNoTests --forceExit
+        env:
+          NODE_ENV: test
+          GEMINI_API_KEY: "mock-key"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test"
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
         working-directory: RCR
 
   test-frontend:
@@ -44,7 +51,6 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          # 🚀 FIXED: Using secrets directly in the 'with' block for maximum reliability
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
@@ -57,7 +63,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          # 🚀 FIXED: Ensure username is injected correctly into tags
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/rcr-api:latest
 
       - name: Build & Push Worker

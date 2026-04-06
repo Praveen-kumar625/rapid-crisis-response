@@ -12,7 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary'; // 🚨 NEW: Import Erro
 // Lazy loaded pages
 const Home = lazy(() => import('./pages/Home'));
 const MapPage = lazy(() => import('./pages/MapPage'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Dashboard = lazy(() => import('./pages/TacticalDashboard')); // Redesigned
 const ReportPage = lazy(() => import('./pages/ReportPage'));
 const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 

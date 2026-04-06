@@ -17,7 +17,7 @@ module.exports = {
         accent: '#F59E0B',    // Amber
         softWhite: '#F8FAFC',
         navy: {
-          950: '#050810',
+          950: '#0B1120', // Refined Deep Navy
           900: '#0a0f1c',
           800: '#0f172a',
           700: '#1e293b'
@@ -36,13 +36,18 @@ module.exports = {
           hover: '#e62e5c',
           glow: 'rgba(255, 51, 102, 0.3)'
         },
+        warning: {
+          DEFAULT: '#f59e0b',
+          hover: '#d97706',
+          glow: 'rgba(245, 158, 11, 0.3)'
+        },
         surface: 'rgba(255, 255, 255, 0.1)',
         surfaceBorder: 'rgba(255, 255, 255, 0.2)'
       },
       fontFamily: {
-        sans: ['Montserrat', 'Inter', 'system-ui', 'sans-serif'],
-        body: ['Source Sans Pro', 'sans-serif'],
-        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+        sans: ['Inter', 'Montserrat', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'Source Sans Pro', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
       },
       backdropBlur: {
         xs: '2px',

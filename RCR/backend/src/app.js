@@ -25,8 +25,9 @@ app.use(globalLimiter);
 app.use(
     cors({
         origin: function(origin, callback) {
-            // 🚨 FIXED: Broaden exception for non-production environments
-            if (!origin || NODE_ENV !== 'production') {
+            // 🚨 FIXED: Broaden exception for non-production environments and Vercel MVP
+            const allowed = ['https://rapid-crisis-response-f4yd.vercel.app', 'http://localhost:3000'];
+            if (!origin || NODE_ENV !== 'production' || allowed.includes(origin)) {
                 return callback(null, true);
             }
 

@@ -61,6 +61,7 @@ function ReportForm() {
     const [sosMessage, setSosMessage] = useState('');
     const [showAiModal, setShowAiModal] = useState(false);
     const [aiResult, setAiResult] = useState({ category: '', severity: 0, method: 'Cloud AI (Gemini)' });
+    const [locationError, setLocationError] = useState(false); // 🚨 LOCATION FALLBACK FIX
     
     const mediaRecorderRef = useRef(null);
     const titleRef = useRef(null);
@@ -71,19 +72,27 @@ function ReportForm() {
         setIsSpeechSupported(!!SpeechRecognition);
     }, []);
 
-    useEffect(() => {
-        let isMounted = true;
+    const requestLocation = () => {
         if ('geolocation' in navigator) {
+            toast.loading('Acquiring signal lock...', { id: 'geo' });
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    if (isMounted) setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    setLocationError(false);
+                    toast.success('Signal lock acquired', { id: 'geo' });
                 },
                 (err) => {
                     console.warn('[ReportForm] Geolocation FAILED:', err.message);
-                    if (isMounted) toast.error(`📍 Location Error: ${err.message}`);
-                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+                    setLocationError(true);
+                    toast.error(`📍 Location Denied. Please enable or enter manually.`, { id: 'geo' });
+                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
+    };
+
+    useEffect(() => {
+        let isMounted = true;
+        if (isMounted) requestLocation();
         return () => { isMounted = false; };
     }, []);
 
@@ -130,20 +139,43 @@ function ReportForm() {
 
     const handleVoiceToggle = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-IN';
-        if (!isRecording) {
-            setIsRecording(true);
-            recognition.start();
-        } else {
-            recognition.stop();
+        if (!SpeechRecognition) {
+            toast.error('Voice dictation not supported in this browser.');
+            return;
         }
-        recognition.onresult = (event) => {
-            const transcript = Array.from(event.results).map(r => r[0].transcript).join(' ');
-            setForm(prev => ({...prev, description: prev.description ? `${prev.description} ${transcript}` : transcript }));
-        };
-        recognition.onend = () => setIsRecording(false);
+        
+        try {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-IN';
+            
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'not-allowed') {
+                    toast.error('Microphone access denied. Please enable permissions.');
+                } else {
+                    toast.error(`Voice dictation error: ${event.error}`);
+                }
+                setIsRecording(false);
+            };
+
+            if (!isRecording) {
+                setIsRecording(true);
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
+            
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results).map(r => r[0].transcript).join(' ');
+                setForm(prev => ({...prev, description: prev.description ? `${prev.description} ${transcript}` : transcript }));
+            };
+            
+            recognition.onend = () => setIsRecording(false);
+        } catch (err) {
+            console.error('Voice dictation initialization failed:', err);
+            toast.error('Failed to start voice dictation. Ensure you clicked the button directly.');
+            setIsRecording(false);
+        }
     };
 
     const handleAudioSOS = async() => {
@@ -152,20 +184,21 @@ function ReportForm() {
             return;
         }
         if (!isAudioRecording) {
-            setSosMessage('SOS: Recording Protocol Active...');
-            setIsAudioRecording(true);
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = recorder;
-            const chunks = [];
-            recorder.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data);
-            recorder.onstop = async() => {
-                const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-                const currentMimeType = recorder.mimeType || 'audio/webm';
-                setIsAudioRecording(false);
-                setSosMessage('SOS: Encrypting & Dispatching...');
-                const reader = new FileReader();
-                reader.onloadend = async() => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                setSosMessage('SOS: Recording Protocol Active...');
+                setIsAudioRecording(true);
+                const recorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = recorder;
+                const chunks = [];
+                recorder.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data);
+                recorder.onstop = async() => {
+                    const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+                    const currentMimeType = recorder.mimeType || 'audio/webm';
+                    setIsAudioRecording(false);
+                    setSosMessage('SOS: Encrypting & Dispatching...');
+                    const reader = new FileReader();
+                    reader.onloadend = async() => {
                     const base64 = reader.result.split(',')[1];
                     try {
                         await api.post('/incidents/voice', {
@@ -187,6 +220,11 @@ function ReportForm() {
                 reader.readAsDataURL(blob);
             };
             recorder.start();
+            } catch (err) {
+                console.error('Audio capture failed:', err);
+                toast.error('Microphone access denied. Please check permissions.');
+                setIsAudioRecording(false);
+            }
         } else {
             mediaRecorderRef.current?.stop();
         }
@@ -355,7 +393,9 @@ function ReportForm() {
             <div className="bg-white/[0.02] p-6 sm:p-8 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
                     <h3 className="text-xl font-bold uppercase tracking-widest text-white">Incident Manifest</h3>
-                    <p className="text-electric text-[9px] font-mono tracking-[0.2em] mt-1 uppercase">Node: {position.lat.toFixed(2)}, {position.lng.toFixed(2)}</p>
+                    <p className="text-electric text-[9px] font-mono tracking-[0.2em] mt-1 uppercase">
+                        {locationError ? <span className="text-danger animate-pulse flex items-center gap-2 mt-2"><AlertTriangle size={12}/> LOCATION DENIED - ENTER MANUALLY</span> : `Node: ${position.lat.toFixed(2)}, ${position.lng.toFixed(2)}`}
+                    </p>
                 </div>
                 {!navigator.onLine && (
                     <Badge variant="amber" className="animate-pulse">Edge Resilience Active</Badge>
@@ -364,6 +404,29 @@ function ReportForm() {
 
             <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-10">
                 
+                {locationError && (
+                    <div className="bg-danger/10 border border-danger/30 rounded-xl p-4 flex flex-col gap-3">
+                        <p className="text-danger text-xs font-bold uppercase">Manual Location Required</p>
+                        <div className="flex gap-4">
+                            <Input 
+                                type="number" 
+                                step="any" 
+                                placeholder="Latitude" 
+                                value={position.lat} 
+                                onChange={(e) => setPosition(p => ({ ...p, lat: parseFloat(e.target.value) || 0 }))} 
+                            />
+                            <Input 
+                                type="number" 
+                                step="any" 
+                                placeholder="Longitude" 
+                                value={position.lng} 
+                                onChange={(e) => setPosition(p => ({ ...p, lng: parseFloat(e.target.value) || 0 }))} 
+                            />
+                        </div>
+                        <Button type="button" variant="secondary" onClick={requestLocation} className="text-[10px] w-full mt-2">Retry GPS Lock</Button>
+                    </div>
+                )}
+
                 {/* EMERGENCY CONTROLS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button 

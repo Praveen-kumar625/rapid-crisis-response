@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogIn, LogOut, Wifi, WifiOff, DatabaseZap } from 'lucide-react';
+import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogIn, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Activity, Cpu, Zap, Map as MapIcon, Layers, Radio, AlertCircle } from 'lucide-react';
+import { Cpu, Zap, AlertCircle } from 'lucide-react';
 import CrisisMap from '../components/CrisisMap';
 import api from '../api';
 import { getSocket } from '../socket';
@@ -197,6 +197,10 @@ const Dashboard = () => {
             </aside>
         </div>
     );
+};
+
+export default Dashboard;
+   );
 };
 
 export default Dashboard;

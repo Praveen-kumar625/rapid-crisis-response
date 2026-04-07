@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
+    PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import { Activity, AlertTriangle, Shield, CheckCircle, Clock, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, Zap } from 'lucide-react';
 import api from '../api';
 import { Section } from '../components/layout/Section';
 import { Container } from '../components/layout/Container';

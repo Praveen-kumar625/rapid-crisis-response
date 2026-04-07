@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogIn, LogOut, Wifi, WifiOff } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 
 const NavLink = ({ to, icon: Icon, children, currentPath, onClick }) => {
@@ -54,7 +52,7 @@ const NetworkStatus = () => {
     );
 };
 
-export const Navbar = ({ user, login, logout }) => {
+export const Navbar = ({ user, logout }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
 

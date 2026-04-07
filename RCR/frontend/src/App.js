@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { googleLogout } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import toast, { Toaster } from 'react-hot-toast';
 import { joinHotelRoom } from './socket';
@@ -77,29 +77,6 @@ function App() {
         }
     };
 
-    const login = useGoogleLogin({
-        onSuccess: async (tokenResponse) => {
-            // useGoogleLogin gives access_token by default. 
-            // For id_token verification on backend, we might need to fetch user info or use the GoogleLogin component.
-            // But we can fetch id_token by setting flow: 'implicit' and using GoogleLogin or custom fetch.
-            // Let's use the simplest approach for "quickly": 
-            // If the user provided ID token verification on backend, we need the ID token.
-            // The `useGoogleLogin` with `flow: 'auth-code'` gives a code to exchange.
-            // For "quick" we'll use the one that gives an ID token.
-            // Actually, `@react-oauth/google` `useGoogleLogin` is for access tokens mostly.
-            // To get an ID token easily, let's use the GoogleLogin component or fetch profile.
-            
-            console.log('Login Success:', tokenResponse);
-            // Since we need ID token for backend `verifyIdToken`, we'll use GoogleLogin component in Navbar or similar.
-            // Or fetch from Google userinfo API.
-        },
-        onError: (error) => console.log('Login Failed:', error)
-    });
-
-    // Wait, let's use a simpler way to get the ID token.
-    // I will replace the custom button logic if needed, but for now let's use the GoogleLogin component.
-    // I'll update Navbar.js to use the GoogleLogin component directly.
-
     const logout = () => {
         googleLogout();
         localStorage.removeItem('google_token');
@@ -118,7 +95,7 @@ function App() {
                     }} 
                 />
                 
-                <AppLayout user={user} login={login} logout={logout}>
+                <AppLayout user={user} logout={logout}>
                     <Suspense fallback={<PageLoader />}>
                         <AnimatedRoutes />
                     </Suspense>

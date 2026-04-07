@@ -11,38 +11,38 @@ module.exports = {
     },
     extend: {
       colors: {
-        primary: '#031D44',   // Deep Navy
+        primary: '#0B0F19',   // Tactical Deep Black
         secondary: '#0D9488', // Teal
         'secondary-light': '#2DD4BF', // Bright Teal for text
         accent: '#F59E0B',    // Amber
         softWhite: '#F8FAFC',
         navy: {
-          950: '#020617', // Solid Slate 950
-          900: '#0f172a', // Solid Slate 900
-          800: '#1e293b', // Solid Slate 800
+          950: '#0B0F19', // Solid Tactical Black
+          900: '#151B2B', // Solid Panel Slate
+          800: '#1E293B', // Border/Hover Slate
           700: '#334155'
         },
         electric: {
-          DEFAULT: '#06b6d4', // Solid Cyan 500
+          DEFAULT: '#00F0FF', // Neon Cyan
           hover: '#0891b2',
-          glow: 'transparent'
+          glow: 'rgba(0, 240, 255, 0.4)'
         },
         emerald: {
           DEFAULT: '#10b981',
-          glow: 'transparent'
+          glow: 'rgba(16, 185, 129, 0.4)'
         },
         danger: {
-          DEFAULT: '#ef4444', // Solid Red 500
+          DEFAULT: '#FF3366', // Tactical Red
           hover: '#dc2626',
-          glow: 'transparent'
+          glow: 'rgba(255, 51, 102, 0.4)'
         },
         warning: {
-          DEFAULT: '#f59e0b',
+          DEFAULT: '#F59E0B',
           hover: '#d97706',
-          glow: 'transparent'
+          glow: 'rgba(245, 158, 11, 0.4)'
         },
-        surface: '#0f172a',
-        surfaceBorder: '#334155'
+        surface: '#151B2B',
+        surfaceBorder: '#1E293B'
       },
       fontFamily: {
         sans: ['Inter', 'Montserrat', 'system-ui', 'sans-serif'],
@@ -54,13 +54,14 @@ module.exports = {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'mesh-pattern': "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')",
+        'grid-pattern': "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTSA0MCAwIEwgMCAwIDAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')",
       },
       animation: {
         'slow-drift': 'drift 20s ease-in-out infinite',
         'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
         'float': 'float 6s ease-in-out infinite',
         'shimmer': 'shimmer 2s linear infinite',
+        'scanline': 'scanline 8s linear infinite',
       },
       keyframes: {
         drift: {
@@ -78,12 +79,16 @@ module.exports = {
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        scanline: {
+          '0%': { transform: 'translateY(-100%)' },
+          '100%': { transform: 'translateY(100%)' }
         }
       },
       boxShadow: {
-        'electric': '0 0 20px rgba(0, 240, 255, 0.3)',
-        'danger': '0 0 20px rgba(255, 51, 102, 0.3)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        'neon-cyan': '0 0 15px rgba(0, 240, 255, 0.3)',
+        'neon-red': '0 0 15px rgba(255, 51, 102, 0.3)',
+        'tactical': '0 4px 20px 0 rgba(0, 0, 0, 0.5)',
       }
     },
   },

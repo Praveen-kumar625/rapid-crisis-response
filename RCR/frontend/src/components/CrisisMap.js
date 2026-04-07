@@ -125,9 +125,9 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
 
     if (!apiKey) {
         return (
-            <div className="w-full h-full min-h-[600px] flex flex-col items-center justify-center bg-navy-950 p-12 text-center border border-white/5 rounded-3xl">
-                <AlertCircle size={48} className="text-danger mb-6" />
-                <h2 className="text-2xl font-black text-white uppercase mb-4">Map Key Missing</h2>
+            <div className="w-full h-full min-h-[600px] flex flex-col items-center justify-center bg-[#0B0F19] p-12 text-center border border-slate-800 rounded-none">
+                <AlertCircle size={48} className="text-red-600 mb-6" />
+                <h2 className="text-2xl font-black text-slate-100 uppercase mb-4">Map Key Missing</h2>
                 <p className="text-slate-400 max-w-md font-mono text-xs uppercase tracking-widest">
                     Define REACT_APP_GOOGLE_MAPS_API_KEY in your .env.local file to initialize the tactical overlay.
                 </p>
@@ -136,7 +136,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
     }
 
     return (
-        <div className="relative w-full h-full min-h-[600px] flex-1 overflow-hidden rounded-3xl">
+        <div className="relative w-full h-full min-h-[600px] flex-1 overflow-hidden rounded-none border border-slate-800 bg-[#0B0F19]">
             <APIProvider apiKey={apiKey}>
                 {/* 🚨 CRITICAL: Explicit dimensions on the container and mapId for AdvancedMarkers */}
                 <Map 
@@ -146,14 +146,14 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                     disableDefaultUI={true}
                     gestureHandling="greedy"
                     styles={MAP_STYLES}
-                    className="w-full h-full min-h-[600px] rounded-3xl"
+                    className="w-full h-full min-h-[600px] rounded-none"
                 >
                     {/* HQ Marker */}
                     <AdvancedMarker position={RESPONDER_HQ}>
                         <div className="relative flex items-center justify-center">
-                            <div className="absolute w-12 h-12 bg-secondary/20 rounded-full animate-ping"></div>
-                            <div className="w-8 h-8 bg-navy-950 rounded-full border-2 border-secondary flex items-center justify-center shadow-lg z-10">
-                                <Shield size={14} className="text-secondary" />
+                            <div className="absolute w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-none animate-pulse"></div>
+                            <div className="w-8 h-8 bg-[#0B0F19] border-2 border-cyan-500 flex items-center justify-center shadow-neon-cyan z-10">
+                                <Shield size={14} className="text-cyan-400" />
                             </div>
                         </div>
                     </AdvancedMarker>
@@ -168,20 +168,20 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                             }}
                             onCloseClick={() => setSelectedIncident(null)}
                         >
-                            <div className="p-3 max-w-[200px] text-navy-950">
+                            <div className="p-3 max-w-[200px] bg-[#151B2B] border border-slate-700 text-slate-100 font-mono">
                                 <Badge 
-                                    variant={activeIncident.severity >= 4 ? 'danger' : 'accent'}
+                                    variant={activeIncident.severity >= 4 ? 'danger' : 'amber'}
                                     className="mb-2 text-[8px]"
                                 >
                                     LVL {activeIncident.severity}
                                 </Badge>
-                                <h4 className="font-black text-xs uppercase mb-1 leading-tight">{activeIncident.title}</h4>
-                                <p className="text-[10px] mb-3 line-clamp-2 text-slate-600">{activeIncident.description}</p>
+                                <h4 className="font-black text-xs uppercase mb-1 leading-tight text-white italic">{activeIncident.title}</h4>
+                                <p className="text-[9px] mb-3 line-clamp-2 text-slate-400 uppercase tracking-tight">{activeIncident.description}</p>
                                 <Button 
-                                    className="w-full py-2 text-[9px] font-black uppercase"
+                                    className="w-full py-2 text-[9px] font-black uppercase bg-cyan-600 text-black border-cyan-400"
                                     onClick={() => navigate(`/incidents/${activeIncident.id}`)}
                                 >
-                                    Review Intel
+                                    Review_Intel
                                 </Button>
                             </div>
                         </InfoWindow>
@@ -190,15 +190,14 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
             </APIProvider>
 
             {/* Tactical Overlays */}
-            <div className="absolute top-6 left-6 z-10">
+            <div className="absolute top-6 left-6 z-10 pointer-events-none">
                 <Card 
-                    variant="panel"
-                    className="flex items-center px-5 py-3 gap-4 border border-white/10 shadow-2xl backdrop-blur-2xl"
+                    className="flex items-center px-5 py-3 gap-4 border border-slate-700 bg-[#0B0F19]/90 shadow-tactical rounded-none"
                 >
-                    <Shield size={18} className="text-danger" />
+                    <Shield size={18} className="text-red-600" />
                     <div className="flex flex-col">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Live Stream</span>
-                        <span className="text-xs font-mono font-bold text-secondary">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Live_Grid</span>
+                        <span className="text-xs font-mono font-bold text-cyan-400 tabular-nums">
                             {incidents.length} SIGNAL_NODES
                         </span>
                     </div>

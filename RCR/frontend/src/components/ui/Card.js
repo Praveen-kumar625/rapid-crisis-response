@@ -9,15 +9,15 @@ export const Card = ({
     ...props 
 }) => {
     // Solid tactical panel style
-    const baseStyle = 'bg-slate-900 border border-slate-700 rounded-none shadow-none transition-colors duration-200';
+    const baseStyle = 'bg-[#151B2B] border border-slate-800 rounded-none shadow-tactical transition-colors duration-200';
     
     // Maintain variation logic but with solid colors
     const variants = {
         glass: baseStyle,
-        panel: 'bg-slate-800 border border-slate-600 rounded-none shadow-none',
+        panel: 'bg-[#1E293B] border border-slate-700 rounded-none shadow-none',
     };
 
-    const glowClass = glowing ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : '';
+    const glowClass = glowing ? 'border-red-500/50 shadow-neon-red' : '';
 
     return (
         <div 

@@ -3,13 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { 
     ShieldAlert, 
     Clock, 
-    Cpu, 
     AlertTriangle, 
     Zap, 
-    CheckCircle2, 
     ChevronLeft,
     Navigation,
-    User,
     Activity
 } from 'lucide-react';
 import api from '../api';

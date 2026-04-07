@@ -322,6 +322,12 @@ function ReportForm() {
                     )}
                 </div>
 
+                {sosMessage && (
+                    <div className="bg-red-600/10 border-l-4 border-red-600 px-4 py-3 text-[10px] font-mono text-red-500 animate-pulse uppercase tracking-widest">
+                        &gt;&gt; {sosMessage}
+                    </div>
+                )}
+
                 <div className="space-y-8">
                     <div>
                         <Label htmlFor="incident-title">Incident_Identifier</Label>

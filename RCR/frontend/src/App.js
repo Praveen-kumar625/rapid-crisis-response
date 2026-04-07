@@ -1,18 +1,18 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { auth, googleProvider } from './firebase';
-import { signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 import toast, { Toaster } from 'react-hot-toast';
 import { joinHotelRoom } from './socket';
 import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import ErrorBoundary from './components/ErrorBoundary'; // 🚨 NEW: Import ErrorBoundary
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loaded pages
 const Home = lazy(() => import('./pages/Home'));
 const MapPage = lazy(() => import('./pages/MapPage'));
-const Dashboard = lazy(() => import('./pages/Dashboard')); // More polished monolithic version
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ReportPage = lazy(() => import('./pages/ReportPage'));
 const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 
@@ -53,36 +53,62 @@ function App() {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            setUser(currentUser);
-            if (currentUser) {
-                try {
-                    const { data } = await api.get('/incidents/me');
-                    if (data.hotelId) {
-                        joinHotelRoom(data.hotelId);
-                    }
-                } catch (err) {
-                    console.error('Failed to sync user context', err);
-                }
+        const token = localStorage.getItem('google_token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                setUser(decoded);
+                syncUserContext();
+            } catch (err) {
+                console.error('Invalid token', err);
+                localStorage.removeItem('google_token');
             }
-        });
-        return () => unsubscribe();
+        }
     }, []);
 
-    const login = async() => {
-        try { 
-            await signInWithPopup(auth, googleProvider); 
-            toast.success('Successfully authenticated', {
-                style: { background: '#0f172a', color: '#f8fafc', border: '1px solid rgba(255,255,255,0.1)' }
-            });
-        } catch (err) { 
-            console.error('Login Failed', err); 
-            toast.error('Authentication failed');
+    const syncUserContext = async () => {
+        try {
+            const { data } = await api.get('/incidents/me');
+            if (data.hotelId) {
+                joinHotelRoom(data.hotelId);
+            }
+        } catch (err) {
+            console.error('Failed to sync user context', err);
         }
     };
 
+    const login = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            // useGoogleLogin gives access_token by default. 
+            // For id_token verification on backend, we might need to fetch user info or use the GoogleLogin component.
+            // But we can fetch id_token by setting flow: 'implicit' and using GoogleLogin or custom fetch.
+            // Let's use the simplest approach for "quickly": 
+            // If the user provided ID token verification on backend, we need the ID token.
+            // The `useGoogleLogin` with `flow: 'auth-code'` gives a code to exchange.
+            // For "quick" we'll use the one that gives an ID token.
+            // Actually, `@react-oauth/google` `useGoogleLogin` is for access tokens mostly.
+            // To get an ID token easily, let's use the GoogleLogin component or fetch profile.
+            
+            console.log('Login Success:', tokenResponse);
+            // Since we need ID token for backend `verifyIdToken`, we'll use GoogleLogin component in Navbar or similar.
+            // Or fetch from Google userinfo API.
+        },
+        onError: (error) => console.log('Login Failed:', error)
+    });
+
+    // Wait, let's use a simpler way to get the ID token.
+    // I will replace the custom button logic if needed, but for now let's use the GoogleLogin component.
+    // I'll update Navbar.js to use the GoogleLogin component directly.
+
+    const logout = () => {
+        googleLogout();
+        localStorage.removeItem('google_token');
+        setUser(null);
+        toast.success('Logged out successfully');
+    };
+
     return (
-        <ErrorBoundary> {/* 🚨 FIXED: Wrapped app in ErrorBoundary */}
+        <ErrorBoundary>
             <Router>
                 <Toaster 
                     position="top-center" 
@@ -92,7 +118,7 @@ function App() {
                     }} 
                 />
                 
-                <AppLayout user={user} login={login}>
+                <AppLayout user={user} login={login} logout={logout}>
                     <Suspense fallback={<PageLoader />}>
                         <AnimatedRoutes />
                     </Suspense>

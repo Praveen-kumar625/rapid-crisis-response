@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client';
-import { auth } from './firebase';
 
 let socket = null;
 
@@ -10,10 +9,7 @@ let socket = null;
 export async function getSocket() {
     if (socket) return socket;
 
-    let token = null;
-    if (auth.currentUser) {
-        token = await auth.currentUser.getIdToken();
-    }
+    const token = localStorage.getItem('google_token');
 
     socket = io(process.env.REACT_APP_SOCKET_URL, {
         path: '/crisis',

@@ -1,21 +1,13 @@
 // backend/src/middleware/auth.js
-const admin = require('firebase-admin');
+const { OAuth2Client } = require('google-auth-library');
 const db = require('../db');
 const { NODE_ENV, DEMO_MODE } = require('../config/env');
 
-if (!admin.apps.length) {
-    try {
-        admin.initializeApp({
-            credential: admin.credential.applicationDefault(), // Relies on GOOGLE_APPLICATION_CREDENTIALS env var
-        });
-    } catch (err) {
-        console.warn('⚠️ Firebase Admin Initialization Warning: Missing or invalid GOOGLE_APPLICATION_CREDENTIALS. Auth may fail.');
-    }
-}
+const GOOGLE_CLIENT_ID = '171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com';
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 async function jwtAuth(req, res, next) {
     // ------------------- Demo Mode (Guard Protected) -------------------
-    // Only allow demo mode in non-production environments
     if (DEMO_MODE && NODE_ENV !== 'production') {
         const demoUser = await db('users').first();
         req.user = { 
@@ -35,18 +27,21 @@ async function jwtAuth(req, res, next) {
     const token = authHeader.split(' ')[1];
 
     try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
         
-        // Fetch or Create user record to get hotel_id
-        let userRecord = await db('users').where({ id: decodedToken.uid }).first();
+        // Fetch or Create user record
+        let userRecord = await db('users').where({ id: payload.sub }).first();
         
         if (!userRecord) {
-            // Auto-provision user and assign to default hotel for hackathon simplicity
             const defaultHotel = await db('hotels').first();
             const [newUser] = await db('users').insert({
-                id: decodedToken.uid,
-                email: decodedToken.email,
-                name: decodedToken.name || decodedToken.email.split('@')[0],
+                id: payload.sub,
+                email: payload.email,
+                name: payload.name || payload.email.split('@')[0],
                 role: 'CITIZEN',
                 hotel_id: defaultHotel?.id
             }).returning('*');
@@ -62,7 +57,7 @@ async function jwtAuth(req, res, next) {
         
         next();
     } catch (error) {
-        console.error('[Auth] Firebase token verification failed:', error.message);
+        console.error('[Auth] Google token verification failed:', error.message);
         return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or expired token' });
     }
 }

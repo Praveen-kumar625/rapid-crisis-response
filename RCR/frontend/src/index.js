@@ -14,12 +14,15 @@ if ('serviceWorker' in navigator) {
 }
 
 import ErrorBoundary from './components/ErrorBoundary';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
 // Auth0Provider deleted. Firebase manages state internally.
 root.render(
     <ErrorBoundary>
-        <App />
+        <GoogleOAuthProvider clientId="171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com">
+            <App />
+        </GoogleOAuthProvider>
     </ErrorBoundary>
 );

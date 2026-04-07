@@ -4,8 +4,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogIn, LogOut, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { auth } from '../../firebase';
-import { signOut } from 'firebase/auth';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+import toast from 'react-hot-toast';
 
 const NavLink = ({ to, icon: Icon, children, currentPath, onClick }) => {
     const isActive = currentPath === to;
@@ -53,9 +54,15 @@ const NetworkStatus = () => {
     );
 };
 
-export const Navbar = ({ user, login }) => {
+export const Navbar = ({ user, login, logout }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
+
+    const handleLoginSuccess = (credentialResponse) => {
+        const token = credentialResponse.credential;
+        localStorage.setItem('google_token', token);
+        window.location.reload(); 
+    };
 
     return (
         <header className="sticky top-0 z-50 bg-slate-900 border-b border-slate-700 shadow-none">
@@ -95,15 +102,19 @@ export const Navbar = ({ user, login }) => {
                 <div className="hidden lg:flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4 bg-slate-800 px-3 py-1 rounded-none border border-slate-700">
-                            <span className="text-[10px] font-mono font-bold text-slate-300 max-w-[150px] truncate">{user.email.toUpperCase()}</span>
-                            <button onClick={() => signOut(auth)} className="text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
+                            <span className="text-[10px] font-mono font-bold text-slate-300 max-w-[150px] truncate">{user.email?.toUpperCase() || 'AUTHORIZED_USER'}</span>
+                            <button onClick={logout} className="text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
                                 <LogOut size={14} />
                             </button>
                         </div>
                     ) : (
-                        <Button variant="primary" onClick={login} className="px-4 py-2 text-[10px]" aria-label="Login">
-                            <LogIn size={16} /> LOGIN
-                        </Button>
+                        <GoogleLogin
+                            onSuccess={handleLoginSuccess}
+                            onError={() => toast.error('Login Failed')}
+                            theme="dark"
+                            shape="square"
+                            size="medium"
+                        />
                     )}
                 </div>
 
@@ -184,17 +195,20 @@ export const Navbar = ({ user, login }) => {
                                             <p className="text-[8px] text-cyan-500 font-mono uppercase tracking-widest">Authorized_Intel</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => { signOut(auth); setIsMobileMenuOpen(false); }} className="p-2 text-slate-400 hover:text-red-500 transition-colors" aria-label="Sign Out">
+                                    <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="p-2 text-slate-400 hover:text-red-500 transition-colors" aria-label="Sign Out">
                                         <LogOut size={20} />
                                     </button>
                                 </div>
                             ) : (
-                                <button 
-                                    onClick={() => { login(); setIsMobileMenuOpen(false); }} 
-                                    className="mt-6 w-full bg-slate-800 border border-slate-600 text-white px-4 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
-                                >
-                                    <LogIn size={20} /> LOGIN_TO_TERMINAL
-                                </button>
+                                <div className="mt-6">
+                                    <GoogleLogin
+                                        onSuccess={handleLoginSuccess}
+                                        onError={() => toast.error('Login Failed')}
+                                        theme="dark"
+                                        shape="square"
+                                        width="100%"
+                                    />
+                                </div>
                             )}
                         </div>
                     </motion.div>

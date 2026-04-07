@@ -3,23 +3,17 @@ import CrisisMap from '../components/CrisisMap';
 import { Section } from '../components/layout/Section';
 import { Container } from '../components/layout/Container';
 
-/**
- * 🚨 ARCHITECTURAL FIX: 
- * Using 'h-[calc(100vh-120px)]' ensures the map has a fixed, visible height
- * relative to the viewport minus the navbar/footer.
- */
-
 function MapPage() {
     return (
-        <Section className="py-4 md:py-8 bg-[#0B0F19] flex-1 flex flex-col min-h-0">
-            <Container className="flex-1 flex flex-col h-full min-h-0">
-                <header className="mb-4 md:mb-8 flex justify-between items-end shrink-0">
+        <Section className="p-0 flex-1 flex flex-col min-h-0 overflow-hidden bg-[#0B0F19]">
+            <Container className="flex-1 flex flex-col h-full min-h-0 px-4 md:px-8 py-4">
+                <header className="mb-4 flex justify-between items-end shrink-0">
                     <div>
-                        <h2 className="text-xl md:text-3xl font-black uppercase tracking-tight text-white mb-1 md:mb-2">
+                        <h2 className="text-xl md:text-3xl font-black uppercase tracking-tight text-white">
                             Tactical <span className="text-cyan-400">Map</span>
                         </h2>
-                        <p className="text-slate-500 font-mono text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] uppercase">
-                            Real-time visualization of all active signal nodes.
+                        <p className="text-slate-500 font-mono text-[8px] md:text-[10px] tracking-widest uppercase">
+                            Real-time signal node visualization
                         </p>
                     </div>
                     <div className="bg-slate-900 border border-slate-800 px-4 py-2 hidden md:block">
@@ -27,8 +21,7 @@ function MapPage() {
                     </div>
                 </header>
 
-                {/* 🚨 CRITICAL: The map component must be inside a container with 'flex-1' or 'h-[VALUE]' */}
-                <div className="flex-1 w-full min-h-0 rounded-none overflow-hidden border border-slate-800 shadow-tactical">
+                <div className="flex-1 w-full min-h-0 relative rounded-none overflow-hidden border border-slate-800 shadow-tactical">
                     <CrisisMap />
                 </div>
             </Container>

@@ -136,7 +136,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
     }
 
     return (
-        <div className="relative w-full h-full min-h-0 flex-1 overflow-hidden rounded-none border border-slate-800 bg-[#0B0F19] touch-none">
+        <div className="absolute inset-0 w-full h-full min-h-0 flex flex-col overflow-hidden bg-[#0B0F19] touch-none">
             <APIProvider apiKey={apiKey}>
                 {/* 🚨 CRITICAL: Explicit dimensions on the container and mapId for AdvancedMarkers */}
                 <Map 
@@ -146,7 +146,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                     disableDefaultUI={true}
                     gestureHandling="greedy"
                     styles={MAP_STYLES}
-                    className="w-full h-full min-h-0 rounded-none"
+                    className="w-full h-full min-h-0"
                 >
                     {/* HQ Marker */}
                     <AdvancedMarker position={RESPONDER_HQ}>
@@ -177,12 +177,12 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                                 </Badge>
                                 <h4 className="font-black text-xs uppercase mb-1 leading-tight text-white italic">{activeIncident.title}</h4>
                                 <p className="text-[9px] mb-3 line-clamp-2 text-slate-400 uppercase tracking-tight">{activeIncident.description}</p>
-                                <Button 
-                                    className="w-full py-2 text-[9px] font-black uppercase bg-cyan-600 text-black border-cyan-400"
+                                <button 
+                                    className="w-full py-2 text-[9px] font-black uppercase bg-cyan-600 text-black border border-cyan-400"
                                     onClick={() => navigate(`/incidents/${activeIncident.id}`)}
                                 >
                                     Review_Intel
-                                </Button>
+                                </button>
                             </div>
                         </InfoWindow>
                     )}
@@ -190,7 +190,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
             </APIProvider>
 
             {/* Tactical Overlays */}
-            <div className="absolute top-2 left-2 md:top-6 md:left-6 z-10 pointer-events-none">
+            <div className="absolute top-2 left-2 md:top-6 md:left-6 z-20 pointer-events-none">
                 <Card 
                     className="flex items-center px-3 py-2 md:px-5 md:py-3 gap-2 md:gap-4 border border-slate-700 bg-[#0B0F19]/90 shadow-tactical rounded-none"
                 >

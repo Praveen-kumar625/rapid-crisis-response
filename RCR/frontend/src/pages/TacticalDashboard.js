@@ -61,31 +61,37 @@ const TacticalDashboard = () => {
     });
 
     return (
-        <div className="h-[calc(100vh-64px)] w-full flex overflow-hidden bg-navy-950">
-            {/* LEFT PANEL */}
-            <IntelFeed 
-                incidents={filteredIncidents} 
-                onSelectIncident={(inc) => setSelectedIncident(inc)} 
-            />
+        <div className="flex-1 w-full flex flex-col lg:flex-row overflow-hidden bg-navy-950 min-h-0">
+            {/* LEFT PANEL - Hidden or scrollable on mobile */}
+            <div className="hidden lg:flex w-80 shrink-0 border-r border-white/10 overflow-hidden">
+                <IntelFeed 
+                    incidents={filteredIncidents} 
+                    onSelectIncident={(inc) => setSelectedIncident(inc)} 
+                />
+            </div>
 
-            {/* CENTER CANVAS */}
-            <TacticalMap 
-                incidents={filteredIncidents}
-                selectedIncident={selectedIncident}
-                onSelectIncident={(inc) => setSelectedIncident(inc)}
-                filter={filter}
-                setFilter={setFilter}
-                onCreateIncident={() => navigate('/report')}
-            />
+            {/* CENTER CANVAS - Priority on mobile */}
+            <div className="flex-1 relative min-h-0">
+                <TacticalMap 
+                    incidents={filteredIncidents}
+                    selectedIncident={selectedIncident}
+                    onSelectIncident={(inc) => setSelectedIncident(inc)}
+                    filter={filter}
+                    setFilter={setFilter}
+                    onCreateIncident={() => navigate('/report')}
+                />
+            </div>
 
-            {/* RIGHT PANEL */}
-            <AICommand 
-                selectedIncident={selectedIncident}
-                stats={{
-                    total: incidents.length,
-                    critical: incidents.filter(i => i.severity >= 4).length
-                }}
-            />
+            {/* RIGHT PANEL - Tactical stats/AI - Hidden on small mobile */}
+            <div className="hidden xl:flex w-80 shrink-0 border-l border-white/10 overflow-hidden">
+                <AICommand 
+                    selectedIncident={selectedIncident}
+                    stats={{
+                        total: incidents.length,
+                        critical: incidents.filter(i => i.severity >= 4).length
+                    }}
+                />
+            </div>
         </div>
     );
 };

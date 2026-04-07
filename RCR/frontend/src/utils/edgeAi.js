@@ -3,6 +3,10 @@ import { pipeline, env } from '@huggingface/transformers';
 // Configure environment for browser
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+// 🚨 FIX: Suppress 'import.meta' warnings in Webpack 5 / react-scripts
+if (typeof env.backends !== 'undefined' && env.backends.onnx) {
+    env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers/dist/';
+}
 
 /**
  * Singleton pattern to load and cache the model in the browser.

@@ -6,8 +6,7 @@ const connection = REDIS.url ? REDIS.url : {
     port: REDIS.port
 };
 
-// 🚨 FIXED: In test mode, we might want to skip real Redis connection or use a mock.
-// For now, we will wrap the Queue initialization to prevent crashing the whole test suite.
+// 🚨 RESILIENCE: Handle missing Redis gracefully for local development
 let incidentQueue;
 
 try {
@@ -15,31 +14,26 @@ try {
         connection,
         defaultJobOptions: {
             attempts: 3,
-            backoff: {
-                type: 'exponential',
-                delay: 2000
-            },
+            backoff: { type: 'exponential', delay: 2000 },
             removeOnComplete: true,
             removeOnFail: false
         }
     });
 
-    // 🚨 RESILIENCE: Prevent tests from hanging on Redis connection errors
-    if (NODE_ENV === 'test') {
-        incidentQueue.on('error', (err) => {
-            console.warn('🧪 [Queue] Redis connection error ignored in TEST mode.');
-        });
-    }
+    // Listen for errors to prevent crashing
+    incidentQueue.on('error', (err) => {
+        if (err.message.includes('ECONNREFUSED')) {
+            console.warn('⚠️ [Queue] Redis connection refused. BullMQ features (background workers) will be inactive.');
+        } else {
+            console.error('❌ [Queue] Redis Error:', err.message);
+        }
+    });
 } catch (err) {
-    if (NODE_ENV === 'test') {
-        console.warn('🧪 [Queue] Could not initialize BullMQ in TEST mode. Using mock queue.');
-        incidentQueue = {
-            add: async () => ({ id: 'mock-job-id' }),
-            on: () => {}
-        };
-    } else {
-        throw err;
-    }
+    console.warn('⚠️ [Queue] Failed to initialize BullMQ. Using mock queue for local development.');
+    incidentQueue = {
+        add: async () => ({ id: 'mock-job-id' }),
+        on: () => {}
+    };
 }
 
 module.exports = { incidentQueue, connection };

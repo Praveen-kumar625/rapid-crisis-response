@@ -1,9 +1,8 @@
 // backend/src/middleware/auth.js
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../db');
-const { NODE_ENV, DEMO_MODE } = require('../config/env');
+const { NODE_ENV, DEMO_MODE, GOOGLE_CLIENT_ID } = require('../config/env');
 
-const GOOGLE_CLIENT_ID = '171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com';
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 async function jwtAuth(req, res, next) {

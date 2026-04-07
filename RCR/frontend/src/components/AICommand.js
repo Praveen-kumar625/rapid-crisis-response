@@ -62,14 +62,14 @@ export const AICommand = ({ selectedIncident }) => {
 
                             <div className="space-y-2">
                                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-3">AI Action Plan</span>
-                                {[
+                                {(selectedIncident.actionPlan && selectedIncident.actionPlan.length > 0 ? selectedIncident.actionPlan : [
                                     'Establish peripheral containment zone',
                                     'Deploy Tier-1 medical responders',
                                     'Initialize structural integrity scan',
                                     'Evacuate sector delta-9'
-                                ].map((step, i) => (
+                                ]).map((step, i) => (
                                     <div key={i} className="flex gap-3 items-start p-2.5 bg-white/[0.03] border border-white/5 text-[9px] font-mono text-slate-300 uppercase">
-                                        <span className="text-electric font-bold">0{i+1}</span>
+                                        <span className="text-electric font-bold">{i+1 < 10 ? `0${i+1}` : i+1}</span>
                                         <span>{step}</span>
                                     </div>
                                 ))}

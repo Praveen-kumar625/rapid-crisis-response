@@ -61,7 +61,7 @@ const TacticalDashboard = () => {
     });
 
     return (
-        <div className="h-[calc(100vh-80px)] w-full flex overflow-hidden bg-navy-950">
+        <div className="h-[calc(100vh-64px)] w-full flex overflow-hidden bg-navy-950">
             {/* LEFT PANEL */}
             <IntelFeed 
                 incidents={filteredIncidents} 

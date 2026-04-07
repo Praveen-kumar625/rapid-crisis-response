@@ -153,19 +153,29 @@ Required Output Fields:
         
         // Sanitize and validate output
         return {
-            spam_score: (typeof data.spam_score === 'number') ? data.spam_score : 0.0,
-            auto_severity: (typeof data.auto_severity === 'number') ? Math.min(5, Math.max(1, Math.round(data.auto_severity))) : userSeverity,
+            spamScore: (typeof data.spam_score === 'number') ? data.spam_score : 0.0,
+            autoSeverity: (typeof data.auto_severity === 'number') ? Math.min(5, Math.max(1, Math.round(data.auto_severity))) : userSeverity,
             predictedCategory: String(data.predicted_category || data.hospitality_category || normalizedCategory).toUpperCase(),
-            hospitality_category: ['MEDICAL', 'FIRE', 'SECURITY', 'INFRASTRUCTURE'].includes(String(data.hospitality_category).toUpperCase()) ? data.hospitality_category.toUpperCase() : fallback.hospitality_category,
-            translated_english_text: String(data.translated_english_text || description || title || ''),
-            detected_language: String(data.detected_language || 'en'),
-            panic_level: ['High', 'Medium', 'Low'].includes(data.panic_level) ? data.panic_level : fallback.panic_level,
+            hospitalityCategory: ['MEDICAL', 'FIRE', 'SECURITY', 'INFRASTRUCTURE'].includes(String(data.hospitality_category).toUpperCase()) ? data.hospitality_category.toUpperCase() : fallback.hospitality_category,
+            translatedText: String(data.translated_english_text || description || title || ''),
+            detectedLanguage: String(data.detected_language || 'en'),
+            panicLevel: ['High', 'Medium', 'Low'].includes(data.panic_level) ? data.panic_level : fallback.panic_level,
             actionPlan: Array.isArray(data.action_plan) ? data.action_plan : (Array.isArray(data.actionPlan) ? data.actionPlan : fallback.actionPlan),
             requiredResources: Array.isArray(data.required_resources) ? data.required_resources : (Array.isArray(data.requiredResources) ? data.requiredResources : fallback.requiredResources),
         };
     } catch (err) {
         console.error('[AI Service] analyzeReport failed:', err.message);
-        return fallback;
+        return {
+            spamScore: fallback.spam_score,
+            autoSeverity: fallback.auto_severity,
+            predictedCategory: fallback.predictedCategory,
+            hospitalityCategory: fallback.hospitality_category,
+            translatedText: fallback.translated_english_text,
+            detectedLanguage: fallback.detected_language,
+            panicLevel: fallback.panic_level,
+            actionPlan: fallback.actionPlan,
+            requiredResources: fallback.requiredResources,
+        };
     }
 }
 
@@ -175,13 +185,13 @@ Required Output Fields:
 async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng }) {
     const fallbackText = 'Voice report received but AI transcription failed.';
     const fallback = {
-        translated_english_text: fallbackText,
-        detected_language: 'en',
-        panic_level: 'High',
-        hospitality_category: 'INFRASTRUCTURE',
+        translatedText: fallbackText,
+        detectedLanguage: 'en',
+        panicLevel: 'High',
+        hospitalityCategory: 'INFRASTRUCTURE',
         actionPlan: ['Manual verification required'],
-        spam_score: 0.0,
-        auto_severity: 3,
+        spamScore: 0.0,
+        autoSeverity: 3,
         predictedCategory: 'INFRASTRUCTURE',
         requiredResources: ['Security Team'],
     };
@@ -202,13 +212,13 @@ async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber
     try {
         const data = await generateContentWithRetry(prompt);
         return {
-            translated_english_text: data.translated_english_text || fallbackText,
-            detected_language: data.detected_language || 'en',
-            panic_level: data.panic_level || 'High',
-            hospitality_category: data.hospitality_category || 'INFRASTRUCTURE',
+            translatedText: data.translated_english_text || fallbackText,
+            detectedLanguage: data.detected_language || 'en',
+            panicLevel: data.panic_level || 'High',
+            hospitalityCategory: data.hospitality_category || 'INFRASTRUCTURE',
             actionPlan: Array.isArray(data.actionPlan) ? data.actionPlan : (Array.isArray(data.action_plan) ? data.action_plan : fallback.actionPlan),
-            spam_score: typeof data.spam_score === 'number' ? data.spam_score : 0.0,
-            auto_severity: typeof data.auto_severity === 'number' ? Math.round(data.auto_severity) : 5,
+            spamScore: typeof data.spam_score === 'number' ? data.spam_score : 0.0,
+            autoSeverity: typeof data.auto_severity === 'number' ? Math.round(data.auto_severity) : 5,
             predictedCategory: String(data.predicted_category || data.hospitality_category || 'INFRASTRUCTURE').toUpperCase(),
             requiredResources: Array.isArray(data.requiredResources) ? data.requiredResources : (Array.isArray(data.required_resources) ? data.required_resources : fallback.requiredResources),
         };

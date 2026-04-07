@@ -160,14 +160,14 @@ function IncidentDetail() {
                                     <div className="space-y-8">
                                         <div>
                                             <p className="text-slate-500 text-[9px] uppercase font-black tracking-[0.2em] mb-3 flex items-center gap-2 font-mono"><Activity size={12} className="text-cyan-400" /> PREDICTED_CATEGORY</p>
-                                            <p className="text-2xl font-black text-white uppercase tracking-tight font-mono italic tabular-nums">{incident.hospitality_category || incident.category}</p>
+                                            <p className="text-2xl font-black text-white uppercase tracking-tight font-mono italic tabular-nums">{incident.hospitalityCategory || incident.category}</p>
                                         </div>
                                         <div>
                                             <p className="text-slate-500 text-[9px] uppercase font-black tracking-[0.2em] mb-3 flex items-center gap-2 font-mono"><AlertTriangle size={12} className="text-amber-500" /> RISK_ASSESSMENT</p>
                                             <div className="flex items-center gap-4">
-                                                <span className="text-3xl font-black text-white font-mono tabular-nums">{incident.auto_severity || incident.severity}<span className="text-slate-600 text-sm">/5</span></span>
+                                                <span className="text-3xl font-black text-white font-mono tabular-nums">{incident.autoSeverity || incident.severity}<span className="text-slate-600 text-sm">/5</span></span>
                                                 <div className="flex-1 flex gap-1.5 h-1.5">
-                                                    {[1, 2, 3, 4, 5].map((s) => (<div key={s} className={`flex-1 ${s <= (incident.auto_severity || incident.severity) ? (isCritical ? 'bg-red-600 shadow-neon-red' : 'bg-cyan-500 shadow-neon-cyan') : 'bg-slate-800'}`} />))}
+                                                    {[1, 2, 3, 4, 5].map((s) => (<div key={s} className={`flex-1 ${s <= (incident.autoSeverity || incident.severity) ? (isCritical ? 'bg-red-600 shadow-neon-red' : 'bg-cyan-500 shadow-neon-cyan') : 'bg-slate-800'}`} />))}
                                                 </div>
                                             </div>
                                         </div>
@@ -175,7 +175,7 @@ function IncidentDetail() {
                                     <div className="space-y-6 bg-black/30 p-6 border border-slate-800">
                                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-4 font-mono">Resolution_Plan</h4>
                                         <div className="space-y-4">
-                                            {incident.ai_action_plan ? incident.ai_action_plan.split('\n').map((step, i) => (
+                                            {incident.actionPlan ? (Array.isArray(incident.actionPlan) ? incident.actionPlan : incident.actionPlan.split('\n')).map((step, i) => (
                                                 <div key={i} className="flex gap-4">
                                                     <span className="text-cyan-500 font-mono font-bold text-xs">{String(i + 1).padStart(2, '0')}</span>
                                                     <p className="text-xs text-slate-300 leading-relaxed font-light">{step}</p>
@@ -198,7 +198,7 @@ function IncidentDetail() {
                             <Card className="p-6 lg:p-8 bg-[#151B2B] border-slate-800 rounded-none shadow-tactical">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-8 flex items-center gap-2 font-mono"><Navigation size={16} className="text-cyan-400" /> INDOOR_CONTEXT</h3>
                                 <div className="space-y-4">
-                                    {[ ['SECTOR_WING', incident.wing_id], ['FLOOR_LEVEL', `L_${incident.floor_level}`], ['AREA_ROOM', incident.room_number] ].map(([label, val], idx) => (
+                                    {[ ['SECTOR_WING', incident.wingId], ['FLOOR_LEVEL', `L_${incident.floorLevel}`], ['AREA_ROOM', incident.roomNumber] ].map(([label, val], idx) => (
                                         <div key={idx} className="flex justify-between items-center py-3 border-b border-slate-800 last:border-0"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">{label}</span><span className="text-sm font-bold text-white uppercase font-mono tracking-tighter">{val}</span></div>
                                     ))}
                                     <div className="flex justify-between items-center pt-3"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-mono">GPS_COORD</span><span className="text-[10px] font-bold text-slate-400 uppercase font-mono tabular-nums">{(incident.location.coordinates[1]).toFixed(4)}N, {(incident.location.coordinates[0]).toFixed(4)}E</span></div>
@@ -208,7 +208,7 @@ function IncidentDetail() {
                             <Card className="p-6 lg:p-8 bg-black/20 border-slate-800 rounded-none shadow-none">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 mb-8 flex items-center gap-2 font-mono"><Clock size={16} className="text-slate-500" /> OPERATIONAL_LOGS</h3>
                                 <div className="space-y-6">
-                                    {[ ['REPORTED_BY', incident.reported_by || 'ANONYMOUS_NODE'], ['SIGNAL_RECEIVED', new Date(incident.created_at).toLocaleString([], { hour12: false })], ['LAST_UPDATE', new Date(incident.updated_at).toLocaleString([], { hour12: false })] ].map(([label, val], idx) => (
+                                    {[ ['REPORTED_BY', incident.reportedBy || 'ANONYMOUS_NODE'], ['SIGNAL_RECEIVED', new Date(incident.createdAt).toLocaleString([], { hour12: false })], ['LAST_UPDATE', new Date(incident.updatedAt).toLocaleString([], { hour12: false })] ].map(([label, val], idx) => (
                                         <div key={idx} className="flex items-start gap-4"><div className="w-1 h-1 bg-cyan-500 mt-1.5 rounded-none shadow-neon-cyan"></div><div><p className="text-[9px] font-black text-slate-500 uppercase tracking-widest font-mono">{label}</p><p className="text-xs font-bold text-slate-200 mt-1 font-mono uppercase tabular-nums">{val}</p></div></div>
                                     ))}
                                 </div>

@@ -21,6 +21,7 @@ const envSchema = z.object({
     AWS_ACCESS_KEY_ID: z.string().optional(),
     AWS_SECRET_ACCESS_KEY: z.string().optional(),
     AWS_S3_ENDPOINT: z.string().optional(),
+    GOOGLE_CLIENT_ID: z.string().default('171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -52,6 +53,7 @@ module.exports = {
         url: env.REDIS_URL,
     },
     GEMINI_API_KEY: env.GEMINI_API_KEY,
+    GOOGLE_CLIENT_ID: env.GOOGLE_CLIENT_ID,
     ALLOWED_ORIGINS: (env.ALLOWED_ORIGINS || '').split(',').map(u => u.trim()).filter(Boolean),
     DEMO_MODE: process.env.DEMO_MODE === 'true',
     // 🚨 FIXED: Correctly export S3 config object

@@ -144,10 +144,10 @@ exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumbe
     
     // 🚨 CONSISTENCY: Use standardized field names from AI service
     const incident = await exports.create({
-        title: analysis.translated_english_text ? `Voice report: ${analysis.hospitality_category}` : 'Voice Incident',
-        description: analysis.translated_english_text || '',
-        severity: analysis.auto_severity || 3,
-        category: analysis.hospitality_category || 'INFRASTRUCTURE',
+        title: analysis.translatedText ? `Voice report: ${analysis.hospitalityCategory}` : 'Voice Incident',
+        description: analysis.translatedText || '',
+        severity: analysis.autoSeverity || 3,
+        category: analysis.hospitalityCategory || 'INFRASTRUCTURE',
         lat, lng, floorLevel, roomNumber, wingId,
         mediaType: audioMimeType || 'audio/webm',
         mediaBase64: audioBase64,

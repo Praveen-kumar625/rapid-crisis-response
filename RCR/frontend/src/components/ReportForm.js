@@ -216,16 +216,16 @@ function ReportForm() {
                         mediaType: file.type,
                         mediaBase64: e.target.result,
                     });
-                    if (data.predictedCategory || data.auto_severity) {
+                    if (data.predictedCategory || data.autoSeverity) {
                         setAiResult({
                             category: data.predictedCategory || 'UNCATEGORIZED',
-                            severity: data.auto_severity || 3,
+                            severity: data.autoSeverity || 3,
                             method: 'Cloud AI (Gemini)'
                         });
                         setForm(prev => ({
                             ...prev,
                             category: data.predictedCategory || prev.category,
-                            severity: data.auto_severity || prev.severity
+                            severity: data.autoSeverity || prev.severity
                         }));
                         setShowAiModal(true);
                     }

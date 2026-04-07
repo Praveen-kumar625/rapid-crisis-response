@@ -45,12 +45,12 @@ const worker = new Worker('incident-tasks', async (job) => {
         const [updated] = await db('incidents')
             .where({ id: incidentId })
             .update({
-                auto_severity: analysis.auto_severity,
+                auto_severity: analysis.autoSeverity,
                 ai_action_plan: (analysis.actionPlan || []).join('\n'),
                 ai_required_resources: JSON.stringify(analysis.requiredResources || []),
-                hospitality_category: analysis.hospitality_category,
-                spam_score: analysis.spam_score,
-                status: analysis.spam_score > 0.8 ? 'REJECTED' : incident.status,
+                hospitality_category: analysis.hospitalityCategory,
+                spam_score: analysis.spamScore,
+                status: analysis.spamScore > 0.8 ? 'REJECTED' : incident.status,
                 updated_at: new Date()
             })
             .returning('*');

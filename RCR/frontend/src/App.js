@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { googleLogout } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import toast, { Toaster } from 'react-hot-toast';
-import { joinHotelRoom } from './socket';
+import { joinHotelRoom, updateSocketToken } from './socket';
 import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,8 +11,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loaded pages
 const Home = lazy(() => import('./pages/Home'));
-const MapPage = lazy(() => import('./pages/MapPage'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
+const TacticalDashboard = lazy(() => import('./pages/TacticalDashboard'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 const ReportPage = lazy(() => import('./pages/ReportPage'));
 const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 
@@ -40,8 +40,8 @@ function AnimatedRoutes() {
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><Home /></PageTransition>} />
-                <Route path="/map" element={<PageTransition><MapPage /></PageTransition>} />
-                <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
+                <Route path="/map" element={<PageTransition><TacticalDashboard /></PageTransition>} />
+                <Route path="/dashboard" element={<PageTransition><Analytics /></PageTransition>} />
                 <Route path="/report" element={<PageTransition><ReportPage /></PageTransition>} />
                 <Route path="/incidents/:id" element={<PageTransition><IncidentDetail /></PageTransition>} />
             </Routes>
@@ -82,6 +82,7 @@ function App() {
             if (newToken) {
                 const decoded = jwtDecode(newToken);
                 setUser(decoded);
+                updateSocketToken(newToken);
                 syncUserContext();
             }
         };

@@ -19,9 +19,11 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 const container = document.getElementById('root');
 const root = createRoot(container);
 // Auth0Provider deleted. Firebase manages state internally.
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com';
+
 root.render(
     <ErrorBoundary>
-        <GoogleOAuthProvider clientId="171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com">
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
             <App />
         </GoogleOAuthProvider>
     </ErrorBoundary>

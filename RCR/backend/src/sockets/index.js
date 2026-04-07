@@ -41,7 +41,7 @@ function initSocket(httpServer) {
     // ------------------- WebSocket Authentication -------------------
     const { OAuth2Client } = require('google-auth-library');
     const db = require('../db');
-    const GOOGLE_CLIENT_ID = '171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com';
+    const { GOOGLE_CLIENT_ID } = require('../config/env');
     const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
     io.use(async (socket, next) => {

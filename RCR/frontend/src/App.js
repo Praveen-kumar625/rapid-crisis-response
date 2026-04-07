@@ -52,6 +52,17 @@ function AnimatedRoutes() {
 function App() {
     const [user, setUser] = useState(null);
 
+    const syncUserContext = async () => {
+        try {
+            const { data } = await api.get('/incidents/me');
+            if (data.hotelId) {
+                joinHotelRoom(data.hotelId);
+            }
+        } catch (err) {
+            console.error('Failed to sync user context', err);
+        }
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('google_token');
         if (token) {
@@ -64,18 +75,19 @@ function App() {
                 localStorage.removeItem('google_token');
             }
         }
-    }, []);
-
-    const syncUserContext = async () => {
-        try {
-            const { data } = await api.get('/incidents/me');
-            if (data.hotelId) {
-                joinHotelRoom(data.hotelId);
+        
+        // Listen for custom login events from Navbar
+        const handleLogin = () => {
+            const newToken = localStorage.getItem('google_token');
+            if (newToken) {
+                const decoded = jwtDecode(newToken);
+                setUser(decoded);
+                syncUserContext();
             }
-        } catch (err) {
-            console.error('Failed to sync user context', err);
-        }
-    };
+        };
+        window.addEventListener('google-login-success', handleLogin);
+        return () => window.removeEventListener('google-login-success', handleLogin);
+    }, []);
 
     const logout = () => {
         googleLogout();

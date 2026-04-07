@@ -59,7 +59,9 @@ export const Navbar = ({ user, logout }) => {
     const handleLoginSuccess = (credentialResponse) => {
         const token = credentialResponse.credential;
         localStorage.setItem('google_token', token);
-        window.location.reload(); 
+        // Dispatch custom event for App.js to pick up without reload
+        window.dispatchEvent(new Event('google-login-success'));
+        toast.success('Successfully authenticated');
     };
 
     return (

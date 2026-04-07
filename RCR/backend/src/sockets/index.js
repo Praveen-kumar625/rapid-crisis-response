@@ -20,22 +20,33 @@ redisClient.on('error', (err) => {
 });
 
 function initSocket(httpServer) {
-    const { ALLOWED_ORIGINS } = require('../config/env');
-
-    const corsOrigin = ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : ['http://localhost:3000'];
+    const { ALLOWED_ORIGINS, NODE_ENV } = require('../config/env');
 
     const io = new Server(httpServer, {
-        cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
+        cors: { 
+            origin: function(origin, callback) {
+                const allowedOrigins = ['http://localhost:3000', 'https://rapid-crisis-response-f4yd.vercel.app'];
+                const allowedPatterns = [/^https:\/\/rapid-crisis-response-.*\.vercel\.app$/];
+                
+                if (!origin || NODE_ENV !== 'production' || allowedOrigins.includes(origin) || allowedPatterns.some(p => p.test(origin))) {
+                    return callback(null, true);
+                }
+                return callback(new Error('CORS policy: Origin not allowed.'), false);
+            },
+            methods: ['GET', 'POST'] 
+        },
         path: '/crisis',
     });
 
     // ------------------- WebSocket Authentication -------------------
-    const admin = require('firebase-admin');
+    const { OAuth2Client } = require('google-auth-library');
     const db = require('../db');
+    const GOOGLE_CLIENT_ID = '171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com';
+    const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
     io.use(async (socket, next) => {
         // In demo mode, bypass auth
-        if (process.env.DEMO_MODE === 'true') {
+        if (process.env.DEMO_MODE === 'true' && process.env.NODE_ENV !== 'production') {
             const demoUser = await db('users').first();
             socket.user = { 
                 id: demoUser?.id || 'demo-admin-1', 
@@ -48,8 +59,12 @@ function initSocket(httpServer) {
         if (!token) return next(new Error('Authentication error: Token missing'));
 
         try {
-            const decodedToken = await admin.auth().verifyIdToken(token);
-            const userRecord = await db('users').where({ id: decodedToken.uid }).first();
+            const ticket = await googleClient.verifyIdToken({
+                idToken: token,
+                audience: GOOGLE_CLIENT_ID,
+            });
+            const payload = ticket.getPayload();
+            const userRecord = await db('users').where({ id: payload.sub }).first();
             
             if (!userRecord) return next(new Error('Authentication error: User not found'));
 
@@ -75,8 +90,12 @@ function initSocket(httpServer) {
 
         // Manual joining allowed if authorized (simplified for hackathon)
         socket.on('join-hotel', (hotelId) => {
+            // Support both UUID and prefixed room names from frontend if necessary, 
+            // but here we expect the ID and we join the internal room name.
             if (hotelId === String(socket.user.hotelId) || socket.user.id.startsWith('demo')) {
-                socket.join(`hotel_${hotelId}`);
+                const roomName = hotelId.startsWith('hotel_') ? hotelId : `hotel_${hotelId}`;
+                socket.join(roomName);
+                console.log(`🏨 Socket ${socket.id} manually joined room: ${roomName}`);
             }
         });
 

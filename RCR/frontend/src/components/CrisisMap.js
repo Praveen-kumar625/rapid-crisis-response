@@ -11,29 +11,46 @@ import { Button } from './ui/Button';
 // Default center (New Delhi) - Ensure these are strict Numbers
 const RESPONDER_HQ = { lat: 28.6139, lng: 77.2090 };
 
-function CrisisMap() {
+// High-Contrast Tactical Dark Theme
+const MAP_STYLES = [
+    { "elementType": "geometry", "stylers": [{ "color": "#0B1120" }] },
+    { "elementType": "labels.text.fill", "stylers": [{ "color": "#4B5563" }] },
+    { "elementType": "labels.text.stroke", "stylers": [{ "color": "#0B1120" }] },
+    { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "color": "#1F2937" }] },
+    { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#4B5563" }] },
+    { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#111827" }] },
+    { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#1F2937" }] },
+    { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#1F2937" }] },
+    { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#020617" }] }
+];
+
+function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }) {
     const navigate = useNavigate();
-    const [incidents, setIncidents] = useState([]);
+    const [internalIncidents, setInternalIncidents] = useState([]);
     const [selectedIncident, setSelectedIncident] = useState(null);
+
+    const incidents = externalIncidents || internalIncidents;
+    const activeIncident = externalIncidents ? (incidents.find(i => i.id === selectedIncident?.id) || selectedIncident) : selectedIncident;
 
     // Config from Environment
     const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
     const mapId = process.env.REACT_APP_GOOGLE_MAPS_ID || 'DEMO_MAP_ID';
 
     useEffect(() => {
+        if (externalIncidents) return; // Use props if provided
+
         let isMounted = true;
         let socketInstance = null;
 
         // Initial Data Fetch
         api.get('/incidents').then((res) => {
-            if (isMounted) setIncidents(res.data);
+            if (isMounted) setInternalIncidents(res.data);
         }).catch(err => console.error('[Map] Data fetch failed:', err));
 
         // Real-time Updates
-        // FIXED: Deduplication logic - don't add if already exists
         const handleCreated = (payload) => {
             if (isMounted) {
-                setIncidents((prev) => {
+                setInternalIncidents((prev) => {
                     const exists = prev.some(inc => inc.id === payload.incident.id);
                     if (exists) return prev;
                     return [payload.incident, ...prev];
@@ -42,11 +59,10 @@ function CrisisMap() {
         };
         const handleStatusUpdated = (payload) => {
             if (isMounted) {
-                setIncidents((prev) => prev.map((i) => (i.id === payload.incident.id ? payload.incident : i)));
+                setInternalIncidents((prev) => prev.map((i) => (i.id === payload.incident.id ? payload.incident : i)));
             }
         };
 
-        // FIXED: Async cleanup pattern
         const initSocket = async() => {
             try {
                 socketInstance = await getSocket();
@@ -67,34 +83,45 @@ function CrisisMap() {
                 socketInstance.off('incident.status-updated', handleStatusUpdated);
             }
         };
-    }, []);
+    }, [externalIncidents]);
 
-    // Memoize markers for performance and to prevent re-renders
-    const markers = useMemo(() => incidents.map((inc) => {
-        // FIXED: STRICT TYPE CONVERSION - Ensure absolute Numbers for Maps API
+    // Filter incidents based on activeFilter if provided
+    const filteredIncidents = useMemo(() => {
+        if (!activeFilter || activeFilter === 'ALL') return incidents;
+        if (activeFilter === 'SENSORS') return incidents.filter(i => i.triageMethod?.includes('IoT') || i.category === 'INFRASTRUCTURE');
+        if (activeFilter === 'REPORTS') return incidents.filter(i => !i.triageMethod?.includes('IoT'));
+        return incidents;
+    }, [incidents, activeFilter]);
+
+    // Memoize markers for performance
+    const markers = useMemo(() => filteredIncidents.map((inc) => {
         const lat = parseFloat(inc.location?.coordinates[1] || inc.lat);
         const lng = parseFloat(inc.location?.coordinates[0] || inc.lng);
 
         if (isNaN(lat) || isNaN(lng)) return null;
 
         const isCritical = inc.severity >= 4;
+        const isSelected = selectedIncident?.id === inc.id;
 
         return (
             <AdvancedMarker 
                 key={inc.id}
                 position={{ lat, lng }}
-                onClick={() => setSelectedIncident(inc)}
+                onClick={() => {
+                    setSelectedIncident(inc);
+                    if (onMarkerClick) onMarkerClick(inc);
+                }}
             >
-                <div className="group transition-transform hover:scale-110">
+                <div className={`group transition-all duration-300 ${isSelected ? 'scale-125 z-50' : 'hover:scale-110'}`}>
                     <Pin 
                         background={isCritical ? '#ff3366' : '#00f0ff'}
                         glyphColor={'#ffffff'}
-                        borderColor={isCritical ? '#991b1b' : '#0891b2'}
+                        borderColor={isSelected ? '#ffffff' : (isCritical ? '#991b1b' : '#0891b2')}
                     />
                 </div>
             </AdvancedMarker>
         );
-    }), [incidents]);
+    }), [filteredIncidents, selectedIncident, onMarkerClick]);
 
     if (!apiKey) {
         return (
@@ -118,6 +145,7 @@ function CrisisMap() {
                     mapId={mapId}
                     disableDefaultUI={true}
                     gestureHandling="greedy"
+                    styles={MAP_STYLES}
                     className="w-full h-full min-h-[600px] rounded-3xl"
                 >
                     {/* HQ Marker */}
@@ -132,26 +160,26 @@ function CrisisMap() {
 
                     {markers}
 
-                    {selectedIncident && (
+                    {activeIncident && (
                         <InfoWindow 
                             position={{
-                                lat: parseFloat(selectedIncident.location?.coordinates[1] || selectedIncident.lat),
-                                lng: parseFloat(selectedIncident.location?.coordinates[0] || selectedIncident.lng)
+                                lat: parseFloat(activeIncident.location?.coordinates[1] || activeIncident.lat),
+                                lng: parseFloat(activeIncident.location?.coordinates[0] || activeIncident.lng)
                             }}
                             onCloseClick={() => setSelectedIncident(null)}
                         >
                             <div className="p-3 max-w-[200px] text-navy-950">
                                 <Badge 
-                                    variant={selectedIncident.severity >= 4 ? 'danger' : 'accent'}
+                                    variant={activeIncident.severity >= 4 ? 'danger' : 'accent'}
                                     className="mb-2 text-[8px]"
                                 >
-                                    LVL {selectedIncident.severity}
+                                    LVL {activeIncident.severity}
                                 </Badge>
-                                <h4 className="font-black text-xs uppercase mb-1 leading-tight">{selectedIncident.title}</h4>
-                                <p className="text-[10px] mb-3 line-clamp-2 text-slate-600">{selectedIncident.description}</p>
+                                <h4 className="font-black text-xs uppercase mb-1 leading-tight">{activeIncident.title}</h4>
+                                <p className="text-[10px] mb-3 line-clamp-2 text-slate-600">{activeIncident.description}</p>
                                 <Button 
                                     className="w-full py-2 text-[9px] font-black uppercase"
-                                    onClick={() => navigate(`/incidents/${selectedIncident.id}`)}
+                                    onClick={() => navigate(`/incidents/${activeIncident.id}`)}
                                 >
                                     Review Intel
                                 </Button>

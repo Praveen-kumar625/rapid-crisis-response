@@ -9,7 +9,7 @@ const Dashboard = () => {
     const [incidents, setIncidents] = useState([]);
     const [selectedIncident, setSelectedIncident] = useState(null);
     const [mapMode, setMapMode] = useState('ALL');
-    const [sysStats, setSysStats] = useState({ latency: '24ms', queue: 'IDLE', active: 12 });
+    const [sysStats] = useState({ latency: '24ms', queue: 'IDLE', active: 12 });
 
     useEffect(() => {
         // 🚨 ARCHITECTURAL FIX: Real-time Signal Synchronization

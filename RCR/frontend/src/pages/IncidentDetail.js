@@ -17,7 +17,7 @@ import { getSocket } from '../socket';
 import { Container } from '../components/layout/Container';
 import { Section } from '../components/layout/Section';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
+import StatusBadge from '../components/StatusBadge';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import toast from 'react-hot-toast';

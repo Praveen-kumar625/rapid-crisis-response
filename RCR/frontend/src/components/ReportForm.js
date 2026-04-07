@@ -7,7 +7,6 @@ import { localAnalyze } from '../utils/edgeAi';
 import { Mic, MicOff, Camera, AlertTriangle, Cpu, Info, ShieldCheck } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
 
 // 🚨 PERFORMANCE FIX: Components defined outside render to prevent re-mounting on every keystroke
 const Label = ({ children, htmlFor }) => (

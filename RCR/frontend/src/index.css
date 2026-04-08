@@ -62,18 +62,35 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-700/50 rounded-none;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
 }
 
-/* Custom tactical scrollbar */
+/* Custom tactical scrollbar - Global */
+html {
+  scrollbar-gutter: stable;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   @apply bg-[#0B0F19];
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 border-none;
+  @apply bg-slate-800 border-2 border-[#0B0F19] rounded-none;
 }
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-slate-700;

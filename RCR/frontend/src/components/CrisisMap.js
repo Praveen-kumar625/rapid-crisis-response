@@ -6,7 +6,6 @@ import api from '../api';
 import { getSocket } from '../socket';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
-import { Button } from './ui/Button';
 
 // Default center (New Delhi) - Ensure these are strict Numbers
 const RESPONDER_HQ = { lat: 28.6139, lng: 77.2090 };

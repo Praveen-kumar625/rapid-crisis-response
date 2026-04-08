@@ -98,7 +98,7 @@ function IncidentDetail() {
     const isCritical = incident.severity >= 4;
 
     return (
-        <div className="flex-1 w-full relative pb-24 bg-[#0B0F19]">
+        <div className="flex-1 w-full relative pb-24 bg-[#0B0F19] overflow-y-auto custom-scrollbar">
             <Section className="pt-6 lg:pt-12">
                 <Container>
                     <Link to="/dashboard" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-cyan-400 transition-colors mb-8 lg:mb-10 font-mono">

@@ -2,7 +2,6 @@
 const { Server } = require('socket.io');
 const Redis = require('ioredis');
 const { REDIS } = require('../config/env');
-const { startAlertListener } = require('../services/alert.service');
 
 let ioInstance = null;
 const redisConfig = REDIS.url ? REDIS.url : {
@@ -15,7 +14,7 @@ const redisClient = new Redis(redisConfig, {
     maxRetriesPerRequest: null, // Essential for BullMQ and long-running subscribers
 });
 
-redisClient.on('error', (err) => {
+redisClient.on('error', (_err) => {
     console.warn('⚠️ Redis Error: System will continue but real-time alerts may be delayed.');
 });
 
@@ -25,7 +24,11 @@ function initSocket(httpServer) {
     const io = new Server(httpServer, {
         cors: { 
             origin: function(origin, callback) {
-                const allowedOrigins = ['http://localhost:3000', 'https://rapid-crisis-response-f4yd.vercel.app'];
+                const allowedOrigins = [
+                    'http://localhost:3000', 
+                    'https://rapid-crisis-response-f4yd.vercel.app',
+                    ...ALLOWED_ORIGINS
+                ];
                 const allowedPatterns = [/^https:\/\/rapid-crisis-response-.*\.vercel\.app$/];
                 
                 if (!origin || NODE_ENV !== 'production' || allowedOrigins.includes(origin) || allowedPatterns.some(p => p.test(origin))) {

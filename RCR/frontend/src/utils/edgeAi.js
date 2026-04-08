@@ -13,19 +13,18 @@ if (typeof env.backends !== 'undefined' && env.backends.onnx) {
  * This prevents re-downloading/re-initializing the model on every inference.
  */
 class EdgeAIEngine {
-    static instance = null;
-
     static async getInstance(progressCallback) {
-        if (this.instance === null) {
+        if (typeof EdgeAIEngine.instance === 'undefined' || EdgeAIEngine.instance === null) {
             // Using a very small, fast distilled model for edge classification
-            this.instance = pipeline('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli', {
+            EdgeAIEngine.instance = pipeline('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli', {
                 dtype: 'q4', // 4-bit quantization for extremely fast loading & low memory footprint
                 progress_callback: progressCallback
             });
         }
-        return this.instance;
+        return EdgeAIEngine.instance;
     }
 }
+EdgeAIEngine.instance = null;
 
 const LABELS = {
     'Fire Incident': 'FIRE',

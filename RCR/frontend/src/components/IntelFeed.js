@@ -82,7 +82,7 @@ const SignalNode = ({ incident, onClick }) => {
 
 export const IntelFeed = ({ incidents, onSelectIncident }) => {
     return (
-        <aside className="w-1/4 h-full flex flex-col border-r border-white/10 bg-navy-950/20 backdrop-blur-md overflow-hidden">
+        <aside className="w-full h-full flex flex-col border-r border-white/10 bg-navy-950/20 backdrop-blur-md overflow-hidden">
             <header className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="relative">
@@ -97,7 +97,7 @@ export const IntelFeed = ({ incidents, onSelectIncident }) => {
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 <AnimatePresence mode="popLayout">
                     {incidents.map((inc) => (
                         <SignalNode 

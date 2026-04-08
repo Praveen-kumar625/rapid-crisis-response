@@ -23,6 +23,15 @@ jest.mock('../infrastructure/queue', () => ({
     connection: {}
 }));
 
+jest.mock('ioredis', () => {
+    return jest.fn().mockImplementation(() => ({
+        ping: jest.fn().mockResolvedValue('PONG'),
+        on: jest.fn(),
+        quit: jest.fn().mockResolvedValue(true),
+        disconnect: jest.fn().mockResolvedValue(true),
+    }));
+});
+
 const app = require('../app');
 
 describe('Health Check', () => {

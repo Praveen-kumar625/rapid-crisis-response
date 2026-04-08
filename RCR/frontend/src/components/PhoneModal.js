@@ -73,7 +73,7 @@ const PhoneModal = ({ isOpen, onClose, onSubmit }) => {
             Emergency SMS Alerts
           </h3>
           <p className="text-sm text-center text-gray-500 mb-8 leading-relaxed">
-            Get instant critical updates during emergencies. We'll send real-time alerts and safety protocols directly to your phone.
+            Get instant critical updates during emergencies. We&apos;ll send real-time alerts and safety protocols directly to your phone.
           </p>
 
           {/* Input Form */}

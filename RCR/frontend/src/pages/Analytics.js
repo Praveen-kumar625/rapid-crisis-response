@@ -87,7 +87,7 @@ const Analytics = () => {
         const categoryData = Object.keys(catMap).map(name => ({ name, value: catMap[name] }));
 
         // 2. Severity vs Impact Trend
-        const severityTrend = filtered.slice(-15).map((inc, i) => ({
+        const severityTrend = filtered.slice(-15).map((inc, _i) => ({
             name: inc.id.substring(0, 4),
             severity: inc.severity,
             impact: (inc.severity * 1.2) + (inc.status === 'OPEN' ? 2 : 0),

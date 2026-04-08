@@ -111,7 +111,7 @@ const IndoorHeatmap = ({ incidents = [] }) => {
                     </div>
                     <div>
                         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white italic">
-                            Spatial_Neural_Grid <span className="text-cyan-500">//</span> LVL_0{activeFloor}
+                            Spatial_Neural_Grid <span className="text-cyan-500">{"//"}</span> LVL_0{activeFloor}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" />

@@ -143,6 +143,9 @@ function initSocket(httpServer) {
                 if (incident?.id) {
                     io.to(`incident-${incident.id}`).emit(`incident.${payload.type}`, payload);
                 }
+            } else if (channel.endsWith('_iot')) {
+                // PHASE 1 GLUE: Bridge IoT alerts to connected clients
+                io.to(`hotel_${hotelId}`).emit('NEW_IOT_ALERT', payload.data);
             } else if (channel.endsWith('_safety')) {
                 // FIXED: Handle safety pulses via Redis bridge for horizontal scaling
                 io.to(`hotel_${hotelId}`).emit('user.safety-pulse', payload.data);

@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Layers, Navigation, ShieldAlert, Cpu, 
-    Zap, Info, Thermometer, Wind, Eye, Target
+    ShieldAlert, Cpu, 
+    Zap, Thermometer, Wind, Eye, Target, Shield
 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { getSocket } from '../socket';

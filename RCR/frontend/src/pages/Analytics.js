@@ -9,7 +9,7 @@ import { getSocket } from '../socket';
 import { Section } from '../components/layout/Section';
 import { Container } from '../components/layout/Container';
 import { Card } from '../components/ui/Card';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const Analytics = () => {
     const [incidents, setIncidents] = useState([]);

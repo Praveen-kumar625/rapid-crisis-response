@@ -1,44 +1,44 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Layers, Navigation, ShieldAlert } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Layers, Navigation, ShieldAlert, Cpu, 
+    Zap, Info, Thermometer, Wind, Eye, Target
+} from 'lucide-react';
 import { Badge } from './ui/Badge';
 import { getSocket } from '../socket';
 
 /**
- * IndoorHeatmap Component
- * Renders a Z-axis building floor plan with real-time IoT heat zones
- * and dynamic evacuation routing.
+ * ULTRA LEVEL IndoorHeatmap Component
+ * 3D Isometric Tactical Grid with Real-time IoT Spatial Intelligence
  */
 const IndoorHeatmap = ({ incidents = [] }) => {
     const [activeFloor, setActiveFloor] = useState(1);
     const [liveIotData, setLiveIotData] = useState([]);
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [hoveredRoom, setHoveredRoom] = useState(null);
+    const [isScanning, setIsScanning] = useState(true);
+    
     const floors = [5, 4, 3, 2, 1];
 
     // -----------------------------------------------------------------
-    // PHASE 3: WebSocket Listener for IoT Data
+    // REAL-TIME DATA SYNC
     // -----------------------------------------------------------------
     useEffect(() => {
         let socket;
         const setupSocket = async () => {
             socket = await getSocket();
-            
             socket.on('NEW_IOT_ALERT', (event) => {
-                console.log('📡 [Heatmap] Live IoT Signal Received:', event);
                 setLiveIotData(prev => {
-                    // Keep only latest 20 events to prevent memory bloat
-                    const filtered = prev.filter(e => e.external_id !== event.external_id);
-                    return [event, ...filtered].slice(0, 20);
+                    const filtered = prev.filter(e => e.room_number !== event.room_number);
+                    return [event, ...filtered].slice(0, 15);
                 });
             });
         };
-
         setupSocket();
-        return () => {
-            if (socket) socket.off('NEW_IOT_ALERT');
-        };
+        return () => { if (socket) socket.off('NEW_IOT_ALERT'); };
     }, []);
 
-    // Merge static incidents with live IoT alerts
+    // Merge static and live data
     const allAlerts = useMemo(() => {
         const iotAsIncidents = liveIotData.map(iot => ({
             id: iot.id,
@@ -47,9 +47,9 @@ const IndoorHeatmap = ({ incidents = [] }) => {
             category: iot.category,
             severity: iot.severity,
             sensorMetadata: iot.sensor_metadata,
-            description: iot.description
+            description: iot.description,
+            isLive: true
         }));
-        
         return [...incidents, ...iotAsIncidents];
     }, [incidents, liveIotData]);
 
@@ -57,253 +57,400 @@ const IndoorHeatmap = ({ incidents = [] }) => {
         return allAlerts.filter(inc => inc.floorLevel === activeFloor);
     }, [allAlerts, activeFloor]);
 
-    // Define room layouts (normalized 0-100 coordinates)
-    const rooms = [
-        { id: '01', x: 10, y: 10, width: 25, height: 20, entry: { x: 35, y: 20 } },
-        { id: '02', x: 40, y: 10, width: 20, height: 20, entry: { x: 40, y: 20 } },
-        { id: '03', x: 65, y: 10, width: 25, height: 20, entry: { x: 65, y: 20 } },
-        { id: '04', x: 10, y: 40, width: 20, height: 40, entry: { x: 35, y: 60 } },
-        { id: '05', x: 70, y: 40, width: 20, height: 40, entry: { x: 65, y: 60 } },
-        { id: '06', x: 35, y: 70, width: 30, height: 20, entry: { x: 50, y: 70 } },
-    ];
+    // Enhanced Room Layout with Metadata
+    const rooms = useMemo(() => [
+        { id: '01', x: 10, y: 15, w: 25, h: 20, label: 'PRIME_SUITE' },
+        { id: '02', x: 40, y: 15, w: 20, h: 20, label: 'SERVER_RM' },
+        { id: '03', x: 65, y: 15, w: 25, h: 20, label: 'UTILITY_A' },
+        { id: '04', x: 10, y: 45, w: 20, h: 40, label: 'GUEST_ZONE_B' },
+        { id: '05', x: 70, y: 45, w: 20, h: 40, label: 'GUEST_ZONE_C' },
+        { id: '06', x: 35, y: 75, w: 30, h: 15, label: 'MAIN_LOBBY' },
+    ], []);
 
-    // Exits
     const exits = [
-        { id: 'EXIT_NORTH', x: 50, y: 5, label: 'STAIRS_A' },
-        { id: 'EXIT_SOUTH', x: 50, y: 95, label: 'STAIRS_B' }
+        { id: 'EXIT_A', x: 50, y: 5, label: 'EVAC_STAIRS_A' },
+        { id: 'EXIT_B', x: 50, y: 95, label: 'EVAC_STAIRS_B' }
     ];
 
-    // -----------------------------------------------------------------
-    // PHASE 3: Dynamic Pathfinding Logic
-    // -----------------------------------------------------------------
+    // DYNAMIC PATHFINDING
     const calculateSafePath = useMemo(() => {
-        // Find a safe exit by checking floor incidents
-        const hazardZones = floorIncidents.filter(inc => {
-            const temp = inc.sensorMetadata?.temperature || 0;
-            const smoke = inc.sensorMetadata?.smoke_density || 0;
-            return temp > 80 || smoke > 0.5 || inc.severity >= 5;
-        });
-
-        // Simple Manhattan-based dynamic routing
-        // Starting from Room 04 (most common demo area) to safest exit
-        const startPoint = { x: 35, y: 60 }; // Entry point of RM_04
+        const hazards = floorIncidents.filter(i => i.severity >= 4);
+        const startPoint = { x: 35, y: 65 }; // Reference point
         
-        // Determine safest exit (one furthest from hazards)
-        const selectedExit = exits.reduce((best, current) => {
-            const distToHazards = hazardZones.reduce((minDist, hz) => {
-                const room = rooms.find(r => `${activeFloor}${r.id}` === hz.roomNumber);
-                if (!room) return minDist;
-                const d = Math.sqrt(Math.pow(current.x - room.x, 2) + Math.pow(current.y - room.y, 2));
-                return Math.min(minDist, d);
-            }, Infinity);
-            
-            return distToHazards > (best.dist || 0) ? { exit: current, dist: distToHazards } : best;
-        }, { exit: exits[0], dist: 0 }).exit;
+        // Determine safest exit based on weighted hazard distance
+        const selectedExit = exits.reduce((best, exit) => {
+            const hazardWeight = hazards.reduce((sum, h) => {
+                const room = rooms.find(r => `${activeFloor}${r.id}` === h.roomNumber);
+                if (!room) return sum;
+                const d = Math.sqrt(Math.pow(exit.x - room.x, 2) + Math.pow(exit.y - room.y, 2));
+                return sum + (100 / (d + 1)) * h.severity;
+            }, 0);
+            return hazardWeight < best.weight ? { exit, weight: hazardWeight } : best;
+        }, { exit: exits[0], weight: Infinity }).exit;
 
-        // Construct SVG Path (Hallway-only routing)
-        // M start.x start.y -> L hallway.x start.y -> L hallway.x exit.y -> L exit.x exit.y
-        const hallwayX = 50; 
+        const hallwayX = 50;
         return `M ${startPoint.x} ${startPoint.y} L ${hallwayX} ${startPoint.y} L ${hallwayX} ${selectedExit.y} L ${selectedExit.x} ${selectedExit.y}`;
-    }, [floorIncidents, activeFloor]);
+    }, [floorIncidents, activeFloor, rooms]);
 
-    const getHeatColor = (incident) => {
-        if (!incident) return 'rgba(30, 41, 59, 0.3)';
-        const { category, sensorMetadata } = incident;
+    const getRoomStyle = (roomNumber) => {
+        const incident = floorIncidents.find(i => i.roomNumber === roomNumber);
+        if (!incident) return { fill: 'rgba(15, 23, 42, 0.4)', stroke: '#1e293b' };
         
-        if (category === 'FIRE') {
-            const temp = sensorMetadata?.temperature || 0;
-            if (temp > 80) return 'rgba(239, 68, 68, 0.8)';
-            return 'rgba(249, 115, 22, 0.7)';
-        }
-        if (category === 'SMOKE') return 'rgba(168, 162, 158, 0.8)';
-        if (sensorMetadata?.co2_level > 2000) return 'rgba(16, 185, 129, 0.6)';
-        
-        return incident.severity >= 4 ? 'rgba(220, 38, 38, 0.6)' : 'rgba(234, 179, 8, 0.6)';
+        if (incident.category === 'FIRE') return { fill: 'rgba(239, 68, 68, 0.6)', stroke: '#ef4444' };
+        if (incident.category === 'SMOKE') return { fill: 'rgba(168, 162, 158, 0.6)', stroke: '#a8a29e' };
+        return { fill: 'rgba(234, 179, 8, 0.4)', stroke: '#eab308' };
     };
 
     return (
-        <div className="relative flex flex-col w-full h-full bg-[#0B0F19] border border-slate-800 font-mono overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-[#111827] border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                    <Layers size={18} className="text-cyan-400" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-white italic">
-                        Z-AXIS_INDOOR_GRID [LVL_0{activeFloor}]
-                    </h3>
+        <div className="relative flex flex-col w-full h-full bg-[#0B0F19] border border-slate-800 font-mono overflow-hidden select-none">
+            {/* TACTICAL HEADER */}
+            <div className="flex items-center justify-between p-5 bg-[#0B0F19] border-b border-slate-800 z-20">
+                <div className="flex items-center gap-4">
+                    <div className="p-2 bg-cyan-500/10 border border-cyan-500/30">
+                        <Cpu size={20} className="text-cyan-400 animate-pulse" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white italic">
+                            Spatial_Neural_Grid <span className="text-cyan-500">//</span> LVL_0{activeFloor}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" />
+                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Quantum_Sync_Active</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex gap-4">
-                    <Badge variant="outline" className="border-cyan-500/30 text-cyan-400 text-[8px] animate-pulse">
-                        LIVE_SYSTEM_POLLING
-                    </Badge>
+                <div className="flex items-center gap-6">
+                    <div className="hidden md:flex gap-4 border-r border-slate-800 pr-6">
+                        <div className="flex flex-col items-end">
+                            <span className="text-[7px] text-slate-500 font-black uppercase">Nodes</span>
+                            <span className="text-xs font-bold text-cyan-400">{rooms.length}</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[7px] text-slate-500 font-black uppercase">Active_Hazards</span>
+                            <span className="text-xs font-bold text-red-500">{floorIncidents.length}</span>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setIsScanning(!isScanning)}
+                        className={`p-2 transition-colors ${isScanning ? 'text-cyan-400' : 'text-slate-600'}`}
+                    >
+                        <Eye size={18} />
+                    </button>
                 </div>
             </div>
 
             <div className="flex flex-1 relative">
-                {/* Floor Selector */}
-                <div className="w-16 border-r border-slate-800 flex flex-col items-center py-4 gap-2 bg-[#0B0F19]/50">
+                {/* Z-AXIS CONTROLLER */}
+                <div className="w-20 border-r border-slate-800 flex flex-col items-center py-6 gap-4 bg-[#0B0F19]/80 z-10">
                     {floors.map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setActiveFloor(f)}
-                            className={`w-10 h-10 flex items-center justify-center text-xs font-bold border transition-all duration-200 ${
-                                activeFloor === f 
-                                ? 'bg-cyan-500 border-cyan-400 text-black shadow-neon-cyan' 
-                                : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-500'
-                            }`}
-                        >
-                            F{f}
-                        </button>
+                        <div key={f} className="relative group">
+                            <button
+                                onClick={() => setActiveFloor(f)}
+                                className={`w-12 h-12 flex flex-col items-center justify-center transition-all duration-300 relative ${
+                                    activeFloor === f 
+                                    ? 'text-cyan-400 scale-110' 
+                                    : 'text-slate-600 hover:text-slate-400'
+                                }`}
+                            >
+                                <span className={`text-[10px] font-black ${activeFloor === f ? 'text-cyan-400' : ''}`}>F0{f}</span>
+                                <div className={`w-full h-0.5 mt-1 transition-all ${activeFloor === f ? 'bg-cyan-500 shadow-neon-cyan' : 'bg-transparent'}`} />
+                            </button>
+                            {activeFloor === f && (
+                                <motion.div layoutId="floor-glow" className="absolute -inset-2 bg-cyan-500/5 blur-xl rounded-full -z-10" />
+                            )}
+                        </div>
                     ))}
                 </div>
 
-                {/* SVG Floor Plan */}
-                <div className="flex-1 relative p-8 flex items-center justify-center bg-grid-slate-900/[0.2]">
-                    <div className="w-full h-full max-w-2xl">
-                        <svg viewBox="0 0 100 100" className="w-full h-full shadow-2xl">
-                            {/* Grids and Hallways */}
-                            <rect x="5" y="5" width="90" height="90" fill="none" stroke="#1e293b" strokeWidth="0.2" strokeDasharray="1 1" />
-                            <rect x="35" y="10" width="30" height="80" fill="rgba(15, 23, 42, 0.5)" stroke="#1e293b" strokeWidth="0.5" />
+                {/* MAIN SVG GRID */}
+                <div className="flex-1 relative p-12 bg-grid-slate-900/[0.4] flex items-center justify-center perspective-[1000px]">
+                    {/* Scanner Effect */}
+                    {isScanning && (
+                        <motion.div 
+                            animate={{ top: ['0%', '100%', '0%'] }}
+                            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                            className="absolute left-0 right-0 h-px bg-cyan-500/30 shadow-neon-cyan z-10 pointer-events-none"
+                        />
+                    )}
 
-                            {/* Safe Route (PHASE 3) */}
+                    <div className="w-full h-full max-w-4xl relative">
+                        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
+                            <defs>
+                                <filter id="glow">
+                                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                                    <feMerge>
+                                        <feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/>
+                                    </feMerge>
+                                </filter>
+                                <linearGradient id="roomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
+                                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                                </linearGradient>
+                            </defs>
+
+                            {/* Perimeter */}
+                            <rect x="2" y="2" width="96" height="96" fill="none" stroke="rgba(34, 211, 238, 0.1)" strokeWidth="0.5" />
+                            
+                            {/* Hallway Infrastructure */}
+                            <path d="M 35 10 L 35 90 M 65 10 L 65 90" stroke="rgba(34, 211, 238, 0.2)" strokeWidth="0.5" strokeDasharray="2 2" />
+                            <rect x="35" y="10" width="30" height="80" fill="rgba(15, 23, 42, 0.3)" />
+
+                            {/* Safe Route Projection */}
                             <motion.path
                                 d={calculateSafePath}
                                 fill="none"
-                                stroke="#22c55e"
-                                strokeWidth="1.5"
+                                stroke="#10b981"
+                                strokeWidth="1.2"
                                 strokeLinecap="round"
-                                strokeLinejoin="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{ pathLength: 1, opacity: 1 }}
-                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                style={{ filter: 'drop-shadow(0 0 3px #22c55e)' }}
+                                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                                filter="url(#glow)"
                             />
 
-                            {/* Exits */}
-                            {exits.map(exit => (
-                                <g key={exit.id}>
-                                    <circle cx={exit.x} cy={exit.y} r="3" fill="#22c55e" fillOpacity="0.2" stroke="#22c55e" strokeWidth="0.5" />
-                                    <text x={exit.x} y={exit.y + (exit.y < 50 ? -5 : 8)} textAnchor="middle" fontSize="3" fill="#22c55e" className="font-black">{exit.label}</text>
-                                </g>
-                            ))}
-
-                            {/* Rooms */}
+                            {/* Rooms Implementation */}
                             {rooms.map(room => {
                                 const roomNumber = `${activeFloor}${room.id}`;
                                 const incident = floorIncidents.find(i => i.roomNumber === roomNumber);
-                                const isHazard = incident?.sensorMetadata?.temperature > 80 || incident?.category === 'SMOKE';
+                                const isHovered = hoveredRoom === room.id;
+                                const style = getRoomStyle(roomNumber);
 
                                 return (
-                                    <g key={room.id}>
+                                    <g 
+                                        key={room.id} 
+                                        className="cursor-pointer transition-all duration-300"
+                                        onMouseEnter={() => setHoveredRoom(room.id)}
+                                        onMouseLeave={() => setHoveredRoom(null)}
+                                        onClick={() => setSelectedRoom(incident || { roomNumber, empty: true })}
+                                    >
                                         <motion.rect
-                                            x={room.x}
-                                            y={room.y}
-                                            width={room.width}
-                                            height={room.height}
+                                            x={room.x} y={room.y} width={room.w} height={room.h}
                                             animate={{ 
-                                                fill: getHeatColor(incident),
-                                                stroke: isHazard ? '#ef4444' : (incident ? '#fff' : '#334155'),
-                                                strokeWidth: isHazard ? 1.5 : (incident ? 0.8 : 0.2)
+                                                fill: isHovered ? 'rgba(34, 211, 238, 0.15)' : style.fill,
+                                                stroke: isHovered ? '#22d3ee' : style.stroke,
+                                                strokeWidth: isHovered ? 1 : 0.5
                                             }}
-                                            transition={{ duration: 0.5 }}
+                                            className="transition-colors"
                                         />
-                                        <text x={room.x + room.width/2} y={room.y + room.height/2} textAnchor="middle" fontSize="3" fill="#94a3b8" className="pointer-events-none font-bold">
+                                        <rect x={room.x} y={room.y} width={room.w} height={room.h} fill="url(#roomGrad)" pointerEvents="none" />
+                                        
+                                        {/* Room Label */}
+                                        <text 
+                                            x={room.x + room.w/2} y={room.y + room.h/2} 
+                                            textAnchor="middle" fontSize="2.5" fill={isHovered ? '#fff' : '#475569'}
+                                            className="font-black pointer-events-none uppercase tracking-tighter"
+                                        >
                                             {roomNumber}
                                         </text>
-                                        {isHazard && (
-                                            <motion.g
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                className="pointer-events-none"
-                                            >
-                                                <path 
-                                                    d={`M ${room.x + room.width/2} ${room.y + 5} L ${room.x + room.width/2 - 2} ${room.y + 9} L ${room.x + room.width/2 + 2} ${room.y + 9} Z`}
-                                                    fill="#ef4444"
+
+                                        {/* Telemetry Overlay */}
+                                        {incident && (
+                                            <g>
+                                                <motion.circle 
+                                                    cx={room.x + 3} cy={room.y + 3} r="1.5" fill={style.stroke}
+                                                    animate={{ opacity: [1, 0.2, 1] }}
+                                                    transition={{ duration: 1, repeat: Infinity }}
                                                 />
-                                            </motion.g>
+                                                {incident.sensorMetadata?.temperature && (
+                                                    <text x={room.x + 2} y={room.y + room.h - 3} fontSize="2" fill="#ef4444" className="font-bold">
+                                                        {incident.sensorMetadata.temperature}°C
+                                                    </text>
+                                                )}
+                                            </g>
                                         )}
                                     </g>
                                 );
                             })}
+
+                            {/* Exit Signage */}
+                            {exits.map(exit => (
+                                <g key={exit.id}>
+                                    <motion.path 
+                                        d={`M ${exit.x-2} ${exit.y} L ${exit.x+2} ${exit.y} M ${exit.x} ${exit.y-2} L ${exit.x} ${exit.y+2}`}
+                                        stroke="#10b981" strokeWidth="0.5"
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                                    />
+                                    <text x={exit.x} y={exit.y + (exit.y < 50 ? -4 : 6)} textAnchor="middle" fontSize="2" fill="#10b981" className="font-black">
+                                        {exit.label}
+                                    </text>
+                                </g>
+                            ))}
                         </svg>
                     </div>
                 </div>
 
-                {/* Right Panel */}
-                <div className="w-64 border-l border-slate-800 bg-[#111827]/80 p-4 overflow-y-auto">
-                    <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <Navigation size={12} /> Route_Intel
-                        </h4>
-                    </div>
+                {/* RIGHT TELEMETRY FEED */}
+                <div className="w-80 border-l border-slate-800 bg-[#0B0F19]/90 p-6 overflow-y-auto z-10 backdrop-blur-md">
+                    <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+                        <Zap size={14} className="text-cyan-500" /> Live_Sensor_Arrays
+                    </h4>
 
-                    {floorIncidents.some(i => i.severity >= 4) && (
-                        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/50 rounded-none animate-pulse">
-                            <div className="flex items-center gap-2 text-red-500 mb-1">
-                                <ShieldAlert size={14} />
-                                <span className="text-[10px] font-black uppercase">Hazard_Detected</span>
-                            </div>
-                            <p className="text-[9px] text-red-400 leading-tight uppercase font-bold">
-                                Dynamic routing active. Avoiding high-heat zones in F0{activeFloor}.
-                            </p>
-                        </div>
-                    )}
-                    
-                    <div className="space-y-3">
-                        <p className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-2 ml-1">Live_Sensor_Feed</p>
-                        {floorIncidents.length === 0 ? (
-                            <div className="p-4 border border-dashed border-slate-800 text-center">
-                                <span className="text-[10px] text-slate-600 uppercase italic">Nominal_Conditions</span>
-                            </div>
-                        ) : (
-                            floorIncidents.map(inc => (
+                    <div className="space-y-6">
+                        <AnimatePresence mode="popLayout">
+                            {floorIncidents.length === 0 ? (
                                 <motion.div 
-                                    initial={{ x: 20, opacity: 0 }}
-                                    animate={{ x: 0, opacity: 1 }}
-                                    key={inc.id} 
-                                    className="p-3 bg-[#0B0F19] border border-slate-700 shadow-lg"
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                    className="p-10 border border-dashed border-slate-800 flex flex-col items-center justify-center text-center opacity-40"
                                 >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-[10px] font-bold text-white">RM_{inc.roomNumber}</span>
-                                        <div className="flex gap-1">
-                                            {inc.sensorMetadata?.temperature > 80 && <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />}
-                                            <Badge variant={inc.severity >= 4 ? 'danger' : 'amber'} className="text-[7px] px-1 py-0 h-3">
-                                                {inc.severity >= 4 ? 'CRIT' : 'WARN'}
+                                    <Shield size={32} className="text-slate-700 mb-4" />
+                                    <p className="text-[9px] text-slate-600 uppercase font-black tracking-widest leading-relaxed">
+                                        Level_Monitoring_Optimal<br/>No_Anomalies_Detected
+                                    </p>
+                                </motion.div>
+                            ) : (
+                                floorIncidents.map(inc => (
+                                    <motion.div
+                                        layout
+                                        key={inc.id}
+                                        initial={{ x: 50, opacity: 0 }}
+                                        animate={{ x: 0, opacity: 1 }}
+                                        exit={{ scale: 0.8, opacity: 0 }}
+                                        className={`group p-4 border rounded-none transition-all ${
+                                            inc.severity >= 4 
+                                            ? 'bg-red-500/5 border-red-500/30' 
+                                            : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-1.5 h-1.5 rounded-none ${inc.severity >= 4 ? 'bg-red-500 shadow-neon-red' : 'bg-cyan-500'}`} />
+                                                <span className="text-[10px] font-black text-white tabular-nums">RM_{inc.roomNumber}</span>
+                                            </div>
+                                            <Badge variant={inc.severity >= 4 ? 'danger' : 'amber'} className="text-[7px] py-0 px-1.5">
+                                                LVL_{inc.severity}
                                             </Badge>
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {inc.sensorMetadata?.temperature && (
-                                            <div className="bg-black/40 p-1.5 border border-slate-800">
-                                                <p className="text-[7px] text-slate-500 uppercase font-black mb-0.5">Temp</p>
-                                                <p className="text-[10px] font-mono text-red-400">{inc.sensorMetadata.temperature}°C</p>
-                                            </div>
-                                        )}
-                                        {inc.sensorMetadata?.smoke_density && (
-                                            <div className="bg-black/40 p-1.5 border border-slate-800">
-                                                <p className="text-[7px] text-slate-500 uppercase font-black mb-0.5">Smoke</p>
-                                                <p className="text-[10px] font-mono text-stone-300">{inc.sensorMetadata.smoke_density}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))
-                        )}
+
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            {inc.sensorMetadata?.temperature && (
+                                                <div className="bg-black/40 p-2 border border-slate-800 group-hover:border-red-500/20 transition-colors">
+                                                    <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                        <Thermometer size={10} />
+                                                        <span className="text-[7px] font-black uppercase">Temp</span>
+                                                    </div>
+                                                    <span className="text-xs font-mono font-bold text-red-400">{inc.sensorMetadata.temperature}°C</span>
+                                                </div>
+                                            )}
+                                            {inc.sensorMetadata?.smoke_density && (
+                                                <div className="bg-black/40 p-2 border border-slate-800 group-hover:border-stone-500/20 transition-colors">
+                                                    <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                                                        <Wind size={10} />
+                                                        <span className="text-[7px] font-black uppercase">Smoke</span>
+                                                    </div>
+                                                    <span className="text-xs font-mono font-bold text-stone-300">{inc.sensorMetadata.smoke_density}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <p className="text-[9px] text-slate-500 leading-relaxed uppercase italic line-clamp-2">
+                                            {inc.description}
+                                        </p>
+                                    </motion.div>
+                                ))
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>
 
-            {/* Status Footer */}
-            <div className="p-2 bg-[#0B0F19] border-t border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-4 ml-2">
-                    <span className="flex items-center gap-1 text-[8px] text-green-500 uppercase font-bold animate-pulse">
-                        <div className="w-1 h-1 bg-green-500 rounded-full"></div> SYSTEM_ONLINE
-                    </span>
-                    <span className="text-[8px] text-slate-500 uppercase tracking-tighter">
-                        LATENCY: 42MS
+            {/* MODAL: ROOM DEEP DIVE */}
+            <AnimatePresence>
+                {selectedRoom && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#0B0F19]/90 backdrop-blur-xl"
+                        onClick={() => setSelectedRoom(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="w-full max-w-lg bg-[#151B2B] border border-slate-800 p-8 shadow-tactical relative overflow-hidden"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                                <Target size={200} className="text-cyan-500" />
+                            </div>
+                            
+                            <div className="flex justify-between items-start mb-10 relative z-10">
+                                <div>
+                                    <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">
+                                        Node_{selectedRoom.roomNumber}
+                                    </h3>
+                                    <p className="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.3em] mt-2">
+                                        Location_Status: {selectedRoom.empty ? 'SECURE' : 'ANOMALY_DETECTED'}
+                                    </p>
+                                </div>
+                                <button onClick={() => setSelectedRoom(null)} className="text-slate-500 hover:text-white transition-colors">
+                                    <Target size={24} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6 relative z-10">
+                                <div className="space-y-6">
+                                    <div className="p-4 bg-black/40 border border-slate-800">
+                                        <p className="text-[8px] font-black text-slate-500 uppercase mb-2">Internal_Atmosphere</p>
+                                        <div className="flex items-end gap-2">
+                                            <span className="text-2xl font-black text-white tabular-nums">
+                                                {selectedRoom.sensorMetadata?.temperature || 24}
+                                            </span>
+                                            <span className="text-xs text-slate-500 mb-1">°C</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-black/40 border border-slate-800">
+                                        <p className="text-[8px] font-black text-slate-500 uppercase mb-2">Oxygen_Saturation</p>
+                                        <div className="flex items-end gap-2">
+                                            <span className="text-2xl font-black text-white tabular-nums">98.2</span>
+                                            <span className="text-xs text-slate-500 mb-1">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-6 border border-slate-800 bg-black/40 flex flex-col justify-center">
+                                    <p className="text-[8px] font-black text-slate-500 uppercase mb-4 text-center">Neural_Vision_Feed</p>
+                                    <div className="aspect-video bg-slate-900 border border-slate-800 relative flex items-center justify-center overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 to-transparent" />
+                                        <Wind size={24} className="text-cyan-500/20 animate-spin-slow" />
+                                        <div className="absolute top-2 left-2 flex gap-1">
+                                            <div className="w-1 h-1 bg-red-500 rounded-full animate-pulse" />
+                                            <span className="text-[6px] text-red-500 font-bold uppercase">REC</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!selectedRoom.empty && (
+                                <div className="mt-8 pt-8 border-t border-slate-800 relative z-10">
+                                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <ShieldAlert size={14} /> Critical_Intelligence
+                                    </p>
+                                    <p className="text-xs text-slate-400 font-bold leading-relaxed uppercase">
+                                        {selectedRoom.description}
+                                    </p>
+                                    <button className="w-full mt-8 py-4 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-[0.3em] transition-all">
+                                        Dispatch_Tactical_Team
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* STATUS FOOTER */}
+            <div className="p-3 bg-[#0B0F19] border-t border-slate-800 flex items-center justify-between z-20">
+                <div className="flex items-center gap-6 ml-3">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-neon-green" />
+                        <span className="text-[9px] font-black text-slate-100 uppercase tracking-widest">Core_Link_Established</span>
+                    </div>
+                    <div className="h-4 w-px bg-slate-800 hidden md:block" />
+                    <span className="text-[9px] text-slate-500 uppercase tracking-tighter hidden md:block italic">
+                        Processing_Latency: 14.2ms
                     </span>
                 </div>
-                <div className="text-[8px] text-slate-600 font-bold uppercase mr-2">
-                    EVAC_ENGINE_ALPHA_V1
+                <div className="flex items-center gap-4 mr-3">
+                    <span className="text-[10px] font-black text-slate-600 uppercase">
+                        RCR_Z-AXIS_V2.0_ULTRA
+                    </span>
                 </div>
             </div>
         </div>

@@ -228,4 +228,4 @@ async function analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber
     }
 }
 
-module.exports = { analyzeReport, analyzeVoice };
+module.exports = { analyzeReport, analyzeVoice, analyzeReportText: analyzeReport };

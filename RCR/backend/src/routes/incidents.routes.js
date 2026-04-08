@@ -9,7 +9,11 @@ const {
     pulseSchema, 
     statusUpdateSchema 
 } = require('../api/validators/incident.validator');
+const sosController = require('../controllers/sos.controller');
 const { aiVerificationLimiter } = require('../middleware/rateLimiter');
+
+// SOS endpoint (multilingual voice)
+router.post('/sos/voice', jwtAuth, aiVerificationLimiter, validate(voiceSchema), sosController.handleVoiceSOS);
 
 // User profile
 router.get('/me', jwtAuth, incidentsController.getMe);

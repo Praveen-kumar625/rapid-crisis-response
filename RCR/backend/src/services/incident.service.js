@@ -14,6 +14,7 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => 
             'hospitality_category as hospitalityCategory', 'spam_score', 'auto_severity',
             'triage_method as triageMethod', 'ai_action_plan as actionPlan',
             'ai_required_resources as requiredResources', 'media_type as mediaType', 'media_url as mediaUrl',
+            'sensor_metadata as sensorMetadata',
             'lat', 'lng', 'indoor_lat as indoorLat', 'indoor_lng as indoorLng',
             'reported_by as reportedBy', 'hotel_id as hotelId',
             'created_at as createdAt', 'updated_at as updatedAt'
@@ -49,6 +50,7 @@ exports.create = async({
     title, description, severity, category, lat, lng,
     floorLevel, roomNumber, wingId, indoorLocation,
     reportedBy, mediaType, mediaBase64, mediaUrl, hotelId,
+    sensorMetadata,
     triageMethod = 'Cloud AI'
 }) => {
     // 1. Upload to Cloud Storage if media exists and wasn't already uploaded via presigned URL
@@ -73,7 +75,8 @@ exports.create = async({
             status: 'OPEN',
             triage_method: triageMethod,
             media_type: mediaType,
-            media_url: finalMediaUrl
+            media_url: finalMediaUrl,
+            sensor_metadata: sensorMetadata || null
         })
         .returning('*');
 
@@ -105,6 +108,7 @@ exports.getById = async(id, hotelId) => {
             'hospitality_category as hospitalityCategory', 'spam_score', 'auto_severity',
             'triage_method as triageMethod', 'ai_action_plan as actionPlan',
             'ai_required_resources as requiredResources', 'media_type as mediaType', 'media_url as mediaUrl',
+            'sensor_metadata as sensorMetadata',
             'lat', 'lng', 'indoor_lat as indoorLat', 'indoor_lng as indoorLng',
             'reported_by as reportedBy', 'hotel_id as hotelId',
             'created_at as createdAt', 'updated_at as updatedAt'

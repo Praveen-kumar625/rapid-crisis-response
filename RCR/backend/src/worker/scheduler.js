@@ -44,6 +44,7 @@ async function startScheduler(redisConfig) {
                 wingId: iotEvent.wing_id,
                 reportedBy: 'SYSTEM_IOT',
                 hotelId: defaultHotel.id,
+                sensorMetadata: iotEvent.sensor_metadata,
                 preAnalysis: {
                     spam_score: 0.0,
                     auto_severity: iotEvent.severity,

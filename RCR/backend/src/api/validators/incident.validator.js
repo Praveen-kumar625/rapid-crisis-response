@@ -25,6 +25,7 @@ const voiceSchema = z.object({
     floorLevel: z.number().int().optional(),
     roomNumber: z.string().optional(),
     wingId: z.string().optional(),
+    hotelId: z.string().uuid().optional(),
 });
 
 // 🚨 NEW: Validator for Safety Pulse

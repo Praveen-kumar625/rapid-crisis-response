@@ -24,7 +24,8 @@ export const TacticalMap = ({
     onSelectIncident, 
     filter, 
     setFilter,
-    onCreateIncident 
+    onCreateIncident,
+    onSwitchView
 }) => {
     const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
     const mapId = process.env.REACT_APP_GOOGLE_MAPS_ID || 'DEMO_MAP_ID';
@@ -111,13 +112,21 @@ export const TacticalMap = ({
                             <span className="text-[10px] font-mono font-bold text-danger">{incidents.filter(i => i.severity >= 4).length} CRITICAL</span>
                         </div>
                     </div>
-                    <button 
-                        onClick={onCreateIncident}
-                        className="btn-tactical whitespace-nowrap"
-                    >
-                        <Plus size={14} strokeWidth={3} />
-                        CREATE INCIDENT
-                    </button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={onSwitchView}
+                            className="bg-cyan-900/50 border border-cyan-500/30 text-cyan-400 px-3 py-1.5 rounded-none text-[9px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-navy-950 transition-all"
+                        >
+                            Indoor_Grid
+                        </button>
+                        <button 
+                            onClick={onCreateIncident}
+                            className="btn-tactical whitespace-nowrap"
+                        >
+                            <Plus size={14} strokeWidth={3} />
+                            CREATE INCIDENT
+                        </button>
+                    </div>
                 </Card>
             </div>
 

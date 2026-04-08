@@ -61,7 +61,7 @@ const TacticalDashboard = () => {
     });
 
     return (
-        <div className="flex-1 w-full flex flex-col lg:flex-row overflow-hidden bg-navy-950 min-h-0">
+        <div className="h-[calc(100vh-64px)] w-full flex flex-col lg:flex-row overflow-hidden bg-navy-950 min-h-0">
             {/* LEFT PANEL - Hidden or scrollable on mobile */}
             <div className="hidden lg:flex w-80 shrink-0 border-r border-white/10 overflow-hidden">
                 <IntelFeed 

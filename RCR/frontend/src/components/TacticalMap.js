@@ -58,7 +58,7 @@ export const TacticalMap = ({
     }), [incidents, selectedIncident, onSelectIncident]);
 
     return (
-        <section className="flex-1 h-full relative bg-navy-950 overflow-hidden border-r border-white/10 touch-none">
+        <section className="flex-1 h-full relative bg-navy-950 overflow-hidden border-r border-white/10 touch-auto">
             <APIProvider apiKey={apiKey}>
                 <Map
                     defaultCenter={RESPONDER_HQ}

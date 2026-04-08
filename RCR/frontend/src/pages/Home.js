@@ -36,7 +36,7 @@ const staggerContainer = {
 
 function Home() {
     return (
-        <div className="flex-1 flex flex-col w-full relative overflow-y-auto custom-scrollbar bg-[#0B0F19]">
+        <div className="flex-1 flex flex-col w-full relative bg-[#0B0F19]">
             
             {/* HERO SECTION */}
             <Section className="hero-min-height flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden border-b border-slate-800">

@@ -135,7 +135,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
     }
 
     return (
-        <div className="absolute inset-0 w-full h-full min-h-0 flex flex-col overflow-hidden bg-[#0B0F19] touch-none">
+        <div className="absolute inset-0 w-full h-full min-h-0 flex flex-col overflow-hidden bg-[#0B0F19] touch-auto">
             <APIProvider apiKey={apiKey}>
                 {/* 🚨 CRITICAL: Explicit dimensions on the container and mapId for AdvancedMarkers */}
                 <Map 

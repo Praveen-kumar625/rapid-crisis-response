@@ -47,7 +47,7 @@ const Dashboard = () => {
     }, []);
 
     return (
-        <div className="min-h-[calc(100vh-64px)] w-full bg-[#0B0F19] text-slate-100 flex flex-col lg:flex-row overflow-hidden lg:overflow-hidden font-sans selection:bg-cyan-500/30">
+        <div className="h-[calc(100vh-64px)] w-full bg-[#0B0F19] text-slate-100 flex flex-col lg:flex-row overflow-hidden lg:overflow-hidden font-sans selection:bg-cyan-500/30">
             {/* LEFT PANEL: INTEL FEED */}
             <aside className="w-full lg:w-1/4 h-[40vh] lg:h-full border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#151B2B] flex flex-col shrink-0">
                 <div className="p-4 lg:p-6 border-b border-slate-800 flex items-center justify-between bg-black/20">

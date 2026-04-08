@@ -80,7 +80,7 @@ const Analytics = () => {
     }
 
     return (
-        <Section className="py-8 bg-[#0B0F19] flex-1 flex flex-col overflow-y-auto">
+        <Section className="py-8 bg-[#0B0F19] flex-1 flex flex-col">
             <Container>
                 <header className="mb-10">
                     <h2 className="text-3xl font-black uppercase tracking-tight text-white mb-2">

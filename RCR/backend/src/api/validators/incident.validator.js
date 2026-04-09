@@ -38,9 +38,16 @@ const statusUpdateSchema = z.object({
     status: z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']),
 });
 
+// 🚨 NEW: Validator for Task Status Update
+const taskStatusSchema = z.object({
+    status: z.enum(['PENDING', 'DISPATCHED', 'ACKNOWLEDGED', 'SECURED']),
+    evidenceUrl: z.string().url().optional(),
+});
+
 module.exports = { 
     incidentSchema, 
     voiceSchema, 
     pulseSchema, 
-    statusUpdateSchema 
+    statusUpdateSchema,
+    taskStatusSchema
 };

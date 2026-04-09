@@ -6,6 +6,7 @@ const twilio = require('twilio');
 const { TWILIO } = require('../config/env');
 const SocketService = require('../services/socket.service');
 const StorageService = require('../infrastructure/storage');
+const TaskService = require('../services/task.service');
 
 const worker = new Worker('incident-tasks', async (job) => {
     const { type, data } = job.data;
@@ -19,7 +20,6 @@ const worker = new Worker('incident-tasks', async (job) => {
 
         let finalBase64 = mediaBase64;
         
-        // 🚨 RESILIENCE: If mediaBase64 is missing (optimized out by service), fetch from Storage
         if (!finalBase64 && mediaUrl && StorageService.downloadToBase64) {
             try {
                 finalBase64 = await StorageService.downloadToBase64(mediaUrl);
@@ -28,7 +28,6 @@ const worker = new Worker('incident-tasks', async (job) => {
             }
         }
 
-        // Perform AI Analysis
         const analysis = await AIService.analyzeReport({
             title: incident.title,
             description: incident.description,
@@ -41,7 +40,6 @@ const worker = new Worker('incident-tasks', async (job) => {
             mediaBase64: finalBase64
         });
 
-        // Update Incident with AI results
         const [updated] = await db('incidents')
             .where({ id: incidentId })
             .update({
@@ -55,15 +53,20 @@ const worker = new Worker('incident-tasks', async (job) => {
             })
             .returning('*');
 
-        // Notify via Sockets that AI analysis is complete
+        if (analysis.actionPlan && analysis.actionPlan.length > 0) {
+            await TaskService.createTasksFromPlan(
+                incidentId, 
+                analysis.actionPlan, 
+                analysis.hospitalityCategory === 'MEDICAL' ? 'MEDIC' : 'SECURITY'
+            );
+        }
+
         await SocketService.publish(`hotel_${incident.hotel_id}_incidents`, { 
             type: 'status-updated', 
             incident: updated 
         });
 
-        // If severity is 5, queue an SMS alert
         if (updated.severity === 5 || updated.auto_severity === 5) {
-            // 🚨 CIRCULAR DEP FIX: Use global incidentQueue if possible or require just-in-time
             const { incidentQueue } = require('../infrastructure/queue');
             await incidentQueue.add('SEND_SMS', { 
                 type: 'SEND_SMS', 
@@ -73,6 +76,50 @@ const worker = new Worker('incident-tasks', async (job) => {
                 attempts: 3,
                 backoff: { type: 'exponential', delay: 1000 }
             });
+        }
+    }
+
+    if (type === 'TASK_DISPATCH') {
+        const { taskId } = data;
+        const task = await db('tasks').where({ id: taskId }).first();
+        
+        if (task && ['PENDING', 'DISPATCHED'].includes(task.status)) {
+            const incident = await db('incidents').where({ id: task.incident_id }).first();
+            if (!incident || !TWILIO.accountSid || !TWILIO.authToken) return;
+
+            const client = twilio(TWILIO.accountSid, TWILIO.authToken);
+            const body = `🚨 TASK OVERRIDE: ${task.assigned_role}\nTask: ${task.instruction}\nIncident: ${incident.title}\nZone: Wing ${incident.wing_id}, Fl ${incident.floor_level}`;
+
+            const destinations = (TWILIO.toNumbers || '').split(',').map(n => n.trim()).filter(Boolean);
+
+            for (const to of destinations) {
+                try {
+                    await client.messages.create({ body, from: TWILIO.fromNumber, to });
+                    console.log(`[Worker] ✅ Task fallback SMS dispatched to ${to}`);
+                } catch (err) {
+                    console.error(`[Worker] ❌ Task fallback SMS failed:`, err.message);
+                }
+            }
+
+            await db('tasks').where({ id: taskId }).update({ status: 'DISPATCHED', updated_at: new Date() });
+        }
+    }
+
+    if (type === 'MASS_SMS_BROADCAST') {
+        const { hotelId, message } = data;
+        if (!TWILIO.accountSid || !TWILIO.authToken) return;
+
+        const users = await db('users').where({ hotel_id: hotelId });
+        const client = twilio(TWILIO.accountSid, TWILIO.authToken);
+
+        for (const user of users) {
+            try {
+                // Using email as placeholder for phone if phone column not yet populated in demo
+                await client.messages.create({ body: message, from: TWILIO.fromNumber, to: user.email });
+                console.log(`[Worker] ✅ Mass SMS dispatched to ${user.email}`);
+            } catch (err) {
+                console.error(`[Worker] ❌ Mass SMS failed for ${user.email}:`, err.message);
+            }
         }
     }
 
@@ -101,7 +148,7 @@ const worker = new Worker('incident-tasks', async (job) => {
     }
 }, { 
     connection,
-    concurrency: 5 // 🚨 PERFORMANCE: Allow parallel processing
+    concurrency: 5 
 });
 
 worker.on('completed', job => {

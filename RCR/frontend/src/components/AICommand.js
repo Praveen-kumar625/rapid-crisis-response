@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, Zap, Activity, ShieldAlert, Terminal, Server } from 'lucide-react';
+import { Cpu, Zap, Activity, ShieldAlert, Terminal, Server, Mic, MicOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { Card } from './ui/Card';
+import api from '../api';
+import toast from 'react-hot-toast';
+import { getSocket } from '../socket';
 
 const StatBar = ({ label, value, color = 'bg-electric' }) => (
     <div className="mb-4">
@@ -20,9 +23,145 @@ const StatBar = ({ label, value, color = 'bg-electric' }) => (
 );
 
 export const AICommand = ({ selectedIncident }) => {
+    const [isRecording, setIsRecording] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [tasks, setTasks] = useState([]);
+    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+
+    useEffect(() => {
+        if (selectedIncident) {
+            setIsLoadingTasks(true);
+            api.get(`/tasks/incident/${selectedIncident.id}`)
+                .then(({ data }) => setTasks(data))
+                .catch(console.error)
+                .finally(() => setIsLoadingTasks(false));
+        } else {
+            setTasks([]);
+        }
+    }, [selectedIncident]);
+
+    useEffect(() => {
+        let isMounted = true;
+        let socketInstance = null;
+
+        (async () => {
+            socketInstance = await getSocket();
+            if (!isMounted) return;
+
+            socketInstance.on('task.task-updated', (payload) => {
+                if (isMounted) {
+                    setTasks(prev => prev.map(t => t.id === payload.task.id ? payload.task : t));
+                }
+            });
+
+            socketInstance.on('task.tasks-created', (payload) => {
+                if (isMounted && selectedIncident && payload.incidentId === selectedIncident.id) {
+                    setTasks(payload.tasks);
+                }
+            });
+        })();
+
+        return () => {
+            isMounted = false;
+            if (socketInstance) {
+                socketInstance.off('task.task-updated');
+                socketInstance.off('task.tasks-created');
+            }
+        };
+    }, [selectedIncident]);
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = recorder;
+            audioChunksRef.current = [];
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunksRef.current.push(e.data);
+            };
+
+            recorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+                await processAudio(audioBlob, recorder.mimeType || 'audio/webm');
+                stream.getTracks().forEach(t => t.stop());
+            };
+
+            recorder.start();
+            setIsRecording(true);
+            toast.success('AI Voice Link Active');
+        } catch (err) {
+            toast.error('Microphone Access Denied');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const processAudio = async (blob, mimeType) => {
+        setIsProcessing(true);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64 = reader.result.split(',')[1];
+            try {
+                const { data } = await api.post('/sos/voice', {
+                    audioBase64: base64,
+                    audioMimeType: mimeType,
+                    lat: 0, lng: 0 
+                });
+                if (data.success) {
+                    toast.success('Voice Intel Processed');
+                }
+            } catch (err) {
+                toast.error('Voice Triage Failed');
+            } finally {
+                setIsProcessing(false);
+            }
+        };
+        reader.readAsDataURL(blob);
+    };
+
     return (
         <aside className="w-full h-full flex flex-col bg-navy-950/40 backdrop-blur-xl border-l border-white/10 overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                {/* VOICE COMMAND INTERFACE */}
+                <section className="mb-8">
+                    <header className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <Mic size={16} className="text-electric" />
+                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Voice Command</h3>
+                        </div>
+                        {isRecording && <div className="w-2 h-2 bg-danger rounded-full animate-ping" />}
+                    </header>
+
+                    <button
+                        onClick={isRecording ? stopRecording : startRecording}
+                        disabled={isProcessing}
+                        className={`w-full py-6 flex flex-col items-center justify-center gap-3 border-2 border-dashed transition-all active:scale-95 ${
+                            isRecording 
+                            ? 'bg-danger/10 border-danger text-danger animate-pulse' 
+                            : 'bg-white/[0.02] border-white/10 text-slate-400 hover:border-electric/50 hover:text-electric'
+                        }`}
+                    >
+                        {isProcessing ? (
+                            <Loader2 className="animate-spin text-electric" size={24} />
+                        ) : isRecording ? (
+                            <MicOff size={24} />
+                        ) : (
+                            <Mic size={24} />
+                        )}
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                            {isProcessing ? 'Analyzing...' : isRecording ? 'Stop Recording' : 'Initiate Voice Link'}
+                        </span>
+                    </button>
+                </section>
+
                 {/* AI TRIAGE SUMMARY */}
                 <section className="mb-8">
                     <header className="flex items-center gap-3 mb-6">
@@ -61,18 +200,33 @@ export const AICommand = ({ selectedIncident }) => {
                             </Card>
 
                             <div className="space-y-2">
-                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-3">AI Action Plan</span>
-                                {(selectedIncident.actionPlan && selectedIncident.actionPlan.length > 0 ? selectedIncident.actionPlan : [
-                                    'Establish peripheral containment zone',
-                                    'Deploy Tier-1 medical responders',
-                                    'Initialize structural integrity scan',
-                                    'Evacuate sector delta-9'
-                                ]).map((step, i) => (
-                                    <div key={i} className="flex gap-3 items-start p-2.5 bg-white/[0.03] border border-white/5 text-[9px] font-mono text-slate-300 uppercase">
-                                        <span className="text-electric font-bold">{i+1 < 10 ? `0${i+1}` : i+1}</span>
-                                        <span>{step}</span>
-                                    </div>
-                                ))}
+                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-3">Tactical Task Execution</span>
+                                {isLoadingTasks ? (
+                                    <div className="py-4 flex justify-center"><Loader2 className="animate-spin text-electric" size={16} /></div>
+                                ) : tasks.length > 0 ? (
+                                    tasks.map((task, i) => (
+                                        <div key={task.id} className="flex flex-col gap-1 p-2.5 bg-white/[0.03] border border-white/5 font-mono text-[9px]">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-electric font-bold">{i+1 < 10 ? `0${i+1}` : i+1}</span>
+                                                    {task.status === 'SECURED' && <CheckCircle2 size={10} className="text-emerald" />}
+                                                </div>
+                                                <span className={`px-1.5 py-0.5 rounded-none text-[7px] font-black ${
+                                                    task.status === 'SECURED' ? 'bg-emerald/20 text-emerald' : 
+                                                    task.status === 'ACKNOWLEDGED' ? 'bg-electric/20 text-electric' :
+                                                    task.status === 'DISPATCHED' ? 'bg-amber/20 text-amber' :
+                                                    'bg-slate-800 text-slate-400'
+                                                }`}>
+                                                    {task.status}
+                                                </span>
+                                            </div>
+                                            <span className="text-slate-300 uppercase leading-tight">{task.instruction}</span>
+                                            <span className="text-[7px] text-slate-500 mt-1">ASSIGNED: {task.assigned_role}</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-[9px] text-slate-600 italic">No tasks dispatched for this unit.</p>
+                                )}
                             </div>
                         </motion.div>
                     ) : (

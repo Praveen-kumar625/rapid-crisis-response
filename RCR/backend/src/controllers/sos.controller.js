@@ -25,31 +25,32 @@ exports.handleVoiceSOS = catchAsync(async (req, res) => {
 
     const { 
         audioBase64, 
-        mimeType, 
+        audioMimeType, 
         floorLevel, 
         roomNumber, 
         wingId, 
         lat, 
         lng, 
-        hotelId 
+        hotelId: bodyHotelId 
     } = req.body;
 
     // 2. Request Body Guard
-    if (!audioBase64 || !mimeType) {
+    if (!audioBase64 || !audioMimeType) {
         return res.status(400).json({
             success: false,
-            message: "Bad Request: Missing audio data or mimeType"
+            message: "Bad Request: Missing audio data or audioMimeType"
         });
     }
 
     const reportedBy = req.user.sub;
+    const hotelId = bodyHotelId || req.user.hotelId;
 
     console.log('[SOS Controller] Processing voice SOS...');
 
     try {
         // 1. Transcribe
         const audioBuffer = Buffer.from(audioBase64, 'base64');
-        const transcriptionResult = await GoogleCloudAI.transcribeAudio(audioBuffer, mimeType);
+        const transcriptionResult = await GoogleCloudAI.transcribeAudio(audioBuffer, audioMimeType);
         const transcription = transcriptionResult?.transcription || '';
         const detectedLanguage = transcriptionResult?.detectedLanguage || 'en-US';
         
@@ -84,7 +85,7 @@ exports.handleVoiceSOS = catchAsync(async (req, res) => {
             wingId: wingId || 'unknown',
             reportedBy,
             hotelId,
-            mediaType: mimeType,
+            mediaType: audioMimeType,
             mediaBase64: audioBase64,
             triageMethod: `Google Cloud + Gemini (${detectedLanguage})`
         });
@@ -113,7 +114,7 @@ exports.handleVoiceSOS = catchAsync(async (req, res) => {
             wingId: wingId || 'unknown',
             reportedBy,
             hotelId,
-            mediaType: mimeType,
+            mediaType: audioMimeType,
             mediaBase64: audioBase64,
             triageMethod: 'Manual (Critical Failure)'
         });

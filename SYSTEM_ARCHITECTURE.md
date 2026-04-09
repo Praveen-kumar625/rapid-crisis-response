@@ -13,12 +13,14 @@ graph TD
         Guest((Guest Mobile)) --> PWA[React PWA]
         Sensors((IoT Sensors)) --> IoTWorker[IoT Generation Pipeline]
         PWA --> IDB[(IndexedDB Cache)]
+        Responder((Tactical Responder)) --> HUD[Mobile HUD]
     end
 
     subgraph "Orchestration Layer (Backend)"
         PWA -- "Socket.io (Real-time)" --> API[Node.js Engine]
         API --> Queue[BullMQ / Redis]
         API --> DB[(PostgreSQL)]
+        HUD -- "Presence & Task ACK" --> API
     end
 
     subgraph "Intelligence Layer (Cloud)"
@@ -31,6 +33,7 @@ graph TD
     subgraph "Command Layer (Tactical)"
         API -- "WebSocket Broadcast" --> Dashboard[Tactical Commander]
         Dashboard --> Map[Crisis Map / Z-Axis Grid]
+        Dashboard --> Audit[(Audit Log Sink)]
     end
 ```
 
@@ -40,17 +43,23 @@ graph TD
 
 ### 🎙️ Voice SOS Pipeline
 1.  **Capture**: `MediaRecorder API` captures audio chunks in the `PhoneModal`.
-2.  **Ingestion**: Audio is Base64 encoded and POSTed to `/api/incidents/sos/voice`.
+2.  **Ingestion**: Audio is Base64 encoded and POSTed to `/api/sos/voice`.
 3.  **Transformation**: The backend routes the buffer to **Google Cloud Speech-to-Text** for transcription.
 4.  **Localization**: If the detected language is non-English, it's processed by **Google Cloud Translation**.
 5.  **Triage**: The English text is sent to **Gemini 1.5 Flash** for severity classification and category mapping.
 6.  **Persistence**: A formal incident is created in PostgreSQL and broadcasted to all responders.
 
+### 📋 Tactical Orchestration (Ultra Level)
+1.  **Decomposition**: AI-generated action plans are automatically split into individual `Task` records.
+2.  **Smart Dispatch**: Tasks are assigned to the best-suited available responder based on role and Z-axis proximity.
+3.  **Dead Man's Switch**: If a task isn't acknowledged via WebSockets within 5 seconds, an **SMS Override** is sent via Twilio.
+4.  **Verification**: Responders confirm "Objective Secured" via the Mobile HUD, instantly updating the Command Center.
+
 ### 📡 Real-Time IoT Stream
 1.  **Generation**: A background worker simulates hotel sensor arrays (Smoke, Heat, CO2).
 2.  **Broadcast**: Data is published to a Redis channel specific to the building (`hotel_{id}_iot`).
 3.  **UI Sync**: The `IndoorHeatmap` component receives the `NEW_IOT_ALERT` via Socket.io.
-4.  **Routing**: The evacuation pathfinder recalculates the safest exit by dynamically avoiding rooms with high telemetry (> 80°C).
+4.  **Routing**: The evacuation engine recalculates the safest exit by dynamically avoiding rooms with high telemetry (> 60°C) or smoke density.
 
 ---
 
@@ -60,8 +69,9 @@ graph TD
 | :--- | :--- | :--- |
 | **Crash-Proofing** | Centralized `catchAsync` & Global Error Middleware | Prevents Node.js process termination on API failure. |
 | **Network Blackout** | Service Worker Background Sync + IndexedDB | Guarantees eventual delivery of SOS reports in low-signal areas. |
+| **Dual-Channel Dispatch** | WebSocket + SMS Fallback | Ensures 100% delivery of tactical instructions regardless of Wi-Fi state. |
+| **Audit Integrity** | Structured `audit_logs` Service | Provides liability-grade history of every status change and mass alert. |
 | **Data Integrity** | Knex.js Migrations + ACID Transactions | Ensures consistent state across multi-tenant data. |
-| **API Safety** | Guard Clauses + Optional Chaining | Protects against `undefined` properties in unstable external responses. |
 
 ---
 
@@ -69,8 +79,8 @@ graph TD
 The system adopts a **Tactical Command Center** aesthetic:
 - **Palette**: `#0B0F19` (Deep Navy), `#22D3EE` (Electric Cyan), `#EF4444` (Hazard Red).
 - **Feedback**: Pulsing animations for active hazards, scanning effects for floor grids.
-- **Density**: High-signal visualization using Recharts and Google Maps Advanced Markers.
+- **Density**: High-signal visualization using Recharts, Google Maps Advanced Markers, and Responder Presence layers.
 
 ---
 
-**RCR Architecture v2.0 // Ultra Level Ready**
+**RCR Architecture v3.0 // Ultra Level Orchestration Ready**

@@ -2,6 +2,9 @@
 const db = require('../db');
 const SocketService = require('./socket.service');
 const AIService = require('../services/ai.service');
+const AuditService = require('./audit.service');
+const { incidentQueue } = require('../infrastructure/queue');
+const StorageService = require('../infrastructure/storage');
 
 /**
  * List incidents – Simple SQL filtering (No PostGIS required)
@@ -40,9 +43,6 @@ exports.list = async({ bbox, wingId, floorLevel, roomNumber, hotelId } = {}) => 
     }));
 };
 
-const { incidentQueue } = require('../infrastructure/queue');
-const StorageService = require('../infrastructure/storage');
-
 /**
  * Create a new incident
  */
@@ -53,14 +53,14 @@ exports.create = async({
     sensorMetadata,
     triageMethod = 'Cloud AI'
 }) => {
-    // 1. Upload to Cloud Storage if media exists and wasn't already uploaded via presigned URL
+    // 1. Upload to Cloud Storage if media exists
     let finalMediaUrl = mediaUrl;
     if (!finalMediaUrl && mediaBase64) {
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${mediaType ? mediaType.split('/')[1] : 'bin'}`;
         finalMediaUrl = await StorageService.uploadBase64(mediaBase64, mediaType, fileName);
     }
 
-    // 2. Insert minimal incident record immediately for fast response
+    // 2. Insert minimal incident record
     const [incident] = await db('incidents')
         .insert({
             title, description, severity, category,
@@ -80,13 +80,20 @@ exports.create = async({
         })
         .returning('*');
 
-    // 3. Notify via Sockets (Fast path)
+    // 🚨 PHASE 4: AUDIT LOG
+    await AuditService.log({
+        incidentId: incident.id,
+        actionType: 'INCIDENT_CREATED',
+        actorId: reportedBy || 'system',
+        description: `New ${category} incident at level ${severity} via ${triageMethod}`
+    });
+
+    // 3. Notify via Sockets
     const tenantTopic = `hotel_${hotelId}`;
     await SocketService.publish(`${tenantTopic}_incidents`, { type: 'created', incident });
 
     // 4. Queue Background Tasks (AI Triage)
-    // 🚨 OPTIMIZATION: Only pass mediaBase64 if small, otherwise worker should use mediaUrl
-    const shouldPassBase64 = mediaBase64 && mediaBase64.length < 500000; // ~500KB limit for Redis safety
+    const shouldPassBase64 = mediaBase64 && mediaBase64.length < 500000;
     await incidentQueue.add('AI_TRIAGE', { 
         type: 'AI_TRIAGE', 
         data: { 
@@ -98,6 +105,39 @@ exports.create = async({
     });
 
     return incident;
+};
+
+/**
+ * Mass Broadcast an emergency alert to all users in a hotel.
+ */
+exports.broadcastAlert = async (hotelId, { message, severity = 5, wingId = null, floorLevel = null }) => {
+    // 1. WebSocket Broadcast
+    const topic = `hotel_${hotelId}_broadcast`;
+    await SocketService.publish(topic, { 
+        type: 'EMERGENCY_BROADCAST', 
+        message, 
+        severity, 
+        wingId, 
+        floorLevel 
+    });
+
+    // 2. Audit Log
+    await AuditService.log({
+        actionType: 'MASS_ALERT_DISPATCHED',
+        actorId: 'admin',
+        description: `Mass alert sent to hotel ${hotelId}: ${message}`,
+        payload: { message, severity, wingId, floorLevel }
+    });
+
+    // 3. Queue SMS Broadcast for high severity
+    if (severity >= 4) {
+        await incidentQueue.add('MASS_SMS_BROADCAST', { 
+            hotelId, 
+            message: `🚨 RCR EMERGENCY: ${message}` 
+        });
+    }
+
+    return { success: true };
 };
 
 exports.getById = async(id, hotelId) => {
@@ -131,13 +171,21 @@ exports.updateStatus = async(id, newStatus, hotelId) => {
     const query = db('incidents').where({ id });
     if (hotelId) query.andWhere({ hotel_id: hotelId });
 
-    // 🚨 FIXED: Manually update updated_at
     const [incident] = await query.update({ 
         status: newStatus,
         updated_at: new Date()
     }).returning('*');
 
     if (incident) {
+        // 🚨 PHASE 4: AUDIT LOG
+        await AuditService.log({
+            incidentId: incident.id,
+            actionType: 'STATUS_CHANGE',
+            actorId: 'admin',
+            description: `Status changed to ${newStatus}`,
+            payload: { newStatus }
+        });
+
         await SocketService.publish(`hotel_${hotelId}_incidents`, { type: 'status-updated', incident });
     }
     return incident;
@@ -146,7 +194,6 @@ exports.updateStatus = async(id, newStatus, hotelId) => {
 exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
     const analysis = await AIService.analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng });
     
-    // 🚨 CONSISTENCY: Use standardized field names from AI service
     const incident = await exports.create({
         title: analysis.translatedText ? `Voice report: ${analysis.hospitalityCategory}` : 'Voice Incident',
         description: analysis.translatedText || '',

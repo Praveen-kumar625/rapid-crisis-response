@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useMap } from '@vis.gl/react-google-maps';
-import { Shield, AlertCircle, MapPin, Navigation, Crosshair, Zap } from 'lucide-react';
+import { Shield, AlertCircle, Crosshair, Zap, User } from 'lucide-react';
 import api from '../api';
 import { getSocket } from '../socket';
 import { Card } from './ui/Card';
@@ -48,6 +48,7 @@ const MapControl = ({ userLocation }) => {
 function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }) {
     const navigate = useNavigate();
     const [internalIncidents, setInternalIncidents] = useState([]);
+    const [responders, setResponders] = useState([]);
     const [selectedIncident, setSelectedIncident] = useState(null);
     const [userLocation, setUserLocation] = useState(null);
     const [liveIotAlerts, setLiveIotAlerts] = useState([]);
@@ -87,19 +88,17 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
     // ULTRA LEVEL: Real-time Data Synchronization
     // -----------------------------------------------------------------
     useEffect(() => {
-        if (externalIncidents) return;
-
         let isMounted = true;
         let socketInstance = null;
 
         // Initial Data Fetch
         api.get('/incidents').then((res) => {
-            if (isMounted) setInternalIncidents(res.data);
+            if (isMounted && !externalIncidents) setInternalIncidents(res.data);
         }).catch(err => console.error('[Map] Data fetch failed:', err));
 
         // Real-time Update Handlers
         const handleCreated = (payload) => {
-            if (isMounted) {
+            if (isMounted && !externalIncidents) {
                 setInternalIncidents((prev) => {
                     if (prev.some(inc => inc.id === payload.incident.id)) return prev;
                     toast.success(`NEW ALERT: ${payload.incident.title}`, { icon: '🚨' });
@@ -109,19 +108,26 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
         };
 
         const handleStatusUpdated = (payload) => {
-            if (isMounted) {
+            if (isMounted && !externalIncidents) {
                 setInternalIncidents((prev) => prev.map((i) => (i.id === payload.incident.id ? payload.incident : i)));
             }
         };
 
         const handleIotAlert = (iotEvent) => {
             if (isMounted) {
-                console.log('📡 [Map] IoT Alert Received:', iotEvent);
                 setLiveIotAlerts(prev => {
                     const filtered = prev.filter(e => e.id !== iotEvent.id);
                     return [iotEvent, ...filtered].slice(0, 10);
                 });
-                toast(`SENSOR TRIGGER: ${iotEvent.title}`, { icon: '🔥', duration: 4000 });
+            }
+        };
+
+        const handlePresenceUpdate = (payload) => {
+            if (isMounted) {
+                setResponders(prev => {
+                    const filtered = prev.filter(r => r.id !== payload.responder.id);
+                    return [...filtered, payload.responder];
+                });
             }
         };
 
@@ -132,6 +138,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                 socketInstance.on('incident.created', handleCreated);
                 socketInstance.on('incident.status-updated', handleStatusUpdated);
                 socketInstance.on('NEW_IOT_ALERT', handleIotAlert);
+                socketInstance.on('responder.presence-update', handlePresenceUpdate);
             } catch (err) {
                 console.error('[Map] Socket failed:', err);
             }
@@ -145,6 +152,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                 socketInstance.off('incident.created', handleCreated);
                 socketInstance.off('incident.status-updated', handleStatusUpdated);
                 socketInstance.off('NEW_IOT_ALERT', handleIotAlert);
+                socketInstance.off('responder.presence-update', handlePresenceUpdate);
             }
         };
     }, [externalIncidents]);
@@ -230,25 +238,33 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                     styles={MAP_STYLES}
                     className="w-full h-full min-h-0"
                 >
-                    {/* ULTRA LEVEL: User Position Marker */}
-                    {userLocation && (
-                        <AdvancedMarker position={userLocation}>
-                            <div className="relative flex items-center justify-center">
-                                <div className="absolute w-8 h-8 bg-blue-500/20 rounded-full animate-ping"></div>
-                                <div className="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)] z-10"></div>
-                                <div className="absolute -bottom-6 bg-blue-600/90 text-white text-[8px] px-2 py-0.5 font-bold rounded-none uppercase tracking-tighter whitespace-nowrap">
-                                    You are here
+                    {responders.filter(r => r.status !== 'OFF_DUTY').map(responder => (
+                        <AdvancedMarker
+                            key={responder.id}
+                            position={{ lat: responder.lat || DEFAULT_CENTER.lat, lng: responder.lng || DEFAULT_CENTER.lng }}
+                        >
+                            <div className="relative group">
+                                <div className={`w-8 h-8 rounded-none border-2 flex items-center justify-center transition-all ${
+                                    responder.status === 'BUSY' ? 'bg-red-500/20 border-red-500' : 'bg-cyan-500/20 border-cyan-500'
+                                } shadow-[0_0_10px_rgba(34,211,238,0.3)]`}>
+                                    <Shield size={16} className={responder.status === 'BUSY' ? 'text-red-500' : 'text-cyan-400'} />
+                                </div>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-navy-900 border border-white/10 p-2 whitespace-nowrap z-50 shadow-2xl">
+                                    <p className="text-[10px] font-black uppercase text-white tracking-tighter">{responder.name}</p>
+                                    <p className="text-[8px] text-cyan-500 font-bold uppercase tracking-widest">{responder.role} :: FL_0{responder.floor}</p>
+                                    <p className={`text-[7px] font-black uppercase mt-1 ${responder.status === 'BUSY' ? 'text-red-500' : 'text-green-500'}`}>
+                                        Status: {responder.status}
+                                    </p>
                                 </div>
                             </div>
                         </AdvancedMarker>
-                    )}
+                    ))}
 
-                    {/* HQ Marker */}
                     <AdvancedMarker position={DEFAULT_CENTER}>
                         <div className="relative flex items-center justify-center">
                             <div className="absolute w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-none animate-pulse"></div>
                             <div className="w-8 h-8 bg-[#0B0F19] border-2 border-cyan-500 flex items-center justify-center shadow-neon-cyan z-10">
-                                <Shield size={14} className="text-cyan-400" />
+                                <User size={14} className="text-cyan-400" />
                             </div>
                         </div>
                     </AdvancedMarker>
@@ -306,26 +322,14 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                             <span className="text-lg font-black text-cyan-400 tabular-nums">{filteredIncidents.length}</span>
                         </div>
                         <div className="flex flex-col text-right">
-                            <span className="text-[7px] font-bold text-slate-500 uppercase">Hazards</span>
-                            <span className="text-lg font-black text-red-500 tabular-nums">
-                                {filteredIncidents.filter(i => i.severity >= 4 || i.category === 'FIRE').length}
+                            <span className="text-[7px] font-bold text-slate-500 uppercase">Responders</span>
+                            <span className="text-lg font-black text-electric tabular-nums">
+                                {responders.filter(r => r.status === 'AVAILABLE').length}
                             </span>
                         </div>
                     </div>
                 </Card>
             </div>
-
-            {/* User Location Info Overlay */}
-            {userLocation && (
-                <div className="absolute bottom-6 left-6 z-20 hidden md:block">
-                    <div className="bg-[#0B0F19]/80 backdrop-blur-sm border border-blue-500/30 px-4 py-2 flex items-center gap-3">
-                        <Navigation size={14} className="text-blue-400 animate-bounce" />
-                        <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-widest">
-                            POS_LOCK: {userLocation.lat.toFixed(4)}N, {userLocation.lng.toFixed(4)}E
-                        </span>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

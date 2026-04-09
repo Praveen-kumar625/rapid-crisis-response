@@ -120,7 +120,7 @@ const PhoneModal = ({ isOpen, onClose, onSubmit, hotelId, position, floorLevel, 
                 // POST to backend SOS route
                 const response = await api.post('/sos/voice', {
                     audioBase64: base64Payload,
-                    mimeType: mimeType,
+                    audioMimeType: mimeType,
                     lat: position?.lat || 0,
                     lng: position?.lng || 0,
                     floorLevel: floorLevel || 1,

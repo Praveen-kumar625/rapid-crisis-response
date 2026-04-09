@@ -6,6 +6,7 @@ require('express-async-errors'); // Note: This already does some lifting for asy
 const healthRoutes = require('./routes/health.routes');
 const incidentRoutes = require('./routes/incidents.routes');
 const sosRoutes = require('./routes/sos.routes');
+const taskRoutes = require('./routes/tasks.routes');
 const rateLimit = require('express-rate-limit');
 const { ALLOWED_ORIGINS, NODE_ENV } = require('./config/env');
 
@@ -59,6 +60,7 @@ app.use(express.json({ limit: '10mb' })); // Support larger base64 audio payload
 app.use('/health', healthRoutes);
 app.use('/incidents', incidentRoutes);
 app.use('/sos', sosRoutes);
+app.use('/tasks', taskRoutes);
 
 // 404 Handler
 app.use((req, res) => {
@@ -67,7 +69,7 @@ app.use((req, res) => {
 
 // PHASE 3: Global Async Error Handling Middleware
 // This must be the last middleware in the stack
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
     const isTest = NODE_ENV === 'test';
     
     // Log the error for debugging (excluding test environment noise)

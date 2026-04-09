@@ -132,11 +132,13 @@ exports.analyze = async(req, res) => {
 
 exports.createFromVoice = async(req, res) => {
     try {
-        const { audioBase64, audioMimeType, lat, lng, floorLevel, roomNumber, wingId } = req.body;
+        const { audioBase64, audioMimeType, lat, lng, floorLevel, roomNumber, wingId, hotelId: bodyHotelId } = req.body;
 
         if (!audioBase64) {
             return res.status(400).json({ error: 'audioBase64 is required' });
         }
+
+        const hotelId = bodyHotelId || req.user?.hotelId;
 
         const analysis = await IncidentService.analyzeVoice({
             audioBase64,
@@ -147,7 +149,7 @@ exports.createFromVoice = async(req, res) => {
             lat,
             lng,
             reportedBy: req.user ? req.user.sub : 'anonymous',
-            hotelId: req.user?.hotelId
+            hotelId
         });
 
         res.status(201).json(analysis);

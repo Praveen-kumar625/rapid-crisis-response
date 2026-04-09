@@ -9,7 +9,9 @@ This document serves as the **Single Source of Truth** for the project's enginee
 1.  **Layered Separation**: Maintain strict boundaries between `Controllers`, `Services`, and `Infrastructure`. Business logic MUST NEVER live inside a Controller.
 2.  **Event-Driven Offloading**: Heavy tasks (AI analysis, SMS alerts, external API syncs) MUST be offloaded to `BullMQ` processors.
 3.  **Offline-First Primacy**: The frontend MUST prioritize `IndexedDB` persistence. Every SOS report is a "Signal Node" that must survive a complete network blackout.
-4.  **Z-Axis Awareness**: All spatial data (Incidents, IoT) MUST include `floorLevel` and `wingId` to support 3D tactical visualization.
+4.  **Z-Axis Awareness**: All spatial data (Incidents, IoT, Responders) MUST include `floorLevel` and `wingId` to support 3D tactical visualization.
+5.  **Resource Management**: Automated task dispatching MUST prioritize available responders using a distance-weighted role-matching algorithm.
+6.  **Audit Persistence**: Every state transition (Incident creation, status change, task completion) MUST be logged to the `audit_logs` service for liability compliance.
 
 ---
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { googleLogout } from '@react-oauth/google';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './utils/firebase';
 import { jwtDecode } from 'jwt-decode';
 import toast, { Toaster } from 'react-hot-toast';
 import { joinHotelRoom, updateSocketToken } from './socket';
@@ -8,6 +9,7 @@ import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
+
 
 // Lazy loaded pages
 const Home = lazy(() => import('./pages/Home'));
@@ -66,38 +68,33 @@ function App() {
     };
 
     useEffect(() => {
-        const token = localStorage.getItem('google_token');
-        if (token) {
-            try {
-                const decoded = jwtDecode(token);
-                setUser(decoded);
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                const token = await firebaseUser.getIdToken();
+                localStorage.setItem('google_token', token);
+                setUser(firebaseUser);
+                updateSocketToken(token);
                 syncUserContext();
-            } catch (err) {
-                console.error('Invalid token', err);
+            } else {
                 localStorage.removeItem('google_token');
+                setUser(null);
             }
-        }
-        
-        // Listen for custom login events from Navbar
-        const handleLogin = () => {
-            const newToken = localStorage.getItem('google_token');
-            if (newToken) {
-                const decoded = jwtDecode(newToken);
-                setUser(decoded);
-                updateSocketToken(newToken);
-                syncUserContext();
-            }
-        };
-        window.addEventListener('google-login-success', handleLogin);
-        return () => window.removeEventListener('google-login-success', handleLogin);
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    const logout = () => {
-        googleLogout();
-        localStorage.removeItem('google_token');
-        setUser(null);
-        toast.success('Logged out successfully');
+    const logout = async () => {
+        try {
+            await auth.signOut();
+            localStorage.removeItem('google_token');
+            setUser(null);
+            toast.success('Logged out successfully');
+        } catch (err) {
+            toast.error('Logout failed');
+        }
     };
+
 
     return (
         <ErrorBoundary>

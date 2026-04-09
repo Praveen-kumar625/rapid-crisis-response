@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CheckCircle2, Clock, MapPin, Navigation } from 'lucide-react';
+import { Shield, CheckCircle2, Clock, MapPin, Navigation, Wifi, WifiOff, Layers } from 'lucide-react';
 import api from '../api';
 import { getSocket } from '../socket';
 import toast from 'react-hot-toast';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { cacheTasks, getCachedTasks } from '../idb';
 
 const TacticalHUD = () => {
     const [tasks, setTasks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [profile, setProfile] = useState(null);
     const [presence, setPresence] = useState({ status: 'AVAILABLE', floor: 1, wing: 'A' });
 
@@ -16,8 +18,14 @@ const TacticalHUD = () => {
         try {
             const { data } = await api.get('/tasks/my-tasks');
             setTasks(data);
+            await cacheTasks(data);
         } catch (err) {
-            console.error('Failed to fetch tasks:', err);
+            console.error('Failed to fetch tasks, loading from cache:', err);
+            const cached = await getCachedTasks();
+            if (cached.length > 0) {
+                setTasks(cached);
+                toast('Offline Mode: Using cached data', { icon: '⚠️' });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -38,6 +46,11 @@ const TacticalHUD = () => {
     };
 
     useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
         api.get('/incidents/me').then(({ data }) => {
             setProfile(data);
             if (data.responderStatus) {
@@ -58,11 +71,17 @@ const TacticalHUD = () => {
                 if (forMe) fetchTasks();
             });
             socketInstance.on('task.task-updated', (payload) => {
-                setTasks(prev => prev.map(t => t.id === payload.task.id ? payload.task : t));
+                setTasks(prev => {
+                    const updated = prev.map(t => t.id === payload.task.id ? payload.task : t);
+                    cacheTasks(updated);
+                    return updated;
+                });
             });
         })();
 
         return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
             if (socketInstance) {
                 socketInstance.off('task.tasks-created');
                 socketInstance.off('task.task-updated');
@@ -75,29 +94,31 @@ const TacticalHUD = () => {
             await api.patch(`/tasks/${taskId}/status`, { status: 'ACKNOWLEDGED' });
             toast.success('Task Acknowledged');
         } catch (err) {
-            toast.error('Sync failed');
+            toast.error('Sync failed - retry when online');
         }
     };
 
     const handleSecure = async (taskId) => {
         try {
             await api.patch(`/tasks/${taskId}/status`, { status: 'SECURED' });
-            // After securing, check if we should go back to AVAILABLE
             if (presence.status === 'BUSY') {
                 updatePresence({ status: 'AVAILABLE' });
             }
             toast.success('Objective Secured');
         } catch (err) {
-            toast.error('Sync failed');
+            toast.error('Sync failed - retry when online');
         }
     };
 
     if (isLoading) return <div className="h-screen bg-navy-950 flex items-center justify-center font-mono text-electric animate-pulse">INITIALIZING TACTICAL LINK...</div>;
 
     return (
-        <div className="min-h-screen bg-[#0B0F19] text-slate-100 font-mono p-4 pb-24">
+        <div className="min-h-screen bg-[#0B0F19] text-slate-100 font-mono p-4 pb-24 relative overflow-hidden">
+            {/* HUD Scanline Overlay */}
+            <div className="pointer-events-none absolute inset-0 z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_4px,3px_100%]"></div>
+
             {/* Header */}
-            <header className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+            <header className="flex justify-between items-center mb-8 border-b border-white/10 pb-4 relative z-10">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-electric/10 border border-electric/30 flex items-center justify-center">
                         <Shield size={20} className="text-electric" />
@@ -108,13 +129,23 @@ const TacticalHUD = () => {
                     </div>
                 </div>
                 <div className="text-right">
-                    <span className="block text-[8px] text-slate-500 uppercase font-black">Network</span>
-                    <span className="text-[10px] text-emerald font-bold uppercase">Signal Lock</span>
+                    <span className="block text-[8px] text-slate-500 uppercase font-black tracking-widest mb-1">Network Status</span>
+                    {isOnline ? (
+                        <div className="flex items-center justify-end gap-1.5 text-emerald">
+                            <Wifi size={10} strokeWidth={3} />
+                            <span className="text-[10px] font-bold uppercase">Signal Lock</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-end gap-1.5 text-danger animate-pulse">
+                            <WifiOff size={10} strokeWidth={3} />
+                            <span className="text-[10px] font-bold uppercase">Signal Lost</span>
+                        </div>
+                    )}
                 </div>
             </header>
 
             {/* Presence Controls */}
-            <div className="grid grid-cols-3 gap-3 mb-8 bg-white/[0.02] p-4 border border-white/5">
+            <div className="grid grid-cols-3 gap-3 mb-8 bg-white/[0.02] p-4 border border-white/5 relative z-10">
                 <div className="flex flex-col gap-2">
                     <span className="text-[8px] font-black text-slate-500 uppercase">Status</span>
                     <select 
@@ -150,9 +181,9 @@ const TacticalHUD = () => {
             </div>
 
             {/* Task Feed */}
-            <div className="space-y-6">
+            <div className="space-y-6 relative z-10">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1.5 h-1.5 bg-electric animate-ping" />
+                    <div className={`w-1.5 h-1.5 ${isOnline ? 'bg-electric animate-ping' : 'bg-slate-600'}`} />
                     <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Active Directives</h2>
                 </div>
 
@@ -171,7 +202,19 @@ const TacticalHUD = () => {
                             <div className="p-5">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex flex-col gap-1">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Directive #{task.id.substring(0,8)}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">Directive #{task.id.substring(0,8)}</span>
+                                            {task.floor_level && (
+                                                <span className="bg-white/10 text-white text-[8px] px-1.5 py-0.5 font-bold border border-white/10 flex items-center gap-1">
+                                                    <Layers size={8} /> FL_{task.floor_level}
+                                                </span>
+                                            )}
+                                            {task.wing_id && (
+                                                <span className="bg-white/10 text-white text-[8px] px-1.5 py-0.5 font-bold border border-white/10">
+                                                    {task.wing_id}
+                                                </span>
+                                            )}
+                                        </div>
                                         <span className={`text-[8px] font-bold uppercase ${
                                             task.incident_severity >= 4 ? 'text-red-500' : 'text-amber-500'
                                         }`}>
@@ -192,8 +235,9 @@ const TacticalHUD = () => {
                                             fullWidth
                                             className="bg-electric text-navy-950 font-black text-[10px] uppercase tracking-widest py-4 rounded-none border-none"
                                             onClick={() => handleAcknowledge(task.id)}
+                                            disabled={!isOnline}
                                         >
-                                            Confirm Receipt
+                                            {isOnline ? 'Confirm Receipt' : 'Waiting for Signal'}
                                         </Button>
                                     ) : task.status === 'ACKNOWLEDGED' ? (
                                         <Button 
@@ -201,8 +245,9 @@ const TacticalHUD = () => {
                                             fullWidth
                                             className="bg-emerald text-navy-950 font-black text-[10px] uppercase tracking-widest py-4 rounded-none border-none"
                                             onClick={() => handleSecure(task.id)}
+                                            disabled={!isOnline}
                                         >
-                                            Objective Secured
+                                            {isOnline ? 'Objective Secured' : 'Waiting for Signal'}
                                         </Button>
                                     ) : (
                                         <div className="w-full py-4 flex items-center justify-center gap-2 bg-emerald/20 border border-emerald/30 text-emerald font-black text-[10px] uppercase tracking-widest">
@@ -236,3 +281,4 @@ const TacticalHUD = () => {
 };
 
 export default TacticalHUD;
+

@@ -1,18 +1,20 @@
 const admin = require('firebase-admin');
 const db = require('../db');
-const { NODE_ENV, DEMO_MODE } = require('../config/env');
+const { NODE_ENV, DEMO_MODE, FIREBASE_PROJECT_ID } = require('../config/env');
 
-// Initialize Firebase Admin (assuming service account is provided via env or ADC)
+// Initialize Firebase Admin
 if (!admin.apps.length) {
     try {
         admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
+            projectId: FIREBASE_PROJECT_ID,
+            // credential: admin.credential.applicationDefault() // Use this if service account is available
         });
-        console.log('✅ [Firebase] Admin initialized');
+        console.log(`✅ [Firebase] Admin initialized for project: ${FIREBASE_PROJECT_ID}`);
     } catch (error) {
         console.error('🚨 [Firebase] Initialization failed:', error.message);
     }
 }
+
 
 /**
  * Firebase ID Token Authentication Middleware

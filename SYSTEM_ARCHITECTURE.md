@@ -53,7 +53,8 @@ graph TD
 1.  **Decomposition**: AI-generated action plans are automatically split into individual `Task` records.
 2.  **Smart Dispatch**: Tasks are assigned to the best-suited available responder based on role and Z-axis proximity.
 3.  **Dead Man's Switch**: If a task isn't acknowledged via WebSockets within 5 seconds, an **SMS Override** is sent via Twilio.
-4.  **Verification**: Responders confirm "Objective Secured" via the Mobile HUD, instantly updating the Command Center.
+4.  **Escalation Protocol**: If a critical incident (Severity 4+) remains unacknowledged for 3 minutes, a high-priority **Escalation SMS** is sent to the regional commander.
+5.  **Verification**: Responders confirm "Objective Secured" via the Mobile HUD, instantly updating the Command Center.
 
 ### 📡 Real-Time IoT Stream
 1.  **Generation**: A background worker simulates hotel sensor arrays (Smoke, Heat, CO2).
@@ -67,10 +68,12 @@ graph TD
 
 | Feature | Implementation | Purpose |
 | :--- | :--- | :--- |
+| **Secure Identity** | Firebase Auth (JWT) | Provides unified, enterprise-grade authentication across PWA and Backend. |
 | **Crash-Proofing** | Centralized `catchAsync` & Global Error Middleware | Prevents Node.js process termination on API failure. |
 | **Network Blackout** | Service Worker Background Sync + IndexedDB | Guarantees eventual delivery of SOS reports in low-signal areas. |
 | **Dual-Channel Dispatch** | WebSocket + SMS Fallback | Ensures 100% delivery of tactical instructions regardless of Wi-Fi state. |
-| **Audit Integrity** | Structured `audit_logs` Service | Provides liability-grade history of every status change and mass alert. |
+| **Escalation Logic** | BullMQ Delayed Jobs | Automates commander notification for unhandled life-safety incidents. |
+| **Audit Integrity** | Structured `audit_logs` & `response_logs` | Provides liability-grade history of every status change and tactical action. |
 | **Data Integrity** | Knex.js Migrations + ACID Transactions | Ensures consistent state across multi-tenant data. |
 
 ---
@@ -83,4 +86,4 @@ The system adopts a **Tactical Command Center** aesthetic:
 
 ---
 
-**RCR Architecture v3.0 // Ultra Level Orchestration Ready**
+**RCR Architecture v4.0 // Ultra Level Orchestration Ready**

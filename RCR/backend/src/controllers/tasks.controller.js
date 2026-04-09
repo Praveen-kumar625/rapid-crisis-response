@@ -16,10 +16,11 @@ exports.getMyTasks = catchAsync(async (req, res) => {
 
 exports.updateTaskStatus = catchAsync(async (req, res) => {
     const { status, evidenceUrl } = req.body;
-    const task = await TaskService.updateTaskStatus(req.params.taskId, status, evidenceUrl);
+    const task = await TaskService.updateTaskStatus(req.params.taskId, status, evidenceUrl, req.user.sub);
     if (!task) return res.status(404).json({ message: 'Task not found' });
     res.json(task);
 });
+
 
 exports.updatePresence = catchAsync(async (req, res) => {
     const { status, floorLevel, wingId } = req.body;

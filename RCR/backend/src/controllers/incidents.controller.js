@@ -163,10 +163,11 @@ exports.updateStatus = async(req, res) => {
     try {
         const { status } = req.body;
         const hotelId = req.user?.hotelId;
-        const updated = await IncidentService.updateStatus(req.params.id, status, hotelId);
+        const updated = await IncidentService.updateStatus(req.params.id, status, hotelId, req.user?.sub);
         if (!updated) return res.status(404).json({ message: 'Not found' });
         res.json(updated);
     } catch (err) {
+
         console.error('[IncidentsController] updateStatus failed:', err);
         res.status(500).json({ error: 'Failed to update status' });
     }

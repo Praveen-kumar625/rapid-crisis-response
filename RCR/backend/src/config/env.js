@@ -22,6 +22,11 @@ const envSchema = z.object({
     AWS_SECRET_ACCESS_KEY: z.string().optional(),
     AWS_S3_ENDPOINT: z.string().optional(),
     GOOGLE_CLIENT_ID: z.string().default('171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com'),
+    FIREBASE_PROJECT_ID: z.string().optional(),
+    TWILIO_ACCOUNT_SID: z.string().optional(),
+    TWILIO_AUTH_TOKEN: z.string().optional(),
+    TWILIO_FROM_NUMBER: z.string().optional(),
+    COMMANDER_PHONE_NUMBER: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -54,6 +59,13 @@ module.exports = {
     },
     GEMINI_API_KEY: env.GEMINI_API_KEY,
     GOOGLE_CLIENT_ID: env.GOOGLE_CLIENT_ID,
+    FIREBASE_PROJECT_ID: env.FIREBASE_PROJECT_ID,
+    TWILIO: {
+        accountSid: env.TWILIO_ACCOUNT_SID,
+        authToken: env.TWILIO_AUTH_TOKEN,
+        fromNumber: env.TWILIO_FROM_NUMBER,
+    },
+    COMMANDER_PHONE_NUMBER: env.COMMANDER_PHONE_NUMBER,
     ALLOWED_ORIGINS: (env.ALLOWED_ORIGINS || '').split(',').map(u => u.trim()).filter(Boolean),
     DEMO_MODE: process.env.DEMO_MODE === 'true',
     // 🚨 FIXED: Correctly export S3 config object
@@ -65,3 +77,4 @@ module.exports = {
         endpoint: env.AWS_S3_ENDPOINT,
     },
 };
+

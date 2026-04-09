@@ -167,7 +167,10 @@ exports.getById = async(id, hotelId) => {
     };
 };
 
-exports.updateStatus = async(id, newStatus, hotelId) => {
+exports.updateStatus = async(id, newStatus, hotelId, userId = 'admin') => {
+    const previousIncident = await db('incidents').where({ id }).first();
+    if (!previousIncident) return null;
+
     const query = db('incidents').where({ id });
     if (hotelId) query.andWhere({ hotel_id: hotelId });
 
@@ -177,19 +180,21 @@ exports.updateStatus = async(id, newStatus, hotelId) => {
     }).returning('*');
 
     if (incident) {
-        // 🚨 PHASE 4: AUDIT LOG
-        await AuditService.log({
+        // 🚨 AUDIT LOG
+        const AuditService = require('./audit.service');
+        await AuditService.logResponseAction({
             incidentId: incident.id,
-            actionType: 'STATUS_CHANGE',
-            actorId: 'admin',
-            description: `Status changed to ${newStatus}`,
-            payload: { newStatus }
+            userId,
+            action: 'INCIDENT_STATUS_CHANGE',
+            previousStatus: previousIncident.status,
+            newStatus: newStatus
         });
 
         await SocketService.publish(`hotel_${hotelId}_incidents`, { type: 'status-updated', incident });
     }
     return incident;
 };
+
 
 exports.analyzeVoice = async({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng, reportedBy, hotelId }) => {
     const analysis = await AIService.analyzeVoice({ audioBase64, audioMimeType, floorLevel, roomNumber, wingId, lat, lng });

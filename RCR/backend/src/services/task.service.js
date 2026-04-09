@@ -51,19 +51,31 @@ exports.createTasksFromPlan = async (incidentId, actionPlan, role = 'SECURITY') 
 /**
  * Mark a task as acknowledged by a responder (cancels SMS fallback).
  */
-exports.acknowledgeTask = async (taskId) => {
+exports.acknowledgeTask = async (taskId, userId) => {
     // 1. Update DB
     const [task] = await db('tasks')
         .where({ id: taskId })
         .update({ 
             status: 'ACKNOWLEDGED',
+            assigned_to: userId,
             updated_at: new Date() 
         })
         .returning('*');
 
     if (!task) return null;
 
+    // 🚨 AUDIT LOG
+    const AuditService = require('./audit.service');
+    await AuditService.logResponseAction({
+        incidentId: task.incident_id,
+        userId,
+        action: 'TASK_ACKNOWLEDGED',
+        newStatus: 'ACKNOWLEDGED',
+        metadata: { taskId }
+    });
+
     // 2. Cancel the Dead Man's Switch (SMS fallback)
+// ... rest of function ...
     try {
         const job = await incidentQueue.getJob(`dispatch_${taskId}`);
         if (job) await job.remove();
@@ -175,7 +187,10 @@ exports.updateResponderStatus = async (userId, status, floor, wing) => {
 /**
  * Update the status of a specific tactical task.
  */
-exports.updateTaskStatus = async (taskId, status, evidenceUrl = null) => {
+exports.updateTaskStatus = async (taskId, status, evidenceUrl = null, userId = null) => {
+    const previousTask = await db('tasks').where({ id: taskId }).first();
+    if (!previousTask) return null;
+
     const [task] = await db('tasks')
         .where({ id: taskId })
         .update({ 
@@ -187,7 +202,19 @@ exports.updateTaskStatus = async (taskId, status, evidenceUrl = null) => {
 
     if (!task) return null;
 
+    // 🚨 AUDIT LOG
+    const AuditService = require('./audit.service');
+    await AuditService.logResponseAction({
+        incidentId: task.incident_id,
+        userId,
+        action: 'TASK_STATUS_UPDATE',
+        previousStatus: previousTask.status,
+        newStatus: status,
+        metadata: { taskId, evidenceUrl }
+    });
+
     // Fetch incident to get hotel context for broadcasting
+// ... rest of function ...
     const incident = await db('incidents').where({ id: task.incident_id }).first();
     if (incident) {
         await SocketService.publish(`hotel_${incident.hotel_id}_tasks`, { 

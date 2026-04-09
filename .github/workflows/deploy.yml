@@ -16,7 +16,11 @@ jobs:
       - name: Install dependencies
         run: npm install
         working-directory: RCR
+      - name: Security Scan
+        run: npm audit --audit-level=high
+        working-directory: RCR
       - name: Run tests
+
         # 🚨 FIXED: Inject placeholder env vars so zod schema and startup checks pass
         run: npm test --workspace=backend -- --passWithNoTests --forceExit
         env:

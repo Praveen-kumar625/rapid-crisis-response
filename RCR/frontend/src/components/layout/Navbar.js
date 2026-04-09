@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogOut, Wifi, WifiOff } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
+import { Menu, X, Shield, Activity, Map as MapIcon, BarChart2, ShieldAlert, LogOut, Wifi, WifiOff, LogIn } from 'lucide-react';
+import { signInWithGoogle } from '../../utils/firebase';
 import toast from 'react-hot-toast';
 
 const NavLink = ({ to, icon: Icon, children, currentPath, onClick }) => {
+// ... existing NavLink implementation ...
     const isActive = currentPath === to;
     return (
         <Link 
@@ -89,6 +90,7 @@ export const Navbar = ({ user, logout }) => {
                 <nav className="hidden lg:flex items-center gap-1" aria-label="Main Navigation">
                     <NavLink to="/" icon={Activity} currentPath={location.pathname}>Overview</NavLink>
                     <NavLink to="/map" icon={MapIcon} currentPath={location.pathname}>Live Map</NavLink>
+                    <NavLink to="/hud" icon={Shield} currentPath={location.pathname}>Tactical HUD</NavLink>
                     <NavLink to="/dashboard" icon={BarChart2} currentPath={location.pathname}>Analytics</NavLink>
                     <div className="w-px h-6 bg-slate-800 mx-2"></div>
                     <Link to="/report" aria-label="Initiate SOS Report">
@@ -99,6 +101,7 @@ export const Navbar = ({ user, logout }) => {
                     </Link>
                 </nav>
 
+
                 <div className="hidden lg:flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4 bg-slate-900 px-3 py-1 rounded-none border border-slate-800">
@@ -108,15 +111,16 @@ export const Navbar = ({ user, logout }) => {
                             </button>
                         </div>
                     ) : (
-                        <GoogleLogin
-                            onSuccess={handleLoginSuccess}
-                            onError={() => toast.error('Login Failed')}
-                            theme="dark"
-                            shape="square"
-                            size="medium"
-                        />
+                        <button 
+                            onClick={handleLogin}
+                            className="bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 px-4 py-2 rounded-none text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                        >
+                            <LogIn size={14} />
+                            SECURE_LOGIN
+                        </button>
                     )}
                 </div>
+
 
                 <button 
                     className="lg:hidden p-2 text-slate-400 hover:text-white"
@@ -201,15 +205,16 @@ export const Navbar = ({ user, logout }) => {
                                 </div>
                             ) : (
                                 <div className="mt-6">
-                                    <GoogleLogin
-                                        onSuccess={handleLoginSuccess}
-                                        onError={() => toast.error('Login Failed')}
-                                        theme="dark"
-                                        shape="square"
-                                        width="100%"
-                                    />
+                                    <button 
+                                        onClick={() => { handleLogin(); setIsMobileMenuOpen(false); }}
+                                        className="w-full bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 px-4 py-4 rounded-none text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-colors"
+                                    >
+                                        <LogIn size={20} />
+                                        SECURE_LOGIN_PORTAL
+                                    </button>
                                 </div>
                             )}
+
                         </div>
                     </motion.div>
                 )}

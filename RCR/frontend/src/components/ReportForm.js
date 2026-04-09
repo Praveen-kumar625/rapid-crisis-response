@@ -56,6 +56,7 @@ function ReportForm() {
     const [showAiModal, setShowAiModal] = useState(false);
     const [aiResult, setAiResult] = useState({ category: '', severity: 0, method: 'Cloud AI (Gemini)' });
     const [locationError, setLocationError] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
     const mediaRecorderRef = useRef(null);
     const titleRef = useRef(null);
@@ -242,6 +243,7 @@ function ReportForm() {
         if (!form.title.trim()) { toast.error('Subject identifier required'); titleRef.current?.focus(); return; }
         if (!form.description.trim()) { toast.error('Narrative required'); descriptionRef.current?.focus(); return; }
         
+        setIsSubmitting(true);
         let finalForm = { ...form };
         let triageMethod = 'Cloud AI (Gemini)';
 
@@ -275,12 +277,16 @@ function ReportForm() {
             } catch (err) {
                 toast.error('Dispatch Failure');
                 await queueReport({...payload, mediaFile, synced: false });
+            } finally {
+                setIsSubmitting(false);
             }
         } else {
             await queueReport({...payload, mediaFile, synced: false });
             toast.success('Queued for sync');
+            setIsSubmitting(false);
         }
     };
+
 
     return (
         <Card className="w-full overflow-hidden shadow-tactical border-slate-800 bg-[#151B2B] rounded-none">
@@ -393,8 +399,16 @@ function ReportForm() {
                     )}
                 </div>
 
-                <button type="submit" className="w-full py-6 bg-cyan-600 hover:bg-cyan-500 text-black font-black uppercase tracking-[0.3em] text-sm transition-all border border-cyan-400 shadow-neon-cyan flex items-center justify-center gap-3"><ShieldCheck size={20} />Submit</button>
+                <Button 
+                    type="submit" 
+                    isLoading={isSubmitting}
+                    className="w-full py-6 text-sm tracking-[0.3em]"
+                >
+                    <ShieldCheck size={20} />
+                    Submit_Report_Signal
+                </Button>
             </form>
+
 
             {showAiModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0B0F19]/95 backdrop-blur-sm">

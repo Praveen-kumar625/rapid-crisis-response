@@ -94,6 +94,22 @@ async function generateContentWithRetry(prompt, maxRetries = 3) {
 // -----------------------------------------------------------------
 
 /**
+ * Deterministic spam filter to prevent API costs on obvious garbage
+ */
+function isObviousSpam(title, description) {
+    const combined = `${title} ${description}`.toLowerCase();
+    const spamKeywords = ['test', 'hello', 'asdf', 'qwerty', '12345'];
+    
+    // Check for short, nonsensical strings
+    if (combined.length < 10) return true;
+    
+    // Check for explicit test strings
+    if (spamKeywords.some(kw => combined === kw || combined.includes(` ${kw} `))) return true;
+    
+    return false;
+}
+
+/**
  * Comprehensive triage for hospitality incidents
  */
 async function analyzeReport({
@@ -107,7 +123,23 @@ async function analyzeReport({
     roomNumber,
     wingId,
 }) {
+    // 0. Pre-filter Spam
+    if (isObviousSpam(title, description)) {
+        return {
+            spamScore: 1.0,
+            autoSeverity: 1,
+            predictedCategory: 'SPAM',
+            hospitalityCategory: 'INFRASTRUCTURE',
+            translatedText: description,
+            detectedLanguage: 'en',
+            panicLevel: 'Low',
+            actionPlan: ['Automatic rejection: Content identified as non-emergency or test data.'],
+            requiredResources: []
+        };
+    }
+
     const normalizedCategory = (category || '').toUpperCase();
+
     
     // Default fallback object (🚨 STANDARDIZED FIELD NAMES)
     const fallback = {

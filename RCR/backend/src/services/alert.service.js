@@ -62,7 +62,31 @@ const startAlertListener = () => {
     console.info('[AlertService] Redis listener active (legacy). Prefer direct sendEmergencySMS calls for RCR flow.');
 };
 
+/**
+ * Sends an escalation SMS for unacknowledged critical incidents.
+ */
+async function sendEscalationSMS(incidentData) {
+    try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID || TWILIO.accountSid;
+        const authToken = process.env.TWILIO_AUTH_TOKEN || TWILIO.authToken;
+        const fromNumber = process.env.TWILIO_FROM_NUMBER || TWILIO.fromNumber;
+        const commanderPhone = process.env.COMMANDER_PHONE_NUMBER;
+
+        if (!accountSid || !authToken || !fromNumber || !commanderPhone) return;
+
+        const client = twilio(accountSid, authToken);
+        const body = `⚠️ ESCALATION: UNACKNOWLEDGED CRITICAL\nIncident: ${incidentData.title}\nSector: ${incidentData.wingId} / FL_${incidentData.floorLevel}\nElapsed: 3m+`;
+
+        await client.messages.create({ body, from: fromNumber, to: commanderPhone });
+        console.log(`[AlertService] ✅ Escalation SMS sent to: ${commanderPhone}`);
+    } catch (error) {
+        console.error('[AlertService] ❌ Escalation SMS Failed:', error.message);
+    }
+}
+
 module.exports = {
     sendEmergencySMS,
+    sendEscalationSMS,
     startAlertListener
 };
+

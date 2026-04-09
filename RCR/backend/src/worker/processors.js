@@ -48,10 +48,12 @@ const worker = new Worker('incident-tasks', async (job) => {
                 ai_required_resources: JSON.stringify(analysis.requiredResources || []),
                 hospitality_category: analysis.hospitalityCategory,
                 spam_score: analysis.spamScore,
-                status: analysis.spamScore > 0.8 ? 'REJECTED' : incident.status,
+                status: analysis.spamScore > 0.8 ? 'REJECTED' : 
+                        (analysis.predictedCategory === 'UNVERIFIED' ? 'MANUAL_REVIEW' : incident.status),
                 updated_at: new Date()
             })
             .returning('*');
+
 
         if (analysis.actionPlan && analysis.actionPlan.length > 0) {
             await TaskService.createTasksFromPlan(
@@ -66,18 +68,38 @@ const worker = new Worker('incident-tasks', async (job) => {
             incident: updated 
         });
 
-        if (updated.severity === 5 || updated.auto_severity === 5) {
+        if (updated.severity >= 4 || updated.auto_severity >= 4) {
             const { incidentQueue } = require('../infrastructure/queue');
+            
+            // Immediate SMS
             await incidentQueue.add('SEND_SMS', { 
                 type: 'SEND_SMS', 
                 data: { incidentId: updated.id } 
-            }, { 
-                removeOnComplete: true,
-                attempts: 3,
-                backoff: { type: 'exponential', delay: 1000 }
+            });
+
+            // Delayed Escalation Check (3 mins)
+            await incidentQueue.add('ESCALATION_CHECK', {
+                type: 'ESCALATION_CHECK',
+                data: { incidentId: updated.id }
+            }, { delay: 180000 });
+        }
+    }
+
+    if (type === 'ESCALATION_CHECK') {
+        const { incidentId } = data;
+        const incident = await db('incidents').where({ id: incidentId }).first();
+        
+        // If still OPEN or UNACKNOWLEDGED, escalate
+        if (incident && (incident.status === 'OPEN')) {
+            const AlertService = require('../services/alert.service');
+            await AlertService.sendEscalationSMS({
+                title: incident.title,
+                wingId: incident.wing_id,
+                floorLevel: incident.floor_level
             });
         }
     }
+
 
     if (type === 'TASK_DISPATCH') {
         const { taskId } = data;

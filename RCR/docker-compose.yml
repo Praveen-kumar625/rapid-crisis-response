@@ -49,10 +49,11 @@ services:
       - DB_PASS=${DB_PASS}
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT}
-      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
-      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - COMMANDER_PHONE_NUMBER=${COMMANDER_PHONE_NUMBER}
     ports:
       - "${PORT_API}:${PORT_API}"
+
     volumes:
       - ./backend/src:/app/src        # hot‑reload for dev
     command: npm run dev
@@ -71,6 +72,7 @@ services:
       - NODE_ENV=development
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT}
+      - COMMANDER_PHONE_NUMBER=${COMMANDER_PHONE_NUMBER}
     volumes:
       - ./backend/src:/app/src
     command: npm run worker
@@ -86,10 +88,14 @@ services:
       - REACT_APP_API_URL=http://api:${PORT_API}
       - REACT_APP_SOCKET_URL=http://api:${PORT_API}
       - REACT_APP_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
-      - REACT_APP_AUTH0_DOMAIN=${AUTH0_DOMAIN}
-      - REACT_APP_AUTH0_CLIENT_ID=YOUR_CLIENT_ID   # set in .env
-      - REACT_APP_AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - REACT_APP_FIREBASE_API_KEY=${REACT_APP_FIREBASE_API_KEY}
+      - REACT_APP_FIREBASE_AUTH_DOMAIN=${REACT_APP_FIREBASE_AUTH_DOMAIN}
+      - REACT_APP_FIREBASE_PROJECT_ID=${REACT_APP_FIREBASE_PROJECT_ID}
+      - REACT_APP_FIREBASE_STORAGE_BUCKET=${REACT_APP_FIREBASE_STORAGE_BUCKET}
+      - REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${REACT_APP_FIREBASE_MESSAGING_SENDER_ID}
+      - REACT_APP_FIREBASE_APP_ID=${REACT_APP_FIREBASE_APP_ID}
     ports:
+
       - "${PORT_WEB}:3000"
     volumes:
       - ./frontend/src:/app/src

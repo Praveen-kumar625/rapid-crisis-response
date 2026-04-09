@@ -26,8 +26,33 @@ exports.log = async ({ incidentId, actionType, actorId, payload = {}, descriptio
 };
 
 /**
+ * Logs a specific responder action to the response_logs table for crisis auditing.
+ */
+exports.logResponseAction = async ({ incidentId, userId, action, previousStatus, newStatus, note = '', metadata = {} }) => {
+    try {
+        const [logEntry] = await db('response_logs')
+            .insert({
+                incident_id: incidentId,
+                user_id: userId,
+                action,
+                previous_status: previousStatus,
+                new_status: newStatus,
+                note,
+                metadata: JSON.stringify(metadata)
+            })
+            .returning('*');
+        
+        console.log(`[ResponseLog] Action Recorded: ${action} for incident ${incidentId}`);
+        return logEntry;
+    } catch (err) {
+        console.error('[Audit Service] Failed to log response action:', err.message);
+    }
+};
+
+/**
  * Retrieves audit history for a specific incident.
  */
+
 exports.getIncidentHistory = async (incidentId) => {
     return db('audit_logs')
         .where({ incident_id: incidentId })

@@ -57,15 +57,17 @@ export const Navbar = ({ user, logout }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
 
-    const handleLoginSuccess = (credentialResponse) => {
-        const token = credentialResponse.credential;
-        localStorage.setItem('google_token', token);
-        // Dispatch custom event for App.js to pick up without reload
-        window.dispatchEvent(new Event('google-login-success'));
-        toast.success('Successfully authenticated');
+    const handleLogin = async () => {
+        try {
+            await signInWithGoogle();
+            toast.success('Successfully authenticated');
+        } catch (err) {
+            toast.error('Authentication Failed');
+        }
     };
 
     return (
+
         <header className="sticky top-0 z-50 bg-[#151B2B] border-b border-slate-800 shadow-none">
             <div className="max-w-screen-2xl mx-auto px-4 md:px-8 h-16 flex justify-between items-center">
                 

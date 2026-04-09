@@ -1,7 +1,8 @@
 // RE-THEMED: Solid Tactical
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
+
 import { MapPin, Cpu, ArrowRight, Navigation } from 'lucide-react';
 import { Card } from './ui/Card';
 

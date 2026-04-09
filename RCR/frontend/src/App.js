@@ -2,8 +2,8 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './utils/firebase';
-import { jwtDecode } from 'jwt-decode';
 import toast, { Toaster } from 'react-hot-toast';
+
 import { joinHotelRoom, updateSocketToken } from './socket';
 import api from './api';
 import { AppLayout } from './components/layout/AppLayout';

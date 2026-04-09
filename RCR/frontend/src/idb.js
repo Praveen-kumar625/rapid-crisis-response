@@ -7,8 +7,9 @@ const TASK_STORE = 'cachedTasks';
 
 export async function getDB() {
     return openDB(DB_NAME, 2, {
-        upgrade(db, oldVersion, newVersion) {
+        upgrade(db, oldVersion, _newVersion) {
             if (oldVersion < 1) {
+
                 if (!db.objectStoreNames.contains(REPORT_STORE)) {
                     const store = db.createObjectStore(REPORT_STORE, {
                         keyPath: 'localId',

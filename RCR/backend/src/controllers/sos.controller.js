@@ -1,6 +1,7 @@
 const IncidentService = require('../services/incident.service');
 const GoogleCloudAI = require('../infrastructure/ai/googleCloud');
 const AIService = require('../services/ai.service');
+const catchAsync = require('../utils/catchAsync');
 
 /**
  * Handle SOS voice reports from the frontend.
@@ -11,41 +12,41 @@ const AIService = require('../services/ai.service');
  * 4. Pass translated text to Gemini for triage.
  * 5. Create incident and return response.
  */
-exports.handleVoiceSOS = async (req, res) => {
+exports.handleVoiceSOS = catchAsync(async (req, res) => {
+    // PHASE 1: Fix Controller Crashes (Strict Guard Clauses)
+    
+    // 1. User Context Guard
+    if (!req.user || !req.user.sub) {
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Unauthorized: Missing user context' 
+        });
+    }
+
+    const { 
+        audioBase64, 
+        mimeType, 
+        floorLevel, 
+        roomNumber, 
+        wingId, 
+        lat, 
+        lng, 
+        hotelId 
+    } = req.body;
+
+    // 2. Request Body Guard
+    if (!audioBase64 || !mimeType) {
+        return res.status(400).json({
+            success: false,
+            message: "Bad Request: Missing audio data or mimeType"
+        });
+    }
+
+    const reportedBy = req.user.sub;
+
+    console.log('[SOS Controller] Processing voice SOS...');
+
     try {
-        // PHASE 1: Fix Controller Crashes (Guard Clauses)
-        
-        // 1. User Context Guard
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "Unauthorized: User context missing" 
-            });
-        }
-
-        const { 
-            audioBase64, 
-            mimeType, 
-            floorLevel, 
-            roomNumber, 
-            wingId, 
-            lat, 
-            lng, 
-            hotelId 
-        } = req.body;
-
-        // 2. Request Body Guard
-        if (!audioBase64 || !mimeType) {
-            return res.status(400).json({
-                success: false,
-                message: "Bad Request: Missing audio data or mimeType"
-            });
-        }
-
-        const reportedBy = req.user.id;
-
-        console.log('[SOS Controller] Processing voice SOS...');
-
         // 1. Transcribe
         const audioBuffer = Buffer.from(audioBase64, 'base64');
         const transcriptionResult = await GoogleCloudAI.transcribeAudio(audioBuffer, mimeType);
@@ -97,41 +98,30 @@ exports.handleVoiceSOS = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('[SOS Controller] Critical Error:', err);
+        console.error('[SOS Controller] Processing Error, triggering fallback:', err);
         
-        // Fallback: Attempt to create incident even if AI or processing fails
-        try {
-            const reportedBy = req.user?.id || 'SYSTEM_FALLBACK';
-            const { floorLevel, roomNumber, wingId, lat, lng, hotelId, mimeType, audioBase64 } = req.body;
+        // Graceful Degradation: Attempt to create incident even if AI processing fails
+        const fallbackIncident = await IncidentService.create({
+            title: 'SOS: Voice Report (Processing Failure)',
+            description: 'A voice SOS was received but AI processing failed. Manual review required.',
+            severity: 5,
+            category: 'EMERGENCY',
+            lat: lat || 0,
+            lng: lng || 0,
+            floorLevel: floorLevel || 1,
+            roomNumber: roomNumber || 'unknown',
+            wingId: wingId || 'unknown',
+            reportedBy,
+            hotelId,
+            mediaType: mimeType,
+            mediaBase64: audioBase64,
+            triageMethod: 'Manual (Critical Failure)'
+        });
 
-            const fallbackIncident = await IncidentService.create({
-                title: 'SOS: Voice Report (System Error)',
-                description: 'A voice SOS was received but processing encountered a critical error. Manual review required.',
-                severity: 5,
-                category: 'EMERGENCY',
-                lat: lat || 0,
-                lng: lng || 0,
-                floorLevel: floorLevel || 1,
-                roomNumber: roomNumber || 'unknown',
-                wingId: wingId || 'unknown',
-                reportedBy,
-                hotelId,
-                mediaType: mimeType || 'audio/webm',
-                mediaBase64: audioBase64,
-                triageMethod: 'Manual (Critical Failure)'
-            });
-
-            return res.status(201).json({
-                success: false,
-                error: 'Internal processing failure, incident logged for manual review.',
-                incident: fallbackIncident
-            });
-        } catch (fallbackErr) {
-            console.error('[SOS Controller] Fatal Fallback Error:', fallbackErr);
-            return res.status(500).json({
-                success: false,
-                error: 'Fatal system error. Emergency services alerted.'
-            });
-        }
+        return res.status(201).json({
+            success: false,
+            error: 'Internal processing failure, incident logged for manual review.',
+            incident: fallbackIncident
+        });
     }
-};
+});

@@ -5,6 +5,7 @@ const morgan = require('morgan');
 require('express-async-errors'); // Note: This already does some lifting for async routes
 const healthRoutes = require('./routes/health.routes');
 const incidentRoutes = require('./routes/incidents.routes');
+const sosRoutes = require('./routes/sos.routes');
 const rateLimit = require('express-rate-limit');
 const { ALLOWED_ORIGINS, NODE_ENV } = require('./config/env');
 
@@ -57,6 +58,7 @@ app.use(express.json({ limit: '10mb' })); // Support larger base64 audio payload
 // Routes
 app.use('/health', healthRoutes);
 app.use('/incidents', incidentRoutes);
+app.use('/sos', sosRoutes);
 
 // 404 Handler
 app.use((req, res) => {

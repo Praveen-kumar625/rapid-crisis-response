@@ -124,7 +124,7 @@ export const TacticalMap = ({
                             className="btn-tactical whitespace-nowrap"
                         >
                             <Plus size={14} strokeWidth={3} />
-                            CREATE INCIDENT
+                            SOS
                         </button>
                     </div>
                 </Card>

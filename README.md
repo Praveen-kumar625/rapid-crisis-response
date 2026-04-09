@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🦚 RAPID CRISIS RESPONSE (RCR)
-### *[ ULTRA-LEVEL ORCHESTRATION ENGINE ]*
+### *Next-Gen AI Emergency Orchestration for Hospitality & Urban Infrastructure*                    
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/andreasbm/readme-icons/master/lines/rainbow.png" width="100%">
@@ -17,7 +17,7 @@
 
 </div>
 
-## 🌌 THE MISSION_DIRECTIVE
+## 🌌 THE MISSION DIRECTIVE
 In the high-stakes theater of hospitality and urban infrastructure, **seconds determine survival**. Legacy systems are siloed and fragile. **RCR** is an AI-native, offline-resilient nerve center that automates triage, visualizes invisible hazards, and orchestrates surgical response efforts across a decentralized ecosystem.
 
 ---

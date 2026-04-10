@@ -47,9 +47,9 @@ const Dashboard = () => {
     }, []);
 
     return (
-        <div className="h-[calc(100vh-64px)] w-full bg-[#0B0F19] text-slate-100 flex flex-col lg:flex-row overflow-hidden lg:overflow-hidden font-sans selection:bg-cyan-500/30">
+        <div className="min-h-[calc(100vh-64px)] w-full bg-[#0B0F19] text-slate-100 flex flex-col lg:flex-row lg:overflow-hidden font-sans selection:bg-cyan-500/30">
             {/* LEFT PANEL: INTEL FEED */}
-            <aside className="w-full lg:w-1/4 h-[40vh] lg:h-full border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#151B2B] flex flex-col shrink-0">
+            <aside className="w-full lg:w-1/4 h-auto lg:h-full border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#151B2B] flex flex-col shrink-0">
                 <div className="p-4 lg:p-6 border-b border-slate-800 flex items-center justify-between bg-black/20">
                     <div className="flex items-center gap-3">
                         <div className="relative">
@@ -60,7 +60,7 @@ const Dashboard = () => {
                     <span className="font-mono text-[9px] lg:text-[10px] text-slate-500 tabular-nums uppercase">Nodes: {incidents.length}</span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 lg:p-4 space-y-3 lg:space-y-4">
+                <div className="max-h-[40vh] lg:max-h-none lg:flex-1 overflow-y-auto custom-scrollbar p-3 lg:p-4 space-y-3 lg:space-y-4">
                     <AnimatePresence initial={false}>
                         {incidents.map((inc) => (
                             <motion.div
@@ -75,17 +75,17 @@ const Dashboard = () => {
                                 }`}
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className={`px-1.5 py-0.5 rounded-none text-[8px] lg:text-[9px] font-black uppercase tracking-wider border ${
+                                    <span className={`px-1.5 py-0.5 rounded-none text-[10px] lg:text-[11px] font-black uppercase tracking-wider border ${
                                         inc.severity >= 4 ? 'bg-red-600 text-white border-red-400 shadow-neon-red' : 'bg-amber-500 text-black border-amber-300'
                                     }`}>
                                         LVL {inc.severity}
                                     </span>
-                                    <span className="font-mono text-[8px] lg:text-[9px] text-slate-500 tabular-nums">
+                                    <span className="font-mono text-[9px] lg:text-[10px] text-slate-500 tabular-nums">
                                         {new Date(inc.createdAt).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                                 <h3 className="text-xs lg:text-sm font-bold truncate uppercase tracking-tight text-white">{inc.title}</h3>
-                                <p className="text-[10px] lg:text-[11px] text-slate-400 line-clamp-2 mt-1 font-light leading-relaxed">
+                                <p className="text-[11px] lg:text-[12px] text-slate-400 line-clamp-2 mt-1 font-light leading-relaxed">
                                     {inc.description}
                                 </p>
                             </motion.div>
@@ -95,7 +95,7 @@ const Dashboard = () => {
             </aside>
 
             {/* CENTER CANVAS: TACTICAL MAP */}
-            <main className="w-full lg:w-1/2 h-[50vh] lg:h-full relative border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#0B0F19] shrink-0">
+            <main className="w-full lg:w-1/2 h-[60vh] lg:h-full relative border-b lg:border-b-0 lg:border-r border-slate-800 bg-[#0B0F19] shrink-0">
                 {/* Floating Toggles */}
                 <div className="absolute top-4 lg:top-6 left-1/2 -translate-x-1/2 z-20 w-[90%] lg:w-auto">
                     <div className="bg-[#151B2B] border border-slate-700 p-1 rounded-none flex justify-center gap-1 shadow-tactical">
@@ -103,7 +103,7 @@ const Dashboard = () => {
                             <button
                                 key={mode}
                                 onClick={() => setMapMode(mode)}
-                                className={`px-3 lg:px-4 py-1 lg:py-1.5 rounded-none text-[8px] lg:text-[9px] font-black uppercase tracking-widest transition-all shrink-0 ${
+                                className={`px-3 lg:px-4 py-2 lg:py-1.5 rounded-none text-[10px] lg:text-[11px] font-black uppercase tracking-widest transition-all shrink-0 ${
                                     mapMode === mode ? 'bg-cyan-600 text-black border border-cyan-400 shadow-neon-cyan' : 'text-slate-400 hover:text-slate-200'
                                 }`}
                             >
@@ -123,7 +123,7 @@ const Dashboard = () => {
 
                 {/* Dispatch FAB */}
                 <div className="absolute bottom-6 lg:bottom-10 left-1/2 -translate-x-1/2 z-20 w-[80%] lg:w-auto">
-                    <button className="w-full lg:w-auto bg-cyan-600 hover:bg-cyan-500 text-black px-6 lg:px-8 py-3 lg:py-4 rounded-none font-black uppercase tracking-[0.2em] text-[10px] lg:text-xs shadow-neon-cyan transition-all active:scale-95 border border-cyan-400">
+                    <button className="w-full lg:w-auto min-h-[44px] bg-cyan-600 hover:bg-cyan-500 text-black px-6 lg:px-8 py-3 lg:py-4 rounded-none font-black uppercase tracking-[0.2em] text-[10px] lg:text-xs shadow-neon-cyan transition-all active:scale-95 border border-cyan-400">
                         Initial Dispatch Signal
                     </button>
                 </div>

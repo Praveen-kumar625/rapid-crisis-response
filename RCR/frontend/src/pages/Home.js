@@ -55,7 +55,7 @@ function Home() {
 
                     <motion.h1 
                         variants={fadeInUp}
-                        className="text-4xl sm:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.95] mb-8 lg:mb-12"
+                        className="text-4xl sm:text-6xl lg:text-9xl font-black tracking-tighter leading-[0.95] mb-8 lg:mb-12"
                     >
                         <span className="block text-slate-100">THE GOLDEN</span>
                         <span className="block text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.3)]">
@@ -65,24 +65,24 @@ function Home() {
 
                     <motion.p 
                         variants={fadeInUp}
-                        className="max-w-3xl mx-auto text-lg md:text-2xl text-slate-400 font-light leading-relaxed mb-12 lg:mb-16"
+                        className="max-w-3xl mx-auto text-base md:text-xl lg:text-2xl text-slate-400 font-light leading-relaxed mb-12 lg:mb-16"
                     >
                         Rapid Crisis Response (RCR) leverages <span className="text-cyan-400 font-medium">Edge AI</span> to orchestrate safety in high-stakes hospitality. Zero-latency triage when seconds define outcomes.
                     </motion.p>
 
                     <motion.div 
                         variants={fadeInUp}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full sm:w-auto"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full sm:w-auto"
                     >
                         <Link to="/report" className="w-full sm:w-auto">
-                            <Button variant="primary" className="w-full sm:w-auto px-12 py-6 text-base bg-red-600 hover:bg-red-500 text-white rounded-none border border-red-400 shadow-[0_0_15px_rgba(220,38,38,0.3)]" aria-label="Initiate SOS Report">
+                            <Button variant="primary" className="w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 text-sm sm:text-base bg-red-600 hover:bg-red-500 text-white rounded-none border border-red-400 shadow-[0_0_15px_rgba(220,38,38,0.3)]" aria-label="Initiate SOS Report">
                                 <ShieldAlert size={20} />
                                 Initiate SOS Report
                             </Button>
                         </Link>
                         
                         <Link to="/map" className="w-full sm:w-auto">
-                            <Button variant="secondary" className="w-full sm:w-auto px-12 py-6 text-base group bg-slate-900 hover:bg-slate-800 text-slate-100 rounded-none border border-slate-700" aria-label="View Live Command Map">
+                            <Button variant="secondary" className="w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 text-sm sm:text-base group bg-slate-900 hover:bg-slate-800 text-slate-100 rounded-none border border-slate-700" aria-label="View Live Command Map">
                                 <MapIcon size={20} className="group-hover:text-cyan-400 transition-colors" />
                                 Command Map
                                 <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />

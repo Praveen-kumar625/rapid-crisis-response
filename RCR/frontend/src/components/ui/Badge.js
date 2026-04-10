@@ -18,7 +18,7 @@ export const Badge = ({
 
     return (
         <span 
-            className={`px-2 py-0.5 rounded-none text-[9px] uppercase tracking-wider border font-mono transition-all duration-200 flex items-center gap-1.5 w-fit tabular-nums ${variants[variant] || variants.neutral} ${className}`}
+            className={`px-2 py-0.5 rounded-none text-[10px] sm:text-[11px] uppercase tracking-wider border font-mono transition-all duration-200 flex items-center gap-1.5 w-fit tabular-nums ${variants[variant] || variants.neutral} ${className}`}
             {...props}
         >
             {children}

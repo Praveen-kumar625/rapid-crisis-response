@@ -19,7 +19,7 @@ export const Button = ({
 
     return (
         <button 
-            className={`px-6 py-3 rounded-none text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-tactical tabular-nums relative overflow-hidden ${variants[variant] || variants.primary} ${className}`}
+            className={`min-h-[44px] px-6 py-3 rounded-none text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-tactical tabular-nums relative overflow-hidden ${variants[variant] || variants.primary} ${className}`}
             disabled={disabled || isLoading}
             {...props}
         >

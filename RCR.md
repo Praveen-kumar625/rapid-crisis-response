@@ -1,4 +1,4 @@
-# 🦚 GEMINI PROJECT MANDATES
+# 🦚 RAPID CRISIS RESPONSE 
 ## *Rapid Crisis Response (RCR) // Quality & Architectural Integrity*
 
 This document serves as the **Single Source of Truth** for the project's engineering standards. Every sub-agent and developer MUST adhere to these mandates to maintain the **Ultra Level** architecture.

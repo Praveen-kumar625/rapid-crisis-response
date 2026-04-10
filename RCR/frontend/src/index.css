@@ -81,9 +81,17 @@ html {
 
 /* Layout Helpers */
 .app-container {
-  @apply container mx-auto px-6 lg:px-16 w-full;
+  @apply container mx-auto px-4 sm:px-6 lg:px-16 w-full;
 }
 
 .hero-min-height {
   min-height: calc(100vh - 64px);
+}
+
+@media (max-width: 640px) {
+  .hero-min-height {
+    min-height: auto;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
 }

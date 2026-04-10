@@ -10,7 +10,7 @@ import { Button } from './ui/Button';
 const Label = ({ children, htmlFor }) => (
     <label 
         htmlFor={htmlFor}
-        className="block text-[10px] uppercase tracking-[0.3em] font-black text-slate-500 mb-3 flex items-center gap-2 cursor-pointer"
+        className="block text-[11px] sm:text-[12px] uppercase tracking-[0.2em] font-black text-slate-500 mb-3 flex items-center gap-2 cursor-pointer"
     >
         <span className="w-1 h-1 bg-cyan-500 rounded-none"></span> {children}
     </label>
@@ -20,7 +20,7 @@ const Input = React.forwardRef(({ className = '', ...props }, ref) => (
     <input 
         {...props}
         ref={ref}
-        className={`w-full bg-[#0B0F19] border border-slate-800 rounded-none focus:border-cyan-500 focus:ring-0 transition-all py-4 px-5 outline-none text-slate-100 placeholder-slate-700 font-mono text-sm ${className}`}
+        className={`w-full bg-[#0B0F19] border border-slate-800 rounded-none focus:border-cyan-500 focus:ring-0 transition-all min-h-[48px] py-3 px-5 outline-none text-slate-100 placeholder-slate-700 font-mono text-sm ${className}`}
     />
 ));
 Input.displayName = 'Input';
@@ -29,7 +29,7 @@ const Textarea = React.forwardRef(({ className = '', ...props }, ref) => (
     <textarea 
         {...props}
         ref={ref}
-        className={`w-full bg-[#0B0F19] border border-slate-800 rounded-none focus:border-cyan-500 focus:ring-0 transition-all py-4 px-5 outline-none text-slate-100 placeholder-slate-700 min-h-[140px] resize-none font-mono text-sm ${className}`}
+        className={`w-full bg-[#0B0F19] border border-slate-800 rounded-none focus:border-cyan-500 focus:ring-0 transition-all py-4 px-5 outline-none text-slate-100 placeholder-slate-700 min-h-[160px] resize-none font-mono text-sm ${className}`}
     />
 ));
 Textarea.displayName = 'Textarea';

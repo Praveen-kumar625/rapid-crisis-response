@@ -125,23 +125,36 @@ export const Navbar = ({ user, logout }) => {
 
 
                 <button 
-                    className="lg:hidden p-2 text-slate-400 hover:text-white"
+                    className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     aria-label={isMobileMenuOpen ? "Close Menu" : "Open Menu"}
                 >
-                    {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+                    {isMobileMenuOpen ? <X size={32} /> : <Menu size={32} />}
                 </button>
             </div>
 
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="lg:hidden fixed inset-0 top-16 z-40 bg-[#0B0F19] p-6 flex flex-col gap-8 border-t border-slate-800"
+                        initial={{ opacity: 0, x: '100%' }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: '100%' }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                        className="lg:hidden fixed inset-0 z-[60] bg-[#0B0F19] flex flex-col border-l border-slate-800"
                     >
+                        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800 bg-[#151B2B]">
+                            <div className="flex items-center gap-3">
+                                <Shield className="text-cyan-400 w-5 h-5" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-100">Tactical_Menu</span>
+                            </div>
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white"
+                            >
+                                <X size={28} />
+                            </button>
+                        </div>
+
                         <motion.nav 
                             initial="initial"
                             animate="animate"
@@ -150,44 +163,54 @@ export const Navbar = ({ user, logout }) => {
                                     transition: { staggerChildren: 0.05 }
                                 }
                             }}
-                            className="flex flex-col gap-2"
+                            className="flex-1 overflow-y-auto p-6 flex flex-col gap-4"
                             aria-label="Mobile Navigation"
                         >
                             {[
                                 { to: "/", icon: Activity, label: "Overview" },
                                 { to: "/map", icon: MapIcon, label: "Live Map" },
+                                { to: "/hud", icon: Shield, label: "Tactical HUD" },
                                 { to: "/dashboard", icon: BarChart2, label: "Analytics" }
                             ].map((link) => (
                                 <motion.div 
                                     key={link.to}
                                     variants={{
-                                        initial: { opacity: 0, x: -10 },
+                                        initial: { opacity: 0, x: 20 },
                                         animate: { opacity: 1, x: 0 }
                                     }}
                                 >
-                                    <NavLink to={link.to} icon={link.icon} currentPath={location.pathname} onClick={() => setIsMobileMenuOpen(false)}>
-                                        {link.label}
-                                    </NavLink>
+                                    <Link 
+                                        to={link.to} 
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className={`flex items-center gap-4 p-4 border transition-all ${
+                                            location.pathname === link.to 
+                                            ? 'bg-slate-800 border-cyan-500 text-cyan-400 shadow-neon-cyan' 
+                                            : 'bg-slate-900 border-slate-800 text-slate-300'
+                                        }`}
+                                    >
+                                        <link.icon size={20} />
+                                        <span className="text-xs font-black uppercase tracking-widest">{link.label}</span>
+                                    </Link>
                                 </motion.div>
                             ))}
                             
                             <motion.div
                                 variants={{
-                                    initial: { opacity: 0, x: -10 },
+                                    initial: { opacity: 0, x: 20 },
                                     animate: { opacity: 1, x: 0 }
                                 }}
                                 className="mt-4"
                             >
                                 <Link to="/report" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <button className="w-full bg-red-600 text-white border border-red-500 px-4 py-4 rounded-none text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 active:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-                                        <ShieldAlert size={20} />
-                                        SOS_REPORT_SIGNAL
+                                    <button className="w-full bg-red-600 text-white border border-red-500 p-5 rounded-none text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 active:bg-red-500 transition-colors shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+                                        <ShieldAlert size={24} />
+                                        INITIATE_SOS_REPORT
                                     </button>
                                 </Link>
                             </motion.div>
                         </motion.nav>
                         
-                        <div className="mt-auto pb-8 border-t border-slate-800 pt-8">
+                        <div className="p-6 bg-[#151B2B] border-t border-slate-800">
                             <NetworkStatus />
                             
                             {user ? (
@@ -201,22 +224,21 @@ export const Navbar = ({ user, logout }) => {
                                             <p className="text-[8px] text-cyan-500 font-mono uppercase tracking-widest">Authorized_Intel</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="p-2 text-slate-400 hover:text-red-500 transition-colors" aria-label="Sign Out">
-                                        <LogOut size={20} />
+                                    <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors" aria-label="Sign Out">
+                                        <LogOut size={24} />
                                     </button>
                                 </div>
                             ) : (
                                 <div className="mt-6">
                                     <button 
                                         onClick={() => { handleLogin(); setIsMobileMenuOpen(false); }}
-                                        className="w-full bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 px-4 py-4 rounded-none text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-colors"
+                                        className="w-full bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 p-5 rounded-none text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-colors"
                                     >
-                                        <LogIn size={20} />
+                                        <LogIn size={24} />
                                         SECURE_LOGIN_PORTAL
                                     </button>
                                 </div>
                             )}
-
                         </div>
                     </motion.div>
                 )}

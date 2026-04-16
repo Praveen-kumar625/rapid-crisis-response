@@ -113,6 +113,13 @@ export const AICommand = ({ selectedIncident }) => {
         setIsProcessing(true);
         addLog(`EXECUTING: ${cmd}`, 'process');
 
+        // FAIL-SAFE TIMEOUT
+        const timeoutId = setTimeout(() => {
+            setIsProcessing(false);
+            addLog('Network Timeout - Command Aborted', 'error');
+            toast.error('Network Timeout: Response delayed');
+        }, 5000);
+
         try {
             // Simulated AI processing delay
             await new Promise(r => setTimeout(r, 1000));
@@ -123,6 +130,7 @@ export const AICommand = ({ selectedIncident }) => {
                 lat: 0, lng: 0
             });
 
+            clearTimeout(timeoutId);
             if (data.success) {
                 addLog('Command Processed Successfully', 'success');
                 toast.success('Directive Dispatched');
@@ -130,6 +138,7 @@ export const AICommand = ({ selectedIncident }) => {
                 addLog('Command Ambiguous - Retrying...', 'warning');
             }
         } catch (err) {
+            clearTimeout(timeoutId);
             addLog('System Fault Detected', 'error');
             toast.error('Command Execution Failed');
         } finally {

@@ -63,6 +63,10 @@ function App() {
         const pending = await getPendingReports();
         if (pending.length === 0) return;
 
+        const timeoutId = setTimeout(() => {
+            toast.error('Sync process timed out. Retrying in background.', { id: 'sync-progress' });
+        }, 10000); // Higher timeout for batch sync
+
         toast.loading(`Syncing ${pending.length} offline reports...`, { id: 'sync-progress' });
         
         let successCount = 0;
@@ -76,6 +80,7 @@ function App() {
             }
         }
 
+        clearTimeout(timeoutId);
         if (successCount > 0) {
             toast.success(`Successfully synced ${successCount} reports`, { id: 'sync-progress' });
             // Trigger a refresh if on a page that shows incidents

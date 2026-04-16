@@ -113,10 +113,16 @@ const PhoneModal = ({ isOpen, onClose, onSubmit, hotelId, position, floorLevel, 
         const reader = new FileReader();
         
         reader.onloadend = async () => {
+            const base64Payload = reader.result.split(',')[1];
+            
+            // FAIL-SAFE TIMEOUT
+            const timeoutId = setTimeout(() => {
+                setIsProcessing(false);
+                setSosMessage('');
+                toast.error('Network Timeout: SOS signal dropped');
+            }, 5000);
+
             try {
-                // Convert to Base64 (strip data:audio/webm;base64, prefix)
-                const base64Payload = reader.result.split(',')[1];
-                
                 // POST to backend SOS route
                 const response = await api.post('/sos/voice', {
                     audioBase64: base64Payload,
@@ -129,6 +135,7 @@ const PhoneModal = ({ isOpen, onClose, onSubmit, hotelId, position, floorLevel, 
                     hotelId: hotelId
                 });
 
+                clearTimeout(timeoutId);
                 if (response.data.success) {
                     toast.success('SOS Voice Intel Dispatched');
                 } else {
@@ -137,6 +144,7 @@ const PhoneModal = ({ isOpen, onClose, onSubmit, hotelId, position, floorLevel, 
                 
                 onClose();
             } catch (err) {
+                clearTimeout(timeoutId);
                 console.error('[SOS] Dispatch Error:', err);
                 toast.error('Failed to dispatch emergency audio signal');
             } finally {

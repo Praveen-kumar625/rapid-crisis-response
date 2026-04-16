@@ -124,31 +124,41 @@ function ReportForm() {
                 recorder.onstop = async() => {
                     const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
                     const currentMimeType = recorder.mimeType || 'audio/webm';
-                    setIsAudioRecording(false);
-                    setSosMessage('SOS: Encrypting & Dispatching...');
+                    
                     const reader = new FileReader();
                     reader.onloadend = async() => {
-                    const base64 = reader.result.split(',')[1];
-                    try {
-                        await api.post('/incidents/voice', {
-                            audioBase64: base64,
-                            audioMimeType: currentMimeType,
-                            lat: position.lat,
-                            lng: position.lng,
-                            floorLevel: form.floorLevel,
-                            roomNumber: form.roomNumber,
-                            wingId: form.wingId,
-                        });
-                        setSosMessage('');
-                        toast.success('Emergency Audio Dispatched');
-                    } catch (err) {
-                        toast.error('SOS triage failed');
-                        setSosMessage('');
-                    }
+                        const base64 = reader.result.split(',')[1];
+                        setSosMessage('SOS: Encrypting & Dispatching...');
+                        
+                        // FAIL-SAFE TIMEOUT
+                        const timeoutId = setTimeout(() => {
+                            setSosMessage('');
+                            toast.error('Network Timeout: Dispatch aborted');
+                        }, 5000);
+
+                        try {
+                            await api.post('/incidents/voice', {
+                                audioBase64: base64,
+                                audioMimeType: currentMimeType,
+                                lat: position.lat,
+                                lng: position.lng,
+                                floorLevel: form.floorLevel,
+                                roomNumber: form.roomNumber,
+                                wingId: form.wingId,
+                            });
+                            clearTimeout(timeoutId);
+                            toast.success('Emergency Audio Dispatched');
+                        } catch (err) {
+                            clearTimeout(timeoutId);
+                            toast.error('SOS triage failed');
+                        } finally {
+                            setSosMessage('');
+                            setIsAudioRecording(false);
+                        }
+                    };
+                    reader.readAsDataURL(blob);
                 };
-                reader.readAsDataURL(blob);
-            };
-            recorder.start();
+                recorder.start();
             } catch (err) {
                 console.error('Audio capture failed:', err);
                 toast.error('Microphone access denied');
@@ -218,8 +228,15 @@ function ReportForm() {
         const payload = { ...finalForm, lng: position.lng, lat: position.lat, mediaType, triageMethod };
 
         if (navigator.onLine) {
+            const toastId = toast.loading('Dispatching signal...');
+            
+            // FAIL-SAFE TIMEOUT
+            const timeoutId = setTimeout(() => {
+                setIsSubmitting(false);
+                toast.error('Network Timeout: Dispatch unconfirmed', { id: toastId });
+            }, 5000);
+
             try {
-                const toastId = toast.loading('Dispatching signal...');
                 let mediaUrl = null;
                 if (mediaFile) {
                     const fileName = mediaFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
@@ -230,11 +247,13 @@ function ReportForm() {
                     }
                 }
                 await api.post('/incidents', { ...payload, mediaUrl });
+                clearTimeout(timeoutId);
                 toast.success('Incident Dispatched', { id: toastId });
                 setForm({ title: '', description: '', severity: 3, category: '', floorLevel: 1, roomNumber: '', wingId: '' });
                 setMediaPreview(''); setMediaFile(null);
             } catch (err) {
-                toast.error('Dispatch Failure - Queued for sync');
+                clearTimeout(timeoutId);
+                toast.error('Dispatch Failure - Queued for sync', { id: toastId });
                 await queueReport({...payload, mediaFile, synced: false });
             } finally {
                 setIsSubmitting(false);

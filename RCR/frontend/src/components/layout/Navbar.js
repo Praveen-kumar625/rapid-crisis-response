@@ -58,13 +58,19 @@ export const Navbar = ({ user, logout }) => {
     const location = useLocation();
 
     const handleLogin = async (isMobile = false) => {
+        const timeoutId = setTimeout(() => {
+            toast.error('Authentication Timeout. Please retry.', { id: 'auth' });
+        }, 5000);
+
         try {
             toast.loading('Authenticating...', { id: 'auth' });
             await signInWithGoogle();
+            clearTimeout(timeoutId);
             if (!isMobile) {
                 toast.success('Successfully authenticated', { id: 'auth' });
             }
         } catch (err) {
+            clearTimeout(timeoutId);
             console.error("Auth error:", err);
             toast.error('Authentication Failed. Check pop-up blockers.', { id: 'auth' });
         }

@@ -7,7 +7,6 @@ import { signInWithGoogle } from '../../utils/firebase';
 import toast from 'react-hot-toast';
 
 const NavLink = ({ to, icon: Icon, children, currentPath, onClick }) => {
-// ... existing NavLink implementation ...
     const isActive = currentPath === to;
     return (
         <Link 
@@ -75,75 +74,90 @@ export const Navbar = ({ user, logout }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
 
-    // ... handleLogin remains same ...
+    const handleLogin = async (isMobile = false) => {
+        const timeoutId = setTimeout(() => {
+            toast.error('Authentication Timeout. Please retry.', { id: 'auth' });
+        }, 5000);
+
+        try {
+            toast.loading('Authenticating...', { id: 'auth' });
+            await signInWithGoogle();
+            clearTimeout(timeoutId);
+            if (!isMobile) {
+                toast.success('Successfully authenticated', { id: 'auth' });
+            }
+        } catch (err) {
+            clearTimeout(timeoutId);
+            console.error("Auth error:", err);
+            toast.error('Authentication Failed. Check pop-up blockers.', { id: 'auth' });
+        }
+    };
 
     return (
-        <header className="sticky top-0 z-50 bg-[#151B2B] border-b border-slate-800 shadow-none hidden md:block">
-            <div className="max-w-screen-2xl mx-auto px-4 md:px-8 h-16 flex justify-between items-center">
-                
-                <div className="flex items-center gap-8">
-                    <Link to="/" className="flex items-center gap-4 group text-decoration-none" aria-label="RCR Home">
-                        <div className="relative flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 rounded-none transition-all duration-300">
-                            <Shield className="text-cyan-400 w-4 h-4" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                            <h1 className="text-[10px] sm:text-sm font-black tracking-widest uppercase text-slate-100 truncate">
-                                RAPID <span className="text-cyan-400">CRISIS</span> RESPONSE
-                            </h1>
-                            <span className="text-[7px] sm:text-[8px] text-amber-500 tracking-[0.2em] font-mono opacity-80 uppercase truncate">OP_TERMINAL_V4</span>
-                        </div>
-                    </Link>
+        <>
+            <header className="sticky top-0 z-50 bg-[#151B2B] border-b border-slate-800 shadow-none hidden md:block">
+                <div className="max-w-screen-2xl mx-auto px-4 md:px-8 h-16 flex justify-between items-center">
+                    
+                    <div className="flex items-center gap-8">
+                        <Link to="/" className="flex items-center gap-4 group text-decoration-none" aria-label="RCR Home">
+                            <div className="relative flex items-center justify-center w-8 h-8 bg-slate-900 border border-slate-700 rounded-none transition-all duration-300">
+                                <Shield className="text-cyan-400 w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <h1 className="text-[10px] sm:text-sm font-black tracking-widest uppercase text-slate-100 truncate">
+                                    RAPID <span className="text-cyan-400">CRISIS</span> RESPONSE
+                                </h1>
+                                <span className="text-[7px] sm:text-[8px] text-amber-500 tracking-[0.2em] font-mono opacity-80 uppercase truncate">OP_TERMINAL_V4</span>
+                            </div>
+                        </Link>
 
-                    <NetworkStatus />
-                </div>
+                        <NetworkStatus />
+                    </div>
 
-                <nav className="hidden lg:flex items-center gap-1" aria-label="Main Navigation">
-                    <NavLink to="/" icon={Activity} currentPath={location.pathname}>Overview</NavLink>
-                    <NavLink to="/map" icon={MapIcon} currentPath={location.pathname}>Live Map</NavLink>
-                    <NavLink to="/hud" icon={Shield} currentPath={location.pathname}>Tactical HUD</NavLink>
-                    <NavLink to="/dashboard" icon={BarChart2} currentPath={location.pathname}>Analytics</NavLink>
-                    <div className="w-px h-6 bg-slate-800 mx-2"></div>
-                    <Link to="/report" aria-label="Initiate SOS Report">
-                        <button className="bg-red-600 text-white border-2 border-red-400 hover:bg-red-500 px-6 py-2.5 rounded-none text-xs font-black uppercase tracking-widest transition-all duration-200 flex items-center gap-2 shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:scale-105 active:scale-95">
-                            <ShieldAlert size={18} className="animate-pulse" />
-                            CRITICAL_SOS
-                        </button>
-                    </Link>
-                </nav>
-
-
-                <div className="hidden lg:flex items-center gap-4">
-                    {user ? (
-                        <div className="flex items-center gap-4 bg-slate-900 px-3 py-1 rounded-none border border-slate-800">
-                            <span className="text-[10px] font-mono font-bold text-slate-100 max-w-[150px] truncate">{user.email?.toUpperCase() || 'AUTHORIZED_USER'}</span>
-                            <button onClick={logout} className="text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
-                                <LogOut size={14} />
+                    <nav className="hidden lg:flex items-center gap-1" aria-label="Main Navigation">
+                        <NavLink to="/" icon={Activity} currentPath={location.pathname}>Overview</NavLink>
+                        <NavLink to="/map" icon={MapIcon} currentPath={location.pathname}>Live Map</NavLink>
+                        <NavLink to="/hud" icon={Shield} currentPath={location.pathname}>Tactical HUD</NavLink>
+                        <NavLink to="/dashboard" icon={BarChart2} currentPath={location.pathname}>Analytics</NavLink>
+                        <div className="w-px h-6 bg-slate-800 mx-2"></div>
+                        <Link to="/report" aria-label="Initiate SOS Report">
+                            <button className="bg-red-600 text-white border-2 border-red-400 hover:bg-red-500 px-6 py-2.5 rounded-none text-xs font-black uppercase tracking-widest transition-all duration-200 flex items-center gap-2 shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:scale-105 active:scale-95">
+                                <ShieldAlert size={18} className="animate-pulse" />
+                                CRITICAL_SOS
                             </button>
-                        </div>
-                    ) : (
-                        <button 
-                            onClick={() => handleLogin()}
-                            className="bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 px-4 py-2 rounded-none text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
-                        >
-                            <LogIn size={14} />
-                            SECURE_LOGIN
-                        </button>
-                    )}
+                        </Link>
+                    </nav>
+
+
+                    <div className="hidden lg:flex items-center gap-4">
+                        {user ? (
+                            <div className="flex items-center gap-4 bg-slate-900 px-3 py-1 rounded-none border border-slate-800">
+                                <span className="text-[10px] font-mono font-bold text-slate-100 max-w-[150px] truncate">{user.email?.toUpperCase() || 'AUTHORIZED_USER'}</span>
+                                <button onClick={logout} className="text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
+                                    <LogOut size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={() => handleLogin()}
+                                className="bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 px-4 py-2 rounded-none text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                            >
+                                <LogIn size={14} />
+                                SECURE_LOGIN
+                            </button>
+                        )}
+                    </div>
+
+
+                    <button 
+                        className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        aria-label={isMobileMenuOpen ? "Close Menu" : "Open Menu"}
+                    >
+                        {isMobileMenuOpen ? <X size={32} /> : <Menu size={32} />}
+                    </button>
                 </div>
-
-
-                <button 
-                    className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    aria-label={isMobileMenuOpen ? "Close Menu" : "Open Menu"}
-                >
-                    {isMobileMenuOpen ? <X size={32} /> : <Menu size={32} />}
-                </button>
-            </div>
-            {/* Mobile menu remains same, but the header itself is hidden md:block so this is for tablets if lg is hidden */}
-        </header>
-    );
-};
+            </header>
 
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -258,6 +272,6 @@ export const Navbar = ({ user, logout }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </header>
+        </>
     );
 };

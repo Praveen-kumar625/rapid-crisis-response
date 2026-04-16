@@ -4,9 +4,8 @@ import { getSocket, emitWithTimeout } from '../socket';
 import { IntelFeed } from '../components/IntelFeed';
 import { TacticalMap } from '../components/TacticalMap';
 import { AICommand } from '../components/AICommand';
-import { ShieldAlert, Activity, Cpu, Map as MapIcon, List, Zap } from 'lucide-react';
+import { ShieldAlert, Activity, Cpu, Map as MapIcon, List } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const TacticalDashboard = () => {
     const [incidents, setIncidents] = useState([]);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Radio, CloudRain, Sun, Wind, CloudLightning, Thermometer, AlertCircle, Loader2 } from 'lucide-react';
 import { Badge } from './ui/Badge';
-
+import IncidentCard from './IncidentCard';
 import { getCachedExternalData, cacheExternalData } from '../idb';
 
 const WeatherIcon = ({ condition }) => {
@@ -12,7 +12,7 @@ const WeatherIcon = ({ condition }) => {
     return <Wind className="text-slate-400" size={16} />;
 };
 
-export const IntelFeed = ({ incidents, onSelectIncident }) => {
+export const IntelFeed = ({ incidents, onSelectIncident, onAcknowledge }) => {
     const [weather, setWeather] = useState(null);
     const [weatherError, setWeatherError] = useState(false);
 
@@ -21,7 +21,6 @@ export const IntelFeed = ({ incidents, onSelectIncident }) => {
             try {
                 const API_KEY = process.env.REACT_APP_WEATHER_API_KEY || process.env.REACT_APP_OPENWEATHER_API_KEY;
                 if (!API_KEY) {
-                    console.warn('Weather API key missing');
                     setWeatherError(true);
                     return;
                 }
@@ -31,20 +30,16 @@ export const IntelFeed = ({ incidents, onSelectIncident }) => {
                 setWeather(data);
                 await cacheExternalData('openweather', data);
             } catch (e) {
-                console.error('IntelFeed: Weather failed, loading from cache', e);
                 const cached = await getCachedExternalData('openweather');
-                if (cached) {
-                    setWeather(cached);
-                } else {
-                    setWeatherError(true);
-                }
+                if (cached) setWeather(cached);
+                else setWeatherError(true);
             }
         };
         fetchWeather();
     }, []);
 
     return (
-        <aside className="w-full h-full flex flex-col border-r border-white/10 bg-slate-950/40 backdrop-blur-xl overflow-hidden font-mono">
+        <div className="w-full h-full flex flex-col bg-slate-950/40 backdrop-blur-xl overflow-hidden font-mono">
             {/* TACTICAL HEADER */}
             <header className="p-6 border-b border-white/10 bg-white/5 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
@@ -96,39 +91,12 @@ export const IntelFeed = ({ incidents, onSelectIncident }) => {
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
                 <AnimatePresence mode="popLayout">
                     {incidents.map((inc) => (
-                        <motion.div 
-                            key={inc.id}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: -20, opacity: 0 }}
+                        <IncidentCard 
+                            key={inc.id} 
+                            incident={inc} 
+                            onAcknowledge={onAcknowledge}
                             onClick={() => onSelectIncident(inc)}
-                            className={`group cursor-pointer border-l-4 p-5 transition-all relative overflow-hidden ${
-                                inc.severity >= 4 ? 'border-l-danger bg-danger/5' : 'border-l-cyan-500 glass-panel'
-                            }`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">ID_{inc.id.substring(0, 8)}</span>
-                                    <h4 className="text-xs font-black text-white uppercase tracking-tight group-hover:text-cyan-400 transition-colors leading-tight">{inc.title}</h4>
-                                </div>
-                                <div className={`w-8 h-8 flex items-center justify-center border ${inc.severity >= 4 ? 'bg-danger/20 border-danger/40 text-danger' : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'}`}>
-                                    <span className="text-[10px] font-black">{inc.severity}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-6">
-                                <div className="flex flex-col">
-                                    <span className="text-[7px] text-slate-600 font-black uppercase tracking-widest mb-1">Sector_Loc</span>
-                                    <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter">W_{inc.wingId} {" // "} L_{inc.floorLevel}</span>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[7px] text-slate-600 font-black uppercase tracking-widest mb-1">Signal_Lock</span>
-                                    <span className={`text-[9px] font-black uppercase tracking-widest ${
-                                        inc.status === 'OPEN' ? 'text-danger animate-pulse' : 'text-emerald'
-                                    }`}>{inc.status}</span>
-                                </div>
-                            </div>
-                        </motion.div>
+                        />
                     ))}
                 </AnimatePresence>
 
@@ -146,6 +114,6 @@ export const IntelFeed = ({ incidents, onSelectIncident }) => {
                     <span className="text-cyan-500/60">Secure_Link: established</span>
                 </div>
             </footer>
-        </aside>
+        </div>
     );
 };

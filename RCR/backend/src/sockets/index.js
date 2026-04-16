@@ -23,22 +23,13 @@ function initSocket(httpServer) {
 
     const io = new Server(httpServer, {
         cors: { 
-            origin: function(origin, callback) {
-                const allowedOrigins = [
-                    'http://localhost:3000', 
-                    'https://rapid-crisis-response-f4yd.vercel.app',
-                    ...ALLOWED_ORIGINS
-                ];
-                const allowedPatterns = [/^https:\/\/rapid-crisis-response-.*\.vercel\.app$/];
-                
-                if (!origin || NODE_ENV !== 'production' || allowedOrigins.includes(origin) || allowedPatterns.some(p => p.test(origin))) {
-                    return callback(null, true);
-                }
-                return callback(new Error('CORS policy: Origin not allowed.'), false);
-            },
-            methods: ['GET', 'POST'] 
+            origin: "*", // Fully permissive for hackathon/resilience
+            methods: ['GET', 'POST'],
+            credentials: true
         },
         path: '/crisis',
+        transports: ['websocket', 'polling'], // Enable polling fallback
+        allowEIO3: true // Support older clients if necessary
     });
 
     // ------------------- WebSocket Authentication -------------------

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Activity, Radio, CloudRain, Sun, Wind, CloudLightning, Thermometer, AlertCircle, Loader2 } from 'lucide-react';
 import { Badge } from './ui/Badge';
 import IncidentCard from './IncidentCard';

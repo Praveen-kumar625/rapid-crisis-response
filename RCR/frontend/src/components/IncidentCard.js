@@ -80,7 +80,7 @@ function IncidentCard({ incident, onAcknowledge }) {
                             <Navigation size={18} className="text-cyan-500" />
                             <div className="flex flex-col">
                                 <span className="text-[9px] font-black text-slate-500 tracking-[0.3em]">LOC_SECTOR</span>
-                                <span className="text-white font-black uppercase text-sm">WING_{wingId || '??'} // LVL_{floorLevel || '??'}</span>
+                                <span className="text-white font-black uppercase text-sm">WING_{wingId || '??'} {' // '} LVL_{floorLevel || '??'}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-4 text-xs font-mono">

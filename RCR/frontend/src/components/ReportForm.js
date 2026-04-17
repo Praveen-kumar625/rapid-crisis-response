@@ -277,7 +277,7 @@ function ReportForm() {
                 </div>
                 {!navigator.onLine && (
                     <div className="bg-danger text-white px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse font-mono shadow-neon-red">
-                        Link_Severed // Buffer_Active
+                        Link_Severed {'//'} Buffer_Active
                     </div>
                 )}
             </div>

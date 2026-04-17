@@ -52,7 +52,7 @@ export const SystemGuide = () => {
                                     <Shield size={32} className="text-red-600" />
                                     <div>
                                         <h2 className="text-2xl font-black tracking-tighter uppercase italic">RCR_Operational_Manual</h2>
-                                        <p className="text-[9px] text-slate-500 uppercase tracking-[0.3em] font-mono">System Version 4.0.2 // Secure Intel</p>
+                                        <p className="text-[9px] text-slate-500 uppercase tracking-[0.3em] font-mono">System Version 4.0.2 {'//'} Secure Intel</p>
                                     </div>
                                 </div>
 

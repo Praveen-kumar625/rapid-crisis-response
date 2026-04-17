@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './utils/firebase';
+import { auth, handleRedirectResult } from './utils/firebase';
 import toast, { Toaster } from 'react-hot-toast';
 
 import { joinHotelRoom, updateSocketToken } from './socket';
@@ -9,10 +9,9 @@ import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
-import { handleRedirectResult } from './utils/firebase';
+import { getPendingReports, markReportSynced } from './idb';
 
-
-// Lazy loaded pages
+// Pages
 const Home = lazy(() => import('./pages/Home'));
 const TacticalDashboard = lazy(() => import('./pages/TacticalDashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -22,8 +21,8 @@ const TacticalHUD = lazy(() => import('./pages/TacticalHUD'));
 const TacticalMobileHUD = lazy(() => import('./pages/TacticalMobileHUD'));
 
 const PageLoader = () => (
-    <div className="flex-1 flex items-center justify-center bg-navy-950">
-        <div className="w-12 h-12 border-4 border-electric/20 border-t-electric rounded-full animate-spin"></div>
+    <div className="flex-1 flex items-center justify-center bg-[#020617]">
+        <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
     </div>
 );
 
@@ -32,7 +31,7 @@ const PageTransition = ({ children }) => (
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.4 }}
         className="flex-1 flex flex-col"
     >
         {children}
@@ -41,6 +40,7 @@ const PageTransition = ({ children }) => (
 
 function AnimatedRoutes() {
     const location = useLocation();
+
     return (
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
@@ -56,39 +56,40 @@ function AnimatedRoutes() {
     );
 }
 
-import { getPendingReports, markReportSynced } from './idb';
-
 function App() {
     const [user, setUser] = useState(null);
 
+    const syncUserContext = async () => {
+        try {
+            const { data } = await api.get('/incidents/me');
+            if (data.hotelId) joinHotelRoom(data.hotelId);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const flushOfflineQueue = async () => {
         const pending = await getPendingReports();
-        if (pending.length === 0) return;
+        if (!pending.length) return;
 
-        const timeoutId = setTimeout(() => {
-            toast.error('Sync process timed out. Retrying in background.', { id: 'sync-progress' });
-        }, 10000); // Higher timeout for batch sync
+        toast.loading(`Syncing ${pending.length} reports...`, { id: 'sync' });
 
-        toast.loading(`Syncing ${pending.length} offline reports...`, { id: 'sync-progress' });
-        
-        let successCount = 0;
+        let success = 0;
         for (const report of pending) {
             try {
                 await api.post('/incidents', report);
                 await markReportSynced(report.localId);
-                successCount++;
+                success++;
             } catch (err) {
-                console.error('Failed to sync report:', report.localId);
+                console.error(err);
             }
         }
 
-        clearTimeout(timeoutId);
-        if (successCount > 0) {
-            toast.success(`Successfully synced ${successCount} reports`, { id: 'sync-progress' });
-            // Trigger a refresh if on a page that shows incidents
+        if (success) {
+            toast.success(`Synced ${success}`, { id: 'sync' });
             window.dispatchEvent(new Event('offline-sync-complete'));
         } else {
-            toast.error('Offline sync failed. Retrying later.', { id: 'sync-progress' });
+            toast.error('Sync failed', { id: 'sync' });
         }
     };
 
@@ -98,24 +99,15 @@ function App() {
         return () => window.removeEventListener('online', flushOfflineQueue);
     }, []);
 
-    const syncUserContext = async () => {
-        try {
-            const { data } = await api.get('/incidents/me');
-            if (data.hotelId) {
-                joinHotelRoom(data.hotelId);
-            }
-        } catch (err) {
-            console.error('Failed to sync user context', err);
-        }
-    };
-
     useEffect(() => {
         handleRedirectResult().catch(console.error);
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 const token = await firebaseUser.getIdToken();
                 localStorage.setItem('google_token', token);
                 setUser(firebaseUser);
+
                 updateSocketToken(token);
                 syncUserContext();
             } else {
@@ -128,28 +120,17 @@ function App() {
     }, []);
 
     const logout = async () => {
-        try {
-            await auth.signOut();
-            localStorage.removeItem('google_token');
-            setUser(null);
-            toast.success('Logged out successfully');
-        } catch (err) {
-            toast.error('Logout failed');
-        }
+        await auth.signOut();
+        localStorage.removeItem('google_token');
+        setUser(null);
+        toast.success('Logged out');
     };
-
 
     return (
         <ErrorBoundary>
             <Router>
-                <Toaster 
-                    position="top-center" 
-                    toastOptions={{ 
-                        className: 'glass-card border border-white/10 text-white text-xs font-bold uppercase tracking-widest py-4 px-6 shadow-2xl',
-                        style: { background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(16px)' }
-                    }} 
-                />
-                
+                <Toaster position="top-center" />
+
                 <AppLayout user={user} logout={logout}>
                     <Suspense fallback={<PageLoader />}>
                         <AnimatedRoutes />

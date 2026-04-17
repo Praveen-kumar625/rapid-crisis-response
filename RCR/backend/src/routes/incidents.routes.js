@@ -7,7 +7,7 @@ const {
     incidentSchema, 
     voiceSchema, 
     pulseSchema, 
-    statusUpdateSchema 
+    statusUpdateSchema  
 } = require('../api/validators/incident.validator');
 const sosController = require('../controllers/sos.controller');
 const { aiVerificationLimiter } = require('../middleware/rateLimiter');

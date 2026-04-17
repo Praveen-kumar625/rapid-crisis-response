@@ -16,7 +16,7 @@ COPY backend/ ./backend/
 
 # Set environment
 ENV NODE_ENV=production
-EXPOSE 3001
+EXPOSE 5000
 
 # Use non-root user
 USER node

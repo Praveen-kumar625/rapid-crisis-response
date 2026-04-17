@@ -3,7 +3,7 @@ require('dotenv').config();
 const { z } = require('zod');
 
 const envSchema = z.object({
-    PORT: z.coerce.number().default(3001),
+    PORT: z.coerce.number().default(5000),
     DB_HOST: z.string().default('localhost'),
     DB_PORT: z.coerce.number().default(5432),
     DB_NAME: z.string().optional(),

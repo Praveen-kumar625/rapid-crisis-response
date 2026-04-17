@@ -16,8 +16,8 @@ COPY . .
 # Set environment to production
 ENV NODE_ENV=production
 
-# Expose the port that the API runs on (🚨 FIXED: Standardized to 3001)
-EXPOSE 3001
+# Expose the port that the API runs on (🚨 FIXED: Standardized to 5000)
+EXPOSE 5000
 
 # Use non-root user for security
 USER node

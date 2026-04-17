@@ -41,7 +41,7 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=development
-      - PORT=${PORT_API}
+      - PORT=${PORT}
       - DB_HOST=postgres
       - DB_PORT=${DB_PORT}
       - DB_NAME=${DB_NAME}
@@ -52,7 +52,7 @@ services:
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - COMMANDER_PHONE_NUMBER=${COMMANDER_PHONE_NUMBER}
     ports:
-      - "${PORT_API}:${PORT_API}"
+      - "${PORT}:${PORT}"
 
     volumes:
       - ./backend/src:/app/src        # hot‑reload for dev
@@ -85,8 +85,8 @@ services:
     depends_on:
       - api
     environment:
-      - REACT_APP_API_URL=http://api:${PORT_API}
-      - REACT_APP_SOCKET_URL=http://api:${PORT_API}
+      - REACT_APP_API_URL=http://api:${PORT}
+      - REACT_APP_SOCKET_URL=http://api:${PORT}
       - REACT_APP_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
       - REACT_APP_FIREBASE_API_KEY=${REACT_APP_FIREBASE_API_KEY}
       - REACT_APP_FIREBASE_AUTH_DOMAIN=${REACT_APP_FIREBASE_AUTH_DOMAIN}

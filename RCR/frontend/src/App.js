@@ -19,6 +19,7 @@ const Analytics = lazy(() => import('./pages/Analytics'));
 const ReportPage = lazy(() => import('./pages/ReportPage'));
 const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 const TacticalHUD = lazy(() => import('./pages/TacticalHUD'));
+const TacticalMobileHUD = lazy(() => import('./pages/TacticalMobileHUD'));
 
 const PageLoader = () => (
     <div className="flex-1 flex items-center justify-center bg-navy-950">
@@ -49,6 +50,7 @@ function AnimatedRoutes() {
                 <Route path="/report" element={<PageTransition><ReportPage /></PageTransition>} />
                 <Route path="/incidents/:id" element={<PageTransition><IncidentDetail /></PageTransition>} />
                 <Route path="/hud" element={<PageTransition><TacticalHUD /></PageTransition>} />
+                <Route path="/mobile-hud" element={<PageTransition><TacticalMobileHUD /></PageTransition>} />
             </Routes>
         </AnimatePresence>
     );

@@ -196,6 +196,7 @@ export const Navbar = ({ user, logout }) => {
                                 { to: "/", icon: Activity, label: "Overview" },
                                 { to: "/map", icon: MapIcon, label: "Live Map" },
                                 { to: "/hud", icon: Shield, label: "Tactical HUD" },
+                                { to: "/mobile-hud", icon: Zap, label: "Mobile HUD" },
                                 { to: "/dashboard", icon: BarChart2, label: "Analytics" }
                             ].map((link) => (
                                 <motion.div 

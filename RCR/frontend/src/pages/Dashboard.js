@@ -200,7 +200,7 @@ const Dashboard = () => {
                             <div className="glass-tactical p-5 border-white/10 bg-slate-900/60">
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className="w-1 h-1 bg-cyan-500 rounded-full animate-ping" />
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Neural Synthesis // Gemini 1.5</p>
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Neural Synthesis {'//'} Gemini 1.5</p>
                                 </div>
                                 <div className="text-[11px] font-bold leading-relaxed uppercase tracking-wider text-slate-200">
                                     {selectedIncident.actionPlan || "Processing incoming telemetry..."}
@@ -230,7 +230,7 @@ const Dashboard = () => {
                     ].map((metric, i) => (
                         <div key={i} className="glass-panel p-4 border-white/5 flex justify-between items-center gap-4 hover:border-white/20 transition-colors">
                             <div className="min-w-0">
-                                <span className="text-[8px] uppercase text-slate-500 font-black block tracking-widest mb-1">SDG_{metric.goal} // {metric.label}</span>
+                                <span className="text-[8px] uppercase text-slate-500 font-black block tracking-widest mb-1">SDG_{metric.goal} {'//'} {metric.label}</span>
                                 <span className={`text-[10px] font-black uppercase tracking-wider ${metric.color}`}>{metric.value}</span>
                             </div>
                             <div className={`w-9 h-9 border border-white/10 flex items-center justify-center ${metric.color} font-black text-xs shrink-0`}>{metric.goal}</div>

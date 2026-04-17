@@ -19,8 +19,6 @@ redisClient.on('error', (_err) => {
 });
 
 function initSocket(httpServer) {
-    const { ALLOWED_ORIGINS, NODE_ENV } = require('../config/env');
-
     const io = new Server(httpServer, {
         cors: { 
             origin: "*", // Fully permissive for hackathon/resilience

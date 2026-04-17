@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
-import { Shield, AlertCircle, Crosshair, Zap, User, Navigation, ShieldAlert, Activity } from 'lucide-react';
+import { AlertCircle, Crosshair, Zap } from 'lucide-react';
 import api from '../api';
 import { getSocket } from '../socket';
 import { Card } from './ui/Card';
@@ -44,11 +43,9 @@ const MapControl = ({ userLocation }) => {
 };
 
 function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }) {
-    const navigate = useNavigate();
     const [internalIncidents, setInternalIncidents] = useState([]);
     const [responders, setResponders] = useState([]);
     const [userLocation, setUserLocation] = useState(null);
-    const [liveIotAlerts, setLiveIotAlerts] = useState([]);
     const [earthquakes, setEarthquakes] = useState([]);
     const [feedStatus, setFeedStatus] = useState({ usgs: 'loading' });
 
@@ -105,20 +102,6 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
             }
         };
 
-        const handleIotAlert = (iotEvent) => {
-            try {
-                if (!iotEvent || !iotEvent.id) return;
-                if (isMounted) {
-                    setLiveIotAlerts(prev => {
-                        const filtered = prev.filter(e => e.id !== iotEvent.id);
-                        return [iotEvent, ...filtered].slice(0, 10);
-                    });
-                }
-            } catch (err) {
-                console.error('[Map] NEW_IOT_ALERT failed', err);
-            }
-        };
-
         const handlePresenceUpdate = (payload) => {
             try {
                 if (!payload || !payload.responder) return;
@@ -138,7 +121,6 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                 socketInstance = await getSocket();
                 if (!isMounted || !socketInstance) return;
                 socketInstance.on('incident.created', handleCreated);
-                socketInstance.on('NEW_IOT_ALERT', handleIotAlert);
                 socketInstance.on('responder.presence-update', handlePresenceUpdate);
             } catch (err) {
                 console.error('[Map] Socket failed:', err);
@@ -151,7 +133,6 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
             isMounted = false;
             if (socketInstance) {
                 socketInstance.off('incident.created', handleCreated);
-                socketInstance.off('NEW_IOT_ALERT', handleIotAlert);
                 socketInstance.off('responder.presence-update', handlePresenceUpdate);
             }
         };
@@ -235,7 +216,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                             <div className="relative flex items-center justify-center group">
                                 <div className="absolute inset-0 bg-orange-500/40 rounded-full animate-ping scale-[3]"></div>
                                 <div className="w-6 h-6 flex items-center justify-center border-2 bg-orange-600 border-white shadow-[0_0_15px_rgba(249,115,22,0.5)]">
-                                    <span className="text-white font-black text-[8px]">${quake.properties.mag.toFixed(1)}</span>
+                                    <span className="text-white font-black text-[8px]">{quake.properties.mag.toFixed(1)}</span>
                                 </div>
                             </div>
                         </AdvancedMarker>

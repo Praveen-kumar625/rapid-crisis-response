@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cpu, Zap, AlertCircle, Activity, Info, ChevronRight, ShieldAlert } from 'lucide-react';
+import { Cpu, Zap, AlertCircle, Activity, ChevronRight, ShieldAlert } from 'lucide-react';
 import CrisisMap from '../components/CrisisMap';
 import api from '../api';
 import { getSocket } from '../socket';
@@ -9,23 +9,16 @@ const Dashboard = () => {
     const [incidents, setIncidents] = useState([]);
     const [selectedIncident, setSelectedIncident] = useState(null);
     const [mapMode, setMapMode] = useState('ALL');
-    const [sysStats] = useState({ latency: '24ms', queue: 'IDLE', active: 12 });
 
     useEffect(() => {
-        let isMounted = true;
-        const fetchInitial = async () => {
-            try {
-                const { data } = await api.get('/incidents');
-                if (isMounted) setIncidents(data);
-            } catch (err) {
-                console.error('[Dashboard] Failed to fetch incidents', err);
-            }
-        };
-        fetchInitial();
-
         let socket;
-        const initRealtime = async () => {
+
+        const init = async () => {
+            const { data } = await api.get('/incidents');
+            setIncidents(data);
+
             socket = await getSocket();
+<<<<<<< HEAD
             if (!socket) return;
             socket.on('incident.created', (payload) => {
                 try {
@@ -46,17 +39,30 @@ const Dashboard = () => {
                 } catch (err) {
                     console.error('[Socket] Dispatch failed for incident.status-updated', err);
                 }
+=======
+
+            socket.on('incident.created', (p) => {
+                setIncidents(prev => [p.incident, ...prev]);
+            });
+
+            socket.on('incident.status-updated', (p) => {
+                setIncidents(prev =>
+                    prev.map(i => i.id === p.incident.id ? p.incident : i)
+                );
+>>>>>>> 5c219bc (Update)
             });
         };
-        initRealtime();
+
+        init();
+
         return () => {
-            isMounted = false;
             socket?.off('incident.created');
             socket?.off('incident.status-updated');
         };
     }, []);
 
     return (
+<<<<<<< HEAD
         <div className="h-full w-full max-w-[100vw] overflow-hidden bg-[#020617] bg-grid-pattern text-slate-100 flex flex-col lg:flex-row lg:overflow-hidden font-sans selection:bg-cyan-500/30 relative">
             <div className="scanline-overlay"></div>
             
@@ -122,46 +128,57 @@ const Dashboard = () => {
                         )}
                     </AnimatePresence>
                 </div>
+=======
+        <div className="min-h-screen bg-[#020617] text-white flex">
+
+            {/* LEFT PANEL */}
+            <aside className="w-1/4 border-r border-white/10 p-4 space-y-3 overflow-y-auto">
+                <h2 className="text-xs uppercase text-red-400 font-bold tracking-widest">
+                    Live Feed
+                </h2>
+
+                <AnimatePresence>
+                    {incidents.map((inc) => (
+                        <motion.div
+                            key={inc.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            onClick={() => setSelectedIncident(inc)}
+                            className="p-3 border border-white/10 cursor-pointer hover:border-cyan-500"
+                        >
+                            <p className="text-xs font-bold">{inc.title}</p>
+                            <p className="text-[10px] text-gray-400">{inc.description}</p>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+>>>>>>> 5c219bc (Update)
             </aside>
 
-            {/* CENTER CANVAS: TACTICAL MAP */}
-            <main className="w-full lg:w-1/2 h-[60vh] lg:h-full relative border-b lg:border-b-0 lg:border-r border-white/10 bg-[#020617] shrink-0">
-                {/* Floating Toggles */}
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 w-[90%] lg:w-auto">
-                    <div className="glass-tactical border-white/10 p-1.5 flex justify-center gap-1.5 shadow-2xl">
-                        {['ALL', 'SENSORS', 'REPORTS'].map(mode => (
-                            <button
-                                key={mode}
-                                onClick={() => setMapMode(mode)}
-                                className={`px-5 py-2 rounded-none text-[10px] font-black uppercase tracking-[0.2em] transition-all shrink-0 ${
-                                    mapMode === mode 
-                                    ? 'bg-cyan-500 text-[#020617] shadow-neon-cyan' 
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                }`}
-                            >
-                                {mode}
-                            </button>
-                        ))}
-                    </div>
+            {/* MAP */}
+            <main className="w-2/4 relative">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {['ALL', 'SENSORS', 'REPORTS'].map(mode => (
+                        <button
+                            key={mode}
+                            onClick={() => setMapMode(mode)}
+                            className={`px-4 py-1 text-xs border ${
+                                mapMode === mode ? 'bg-cyan-500 text-black' : ''
+                            }`}
+                        >
+                            {mode}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="w-full h-full opacity-80 mix-blend-lighten grayscale-[0.2] contrast-[1.1]">
-                    <CrisisMap 
-                        incidents={incidents} 
-                        onMarkerClick={setSelectedIncident}
-                        activeFilter={mapMode}
-                    />
-                </div>
+                <CrisisMap incidents={incidents} activeFilter={mapMode} />
 
-                {/* Dispatch FAB */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 w-[80%] lg:w-auto">
-                    <button className="w-full lg:w-auto min-h-[52px] bg-cyan-500 hover:bg-cyan-400 text-[#020617] px-10 rounded-none font-black uppercase tracking-[0.3em] text-[11px] shadow-neon-cyan transition-all active:scale-[0.98] border-none group flex items-center justify-center gap-3">
-                        <ShieldAlert size={18} className="group-hover:scale-110 transition-transform" />
-                        Execute Dispatch Protocol
-                    </button>
-                </div>
+                <button className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-cyan-500 px-6 py-2 text-black font-bold flex gap-2">
+                    <ShieldAlert size={16} />
+                    Dispatch
+                </button>
             </main>
 
+<<<<<<< HEAD
             {/* RIGHT PANEL: AI TRIAGE & COMMAND */}
             <aside className="w-full lg:w-1/4 h-auto lg:h-full bg-slate-950/40 backdrop-blur-xl flex flex-col p-4 lg:p-6 space-y-8 shrink-0 overflow-y-auto custom-scrollbar z-10 border-l border-white/5">
                 <section className="glass-panel p-5 border-white/10 shadow-xl shrink-0">
@@ -189,71 +206,40 @@ const Dashboard = () => {
                         ))}
                     </div>
                 </section>
+=======
+            {/* RIGHT PANEL */}
+            <aside className="w-1/4 border-l border-white/10 p-4 space-y-6">
+>>>>>>> 5c219bc (Update)
 
-                <section className="border-y border-white/10 py-8">
-                    <div className="flex items-center gap-3 mb-5 text-amber-500">
-                        <Zap size={18} className="animate-pulse" />
-                        <h2 className="text-[10px] lg:text-xs font-black uppercase tracking-[0.2em]">Objective Intel</h2>
-                    </div>
-                    {selectedIncident ? (
-                        <div className="space-y-5">
-                            <div className="glass-tactical p-5 border-white/10 bg-slate-900/60">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-1 h-1 bg-cyan-500 rounded-full animate-ping" />
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Neural Synthesis // Gemini 1.5</p>
-                                </div>
-                                <div className="text-[11px] font-bold leading-relaxed uppercase tracking-wider text-slate-200">
-                                    {selectedIncident.actionPlan || "Processing incoming telemetry..."}
-                                </div>
-                            </div>
-                            <button className="w-full bg-danger/10 border border-danger/40 text-danger py-4 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-danger hover:text-white transition-all active:scale-[0.98]">
-                                Confirm Neutralization
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="h-32 flex flex-col items-center justify-center glass-panel border-dashed border-white/10 opacity-40">
-                            <AlertCircle size={24} className="text-slate-600 mb-3" />
-                            <p className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-500 text-center px-6 leading-loose">Waiting for Node Uplink</p>
-                        </div>
-                    )}
-                </section>
+                <div>
+                    <h2 className="text-xs text-cyan-400 font-bold mb-3">AI Triage</h2>
 
-                <section className="space-y-4 pb-6">
-                    <div className="flex items-center gap-3 text-emerald-500 mb-2">
-                        <Activity size={18} />
-                        <h2 className="text-[10px] lg:text-xs font-black uppercase tracking-[0.2em]">Resilience Metrics</h2>
-                    </div>
-                    {[
-                        { goal: 3, label: 'Health Index', value: '90% Latency Reduction', color: 'text-emerald-400' },
-                        { goal: 9, label: 'Infrastructure', value: 'Edge-AI Synced', color: 'text-cyan-400' },
-                        { goal: 11, label: 'Safe Sector', value: 'Z-Axis Active', color: 'text-amber-400' }
-                    ].map((metric, i) => (
-                        <div key={i} className="glass-panel p-4 border-white/5 flex justify-between items-center gap-4 hover:border-white/20 transition-colors">
-                            <div className="min-w-0">
-                                <span className="text-[8px] uppercase text-slate-500 font-black block tracking-widest mb-1">SDG_{metric.goal} // {metric.label}</span>
-                                <span className={`text-[10px] font-black uppercase tracking-wider ${metric.color}`}>{metric.value}</span>
+                    {['MEDICAL', 'FIRE', 'SECURITY'].map((c) => (
+                        <div key={c} className="mb-2">
+                            <p className="text-[10px]">{c}</p>
+                            <div className="h-1 bg-white/10">
+                                <div className="h-1 bg-cyan-500 w-1/2"></div>
                             </div>
-                            <div className={`w-9 h-9 border border-white/10 flex items-center justify-center ${metric.color} font-black text-xs shrink-0`}>{metric.goal}</div>
                         </div>
                     ))}
-                </section>
+                </div>
 
-                <section className="grid grid-cols-2 gap-4 pb-8">
-                    <div className="glass-panel p-4 border-white/10 group relative cursor-help">
-                        <span className="text-[8px] uppercase text-slate-500 font-black block mb-2 tracking-[0.2em] flex items-center gap-1.5">Latency <Info size={10} /></span>
-                        <span className="font-mono text-cyan-400 text-sm tabular-nums font-black tracking-tight">{sysStats.latency}</span>
-                        <div className="absolute bottom-full left-0 mb-3 w-56 p-3 glass-tactical text-[9px] font-bold text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 uppercase tracking-widest leading-loose">
-                            Network response time across active nodes.
+                <div>
+                    <h2 className="text-xs text-yellow-400 font-bold mb-2">
+                        Selected Incident
+                    </h2>
+
+                    {selectedIncident ? (
+                        <div className="text-xs">
+                            {selectedIncident.description}
                         </div>
-                    </div>
-                    <div className="glass-panel p-4 border-white/10 group relative cursor-help">
-                        <span className="text-[8px] uppercase text-slate-500 font-black block mb-2 tracking-[0.2em] flex items-center gap-1.5">Buffer <Info size={10} /></span>
-                        <span className="font-mono text-amber-500 text-sm font-black tracking-tight uppercase">{sysStats.queue}</span>
-                        <div className="absolute bottom-full right-0 mb-3 w-56 p-3 glass-tactical text-[9px] font-bold text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 uppercase tracking-widest leading-loose">
-                            Current AI pipeline throughput status.
+                    ) : (
+                        <div className="text-gray-500 text-xs">
+                            No selection
                         </div>
-                    </div>
-                </section>
+                    )}
+                </div>
+
             </aside>
         </div>
     );

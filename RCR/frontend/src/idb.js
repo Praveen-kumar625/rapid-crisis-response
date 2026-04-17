@@ -47,12 +47,14 @@ export async function getCachedExternalData(key) {
 // Reports Logic
 export async function queueReport(report) {
     const db = await getDB();
-    await db.put(REPORT_STORE, {...report, synced: false, createdAt: new Date() });
+    // ✅ Use 0 instead of false (IDB doesn't support boolean keys)
+    await db.put(REPORT_STORE, { ...report, synced: 0, createdAt: new Date() });
 }
 
 export async function getPendingReports() {
     const db = await getDB();
-    return db.getAllFromIndex(REPORT_STORE, 'synced', false);
+    // ✅ Use 0 instead of false
+    return db.getAllFromIndex(REPORT_STORE, 'synced', 0);
 }
 
 export async function markReportSynced(localId) {

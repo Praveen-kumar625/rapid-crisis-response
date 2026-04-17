@@ -207,26 +207,53 @@ function ReportForm() {
         }
     };
 
-    const handleSubmit = async(e) => {
-        e.preventDefault();
-        if (!form.title.trim()) { toast.error('Subject identifier required'); titleRef.current?.focus(); return; }
-        if (!form.description.trim()) { toast.error('Narrative required'); descriptionRef.current?.focus(); return; }
-        
-        setIsSubmitting(true);
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!form.title.trim()) {
+        toast.error('Subject identifier required');
+        titleRef.current?.focus();
+        return;
+    }
+
+    if (!form.description.trim()) {
+        toast.error('Narrative required');
+        descriptionRef.current?.focus();
+        return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
         let finalForm = { ...form };
         let triageMethod = 'Cloud AI (Gemini)';
 
+        // Offline AI fallback
         if (!navigator.onLine) {
             const localResult = await localAnalyze(form.title, form.description);
+
             finalForm.category = localResult.category;
             finalForm.severity = localResult.severity;
             triageMethod = localResult.triageMethod;
-            setAiResult({ category: localResult.category, severity: localResult.severity, method: localResult.triageMethod });
+
+            setAiResult({
+                category: localResult.category,
+                severity: localResult.severity,
+                method: localResult.triageMethod,
+            });
+
             setShowAiModal(true);
         }
 
-        const payload = { ...finalForm, lng: position.lng, lat: position.lat, mediaType, triageMethod };
+        const payload = {
+            ...finalForm,
+            lng: position.lng,
+            lat: position.lat,
+            mediaType,
+            triageMethod,
+        };
 
+<<<<<<< HEAD
         if (navigator.onLine) {
             const toastId = toast.loading('Dispatching signal...');
             
@@ -257,14 +284,74 @@ function ReportForm() {
                 await queueReport({...payload, mediaFile, synced: false });
             } finally {
                 setIsSubmitting(false);
-            }
-        } else {
-            await queueReport({...payload, mediaFile, synced: false });
-            toast.success('Offline: Queued for sync');
-            setIsSubmitting(false);
-        }
-    };
+=======
+        let mediaUrl = null;
 
+        // Upload file FIRST (if exists)
+        if (mediaFile) {
+            const fileName = mediaFile.name.replace(/[^a-zA-Z0-9.]/g, "_");
+
+            const { data: urlData } = await api.get(
+                `/incidents/upload-url?fileName=${fileName}&mimeType=${mediaType}`
+            );
+
+            if (!urlData?.uploadUrl) {
+                throw new Error("Upload URL not received from backend");
+>>>>>>> 5c219bc (Update)
+            }
+
+            await fetch(urlData.uploadUrl, {
+                method: "PUT",
+                body: mediaFile,
+                headers: {
+                    "Content-Type": mediaType,
+                },
+            });
+
+            mediaUrl = urlData.fileUrl;
+        }
+
+        // FINAL DISPATCH
+        const toastId = toast.loading("Dispatching signal...");
+
+        const res = await api.post("/incidents", {
+            ...payload,
+            mediaUrl,
+        });
+
+        console.log("DISPATCH SUCCESS:", res.data);
+
+        toast.success("Incident Dispatched", { id: toastId });
+
+        setForm({
+            title: "",
+            description: "",
+            severity: 3,
+            category: "",
+            floorLevel: 1,
+            roomNumber: "",
+            wingId: "",
+        });
+
+        setMediaPreview("");
+        setMediaFile(null);
+    } catch (err) {
+        console.error("DISPATCH FAILED FULL ERROR:", err);
+
+        toast.error("Dispatch Failure - Check console");
+
+        await queueReport({
+            ...form,
+            lng: position.lng,
+            lat: position.lat,
+            mediaType,
+            mediaFile,
+            synced: false,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
 
     return (
         <Card className="w-full overflow-hidden shadow-2xl border-white/5 bg-slate-950/40 backdrop-blur-xl rounded-none">

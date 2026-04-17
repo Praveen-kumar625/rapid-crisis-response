@@ -11,8 +11,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ErrorBoundary from './components/ErrorBoundary';
 import { handleRedirectResult } from './utils/firebase';
 
+import { getPendingReports, markReportSynced } from './idb';
 
-// Lazy loaded pages
+// Lazy pages
 const Home = lazy(() => import('./pages/Home'));
 const TacticalDashboard = lazy(() => import('./pages/TacticalDashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -22,8 +23,8 @@ const TacticalHUD = lazy(() => import('./pages/TacticalHUD'));
 const TacticalMobileHUD = lazy(() => import('./pages/TacticalMobileHUD'));
 
 const PageLoader = () => (
-    <div className="flex-1 flex items-center justify-center bg-navy-950">
-        <div className="w-12 h-12 border-4 border-electric/20 border-t-electric rounded-full animate-spin"></div>
+    <div className="flex-1 flex items-center justify-center bg-[#020617]">
+        <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
     </div>
 );
 
@@ -32,7 +33,7 @@ const PageTransition = ({ children }) => (
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.4 }}
         className="flex-1 flex flex-col"
     >
         {children}
@@ -41,6 +42,7 @@ const PageTransition = ({ children }) => (
 
 function AnimatedRoutes() {
     const location = useLocation();
+
     return (
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
@@ -56,11 +58,10 @@ function AnimatedRoutes() {
     );
 }
 
-import { getPendingReports, markReportSynced } from './idb';
-
 function App() {
     const [user, setUser] = useState(null);
 
+<<<<<<< HEAD
     const flushOfflineQueue = async () => {
         const pending = await getPendingReports();
         if (pending.length === 0) return;
@@ -98,6 +99,9 @@ function App() {
         return () => window.removeEventListener('online', flushOfflineQueue);
     }, []);
 
+=======
+    // ✅ FIXED: Now joinHotelRoom is USED
+>>>>>>> 5c219bc (Update)
     const syncUserContext = async () => {
         try {
             const { data } = await api.get('/incidents/me');
@@ -105,19 +109,55 @@ function App() {
                 joinHotelRoom(data.hotelId);
             }
         } catch (err) {
-            console.error('Failed to sync user context', err);
+            console.error('Context sync failed', err);
+        }
+    };
+
+    const flushOfflineQueue = async () => {
+        const pending = await getPendingReports();
+        if (!pending.length) return;
+
+        toast.loading(`Syncing ${pending.length} reports...`, { id: 'sync' });
+
+        let success = 0;
+        for (const report of pending) {
+            try {
+                await api.post('/incidents', report);
+                await markReportSynced(report.localId);
+                success++;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        if (success) {
+            toast.success(`Synced ${success}`, { id: 'sync' });
+            window.dispatchEvent(new Event('offline-sync-complete'));
+        } else {
+            toast.error('Sync failed', { id: 'sync' });
         }
     };
 
     useEffect(() => {
+        window.addEventListener('online', flushOfflineQueue);
+        if (navigator.onLine) flushOfflineQueue();
+
+        return () => window.removeEventListener('online', flushOfflineQueue);
+    }, []);
+
+    useEffect(() => {
         handleRedirectResult().catch(console.error);
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 const token = await firebaseUser.getIdToken();
+
                 localStorage.setItem('google_token', token);
                 setUser(firebaseUser);
+
                 updateSocketToken(token);
-                syncUserContext();
+                syncUserContext(); // ✅ USED HERE
+
             } else {
                 localStorage.removeItem('google_token');
                 setUser(null);
@@ -132,24 +172,17 @@ function App() {
             await auth.signOut();
             localStorage.removeItem('google_token');
             setUser(null);
-            toast.success('Logged out successfully');
-        } catch (err) {
+            toast.success('Logged out');
+        } catch {
             toast.error('Logout failed');
         }
     };
 
-
     return (
         <ErrorBoundary>
             <Router>
-                <Toaster 
-                    position="top-center" 
-                    toastOptions={{ 
-                        className: 'glass-card border border-white/10 text-white text-xs font-bold uppercase tracking-widest py-4 px-6 shadow-2xl',
-                        style: { background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(16px)' }
-                    }} 
-                />
-                
+                <Toaster position="top-center" />
+
                 <AppLayout user={user} logout={logout}>
                     <Suspense fallback={<PageLoader />}>
                         <AnimatedRoutes />

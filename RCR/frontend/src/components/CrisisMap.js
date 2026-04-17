@@ -1,48 +1,46 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
-import { Shield, AlertCircle, Crosshair, Zap, User, Navigation, ShieldAlert, Activity } from 'lucide-react';
-import api from '../api';
-import { getSocket } from '../socket';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
-import toast from 'react-hot-toast';
-import { cacheExternalData, getCachedExternalData } from '../idb';
+import React from "react";
 
-const DEFAULT_CENTER = { lat: 28.6139, lng: 77.2090 };
-
-const MAP_STYLES = [
-    { "elementType": "geometry", "stylers": [{ "color": "#020617" }] },
-    { "elementType": "labels.text.fill", "stylers": [{ "color": "#4B5563" }] },
-    { "elementType": "labels.text.stroke", "stylers": [{ "color": "#020617" }] },
-    { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "color": "#1F2937" }] },
-    { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#4B5563" }] },
-    { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#111827" }] },
-    { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#1F2937" }] },
-    { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#1F2937" }] },
-    { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#001B2E" }] }
-];
-
-const MapControl = ({ userLocation }) => {
-    const map = useMap();
-    const centerOnUser = useCallback(() => {
-        if (map && userLocation) {
-            map.panTo(userLocation);
-            map.setZoom(16);
-        }
-    }, [map, userLocation]);
-
+const CrisisMap = ({ incidents = [], onMarkerClick, _activeFilter }) => {
     return (
-        <button 
-            onClick={centerOnUser}
-            className="p-4 glass-tactical border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-all shadow-neon-cyan pointer-events-auto active:scale-95"
-            title="Lock onto current coordinates"
-        >
-            <Crosshair size={22} strokeWidth={2.5} />
-        </button>
+        <div className="w-full h-full relative flex items-center justify-center text-slate-500">
+
+            {/* RADIAL GLOW BACKGROUND */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,255,255,0.08),_transparent_70%)]" />
+
+            {/* GRID OVERLAY */}
+            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+            {/* INCIDENT MARKERS */}
+            {incidents.map((inc) => (
+                <div
+                    key={inc.id}
+                    onClick={() => onMarkerClick && onMarkerClick(inc)}
+                    className="absolute cursor-pointer group"
+                    style={{
+                        top: `${Math.random() * 80 + 10}%`,
+                        left: `${Math.random() * 80 + 10}%`,
+                    }}
+                >
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-ping absolute" />
+                    <div className="w-3 h-3 bg-red-500 rounded-full relative" />
+
+                    <div className="opacity-0 group-hover:opacity-100 transition absolute top-5 left-1/2 -translate-x-1/2 text-[10px] bg-black/80 px-2 py-1 rounded text-white whitespace-nowrap">
+                        {inc.title}
+                    </div>
+                </div>
+            ))}
+
+            {/* EMPTY STATE */}
+            {incidents.length === 0 && (
+                <p className="text-xs uppercase tracking-widest opacity-40">
+                    No Active Signals
+                </p>
+            )}
+        </div>
     );
 };
 
+<<<<<<< HEAD
 function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }) {
     const navigate = useNavigate();
     const [internalIncidents, setInternalIncidents] = useState([]);
@@ -282,4 +280,6 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
     );
 }
 
+=======
+>>>>>>> 5c219bc (Update)
 export default CrisisMap;

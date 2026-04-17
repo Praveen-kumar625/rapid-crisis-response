@@ -125,6 +125,7 @@ export const Navbar = ({ user, logout }) => {
                                 <ShieldAlert size={18} className="animate-pulse" />
                                 CRITICAL_SOS
                             </button>
+<<<<<<< HEAD
                         </Link>
                     </nav>
 
@@ -156,6 +157,14 @@ export const Navbar = ({ user, logout }) => {
                     >
                         {isMobileMenuOpen ? <X size={32} /> : <Menu size={32} />}
                     </button>
+=======
+                        </div>
+                    ) : (
+                        <button onClick={() => navigate("/login")}>
+   SECURE LOGIN
+</button>
+                    )}
+>>>>>>> 5c219bc (Update)
                 </div>
             </header>
 

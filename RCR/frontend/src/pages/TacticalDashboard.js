@@ -1,12 +1,11 @@
 import React, { Suspense } from 'react';
 import { useTactical } from '../context/TacticalContext';
-import { useUI } from '../context/UIContext';
 
 // Existing UI Components
-import { MapPanel } from '../components/MapPanel';
+import MapPanel from '../components/MapPanel';
 import { TacticalMap } from '../components/TacticalMap';
 import { IntelFeed } from '../components/IntelFeed';
-import { ActionPanel } from '../components/ActionPanel';
+import ActionPanel from '../components/ActionPanel';
 import { AICommand } from '../components/AICommand';
 
 const LoadingState = ({ label }) => (
@@ -18,7 +17,6 @@ const LoadingState = ({ label }) => (
 
 const TacticalDashboard = () => {
     const { state } = useTactical();
-    const { isSidebarExpanded } = useUI();
 
     return (
         <div className="h-full w-full p-4 lg:p-6 overflow-hidden">
@@ -69,4 +67,3 @@ const TacticalDashboard = () => {
 };
 
 export default TacticalDashboard;
-shboard;

@@ -1,18 +1,20 @@
 import React from "react";
-import { motion } from "framer-motion";
 
-export default function ActionPanel() {
+export default function ActionPanel({ children }) {
     return (
-        <div className="mt-6 flex justify-center">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#0B0F19] overflow-hidden">
+            {/* OPERATOR CONTROL HEADER */}
+            <div className="p-3 border-b border-white/5 flex items-center justify-between bg-slate-900/40 shrink-0">
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-red-600 rounded-full shadow-neon-red" />
+                    <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">Operator_Input_Terminal</h3>
+                </div>
+            </div>
 
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-red-600 rounded-full font-semibold shadow-lg hover:bg-red-700 transition"
-            >
-                Dispatch Emergency Unit
-            </motion.button>
-
+            {/* CONTROL AREA */}
+            <div className="flex-1 relative overflow-hidden">
+                {children}
+            </div>
         </div>
     );
 }

@@ -95,7 +95,7 @@ export const IntelFeed = ({ incidents, onSelectIncident, onAcknowledge }) => {
                             key={inc.id} 
                             incident={inc} 
                             onAcknowledge={onAcknowledge}
-                            onClick={() => onSelectIncident(inc)}
+                            onClick={() => onSelectIncident?.(inc)}
                         />
                     ))}
                 </AnimatePresence>

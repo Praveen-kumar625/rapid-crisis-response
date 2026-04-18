@@ -11,7 +11,9 @@ const initialState = {
     commsStatus: navigator.onLine,
     userLocation: { lat: 28.6139, lng: 77.2090, floor: 1 },
     intelFeed: [],
-    isLoading: true
+    isLoading: true,
+    selectedIncident: null,
+    mapFilter: 'ALL_FEEDS'
 };
 
 function tacticalReducer(state, action) {
@@ -35,6 +37,10 @@ function tacticalReducer(state, action) {
             return { ...state, userLocation: { ...state.userLocation, ...action.payload } };
         case 'ADD_INTEL':
             return { ...state, intelFeed: [action.payload, ...state.intelFeed].slice(0, 20) };
+        case 'SET_SELECTED_INCIDENT':
+            return { ...state, selectedIncident: action.payload };
+        case 'SET_MAP_FILTER':
+            return { ...state, mapFilter: action.payload };
         default:
             return state;
     }

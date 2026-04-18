@@ -7,12 +7,20 @@ import { motion } from 'framer-motion';
 import { MapPin, Cpu, ArrowRight, Navigation, Zap } from 'lucide-react';
 import { Card } from './ui/Card';
 
-function IncidentCard({ incident, onAcknowledge }) {
+function IncidentCard({ incident, onAcknowledge, onClick }) {
     const navigate = useNavigate();
-    const { id, title, severity, category, status, location, triageMethod, wingId, floorLevel } = incident;
+    const { id, title, severity, category, status, location, triageMethod, wingId, floorLevel, isAiVerified } = incident;
     const [lng, lat] = location.coordinates;
     
     const isCritical = severity >= 4;
+
+    const handleClick = (e) => {
+        if (onClick) {
+            onClick();
+        } else {
+            navigate(`/incidents/${id}`);
+        }
+    };
     
     return (
         <motion.div
@@ -38,7 +46,7 @@ function IncidentCard({ incident, onAcknowledge }) {
                 className={`group relative flex flex-col justify-between min-h-[140px] p-5 lg:p-6 glass-panel border-white/5 hover:border-cyan-500/30 cursor-pointer rounded-none shadow-none overflow-hidden transition-all duration-500 ${
                     isCritical ? 'bg-danger/10 border-danger/20' : 'bg-slate-900/60'
                 }`}
-                onClick={() => navigate(`/incidents/${id}`)}
+                onClick={handleClick}
             >
                 {/* Left Accent Stripe */}
                 <div className={`absolute top-0 left-0 w-1.5 h-full transition-all duration-500 ${
@@ -55,6 +63,11 @@ function IncidentCard({ incident, onAcknowledge }) {
                                 {isCritical && (
                                     <span className="flex items-center gap-1.5 text-[10px] font-black text-white bg-red-600 px-2.5 py-1 uppercase tracking-[0.2em] shadow-neon-red">
                                         PRIORITY_ALPHA
+                                    </span>
+                                )}
+                                {isAiVerified && (
+                                    <span className="flex items-center gap-1.5 text-[8px] font-black text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 uppercase tracking-[0.1em]">
+                                        <Cpu size={10} /> AI_OPTIMIZED
                                     </span>
                                 )}
                             </div>
@@ -87,7 +100,7 @@ function IncidentCard({ incident, onAcknowledge }) {
                             <MapPin size={18} className="text-amber-500" />
                             <div className="flex flex-col">
                                 <span className="text-[9px] font-black text-slate-500 tracking-[0.3em]">GPS_COORD</span>
-                                <span className="text-slate-300 font-bold">{lat.toFixed(4)}N / {lng.toFixed(4)}E</span>
+                                <span className="text-slate-300 font-bold">{lat?.toFixed(4)}N / {lng?.toFixed(4)}E</span>
                             </div>
                         </div>
                     </div>

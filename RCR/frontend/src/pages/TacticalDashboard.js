@@ -16,7 +16,7 @@ const LoadingState = ({ label }) => (
 );
 
 const TacticalDashboard = () => {
-    const { state } = useTactical();
+    const { state, dispatch } = useTactical();
 
     return (
         <div className="h-full w-full p-4 lg:p-6 overflow-hidden">
@@ -29,7 +29,14 @@ const TacticalDashboard = () => {
                 <section className="col-span-12 lg:col-span-8 flex flex-col h-full overflow-hidden">
                     <Suspense fallback={<LoadingState label="CALIBRATING_GRID" />}>
                         <MapPanel title="LIVE_SECTOR_MAP">
-                            <TacticalMap incidents={state.incidents} />
+                            <TacticalMap 
+                                incidents={state.incidents} 
+                                responders={state.responders}
+                                selectedIncident={state.selectedIncident}
+                                onSelectIncident={(inc) => dispatch({ type: 'SET_SELECTED_INCIDENT', payload: inc })}
+                                filter={state.mapFilter}
+                                setFilter={(f) => dispatch({ type: 'SET_MAP_FILTER', payload: f })}
+                            />
                         </MapPanel>
                     </Suspense>
                 </section>

@@ -8,7 +8,6 @@ import { joinHotelRoom, updateSocketToken } from './socket';
 import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
-import ErrorBoundary from './components/ErrorBoundary';
 import { getPendingReports, markReportSynced } from './idb';
 import { UIProvider } from './context/UIContext';
 

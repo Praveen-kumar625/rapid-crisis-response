@@ -113,12 +113,275 @@
     word-break: break-word;
   }
 
+  /* --- TACTICAL BUTTON STYLES (youneslaaroussi/ui-buttons) --- */
+
+  /* 1. SNAKE BORDER BUTTON (PRIMARY) */
+  .snake-btn {
+    position: relative;
+    padding: 12px 24px;
+    color: #06b6d4;
+    background: rgba(6, 182, 212, 0.05);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 10px;
+    font-weight: 900;
+    overflow: hidden;
+    transition: 0.5s;
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    cursor: pointer;
+  }
+
+  .snake-btn:hover {
+    background: #06b6d4;
+    color: #020617;
+    box-shadow: 0 0 5px #06b6d4, 0 0 25px #06b6d4;
+  }
+
+  .snake-btn span {
+    position: absolute;
+    display: block;
+  }
+
+  .snake-btn span:nth-child(1) {
+    top: 0; left: -100%;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, #06b6d4);
+    animation: snake-anim1 1.5s linear infinite;
+  }
+
+  @keyframes snake-anim1 {
+    0% { left: -100%; }
+    50%, 100% { left: 100%; }
+  }
+
+  .snake-btn span:nth-child(2) {
+    top: -100%; right: 0;
+    width: 2px; height: 100%;
+    background: linear-gradient(180deg, transparent, #06b6d4);
+    animation: snake-anim2 1.5s linear infinite;
+    animation-delay: 0.375s;
+  }
+
+  @keyframes snake-anim2 {
+    0% { top: -100%; }
+    50%, 100% { top: 100%; }
+  }
+
+  .snake-btn span:nth-child(3) {
+    bottom: 0; right: -100%;
+    width: 100%; height: 2px;
+    background: linear-gradient(270deg, transparent, #06b6d4);
+    animation: snake-anim3 1.5s linear infinite;
+    animation-delay: 0.75s;
+  }
+
+  @keyframes snake-anim3 {
+    0% { right: -100%; }
+    50%, 100% { right: 100%; }
+  }
+
+  .snake-btn span:nth-child(4) {
+    bottom: -100%; left: 0;
+    width: 2px; height: 100%;
+    background: linear-gradient(360deg, transparent, #06b6d4);
+    animation: snake-anim4 1.5s linear infinite;
+    animation-delay: 1.125s;
+  }
+
+  @keyframes snake-anim4 {
+    0% { bottom: -100%; }
+    50%, 100% { bottom: 100%; }
+  }
+
+  /* 2. GLITCH BUTTON (DANGER) */
+  .glitch-btn {
+    background: #450a0a;
+    color: #fff;
+    padding: 12px 24px;
+    border: 1px solid #7f1d1d;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .glitch-btn:hover {
+    animation: glitch-anim-frame 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+    background: #7f1d1d;
+  }
+
+  @keyframes glitch-anim-frame {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+
+  .glitch-btn:hover::before,
+  .glitch-btn:hover::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #7f1d1d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .glitch-btn:hover::before {
+    left: 2px;
+    text-shadow: -2px 0 #00f0ff;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    animation: glitch-effect 2s infinite linear alternate-reverse;
+  }
+
+  .glitch-btn:hover::after {
+    left: -2px;
+    text-shadow: -2px 0 #ff00c1, 2px 2px #ff00c1;
+    clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
+    animation: glitch-effect 2s infinite linear alternate-reverse;
+  }
+
+  @keyframes glitch-effect {
+    0% { clip-path: polygon(0 15%, 100% 15%, 100% 30%, 0 30%); }
+    20% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); }
+    40% { clip-path: polygon(0 33%, 100% 33%, 100% 70%, 0 70%); }
+    60% { clip-path: polygon(0 44%, 100% 44%, 100% 50%, 0 50%); }
+    80% { clip-path: polygon(0 80%, 100% 80%, 100% 100%, 0 100%); }
+    100% { clip-path: polygon(0 50%, 100% 50%, 100% 55%, 0 55%); }
+  }
+
+  /* 3. CYBER GLOW BUTTON (TERTIARY) */
+  .glow-btn {
+    padding: 10px 25px;
+    border: none;
+    outline: none;
+    color: #fff;
+    background: #111;
+    cursor: pointer;
+    position: relative;
+    z-index: 0;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .glow-btn:before {
+    content: '';
+    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(5px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing-cycle 20s linear infinite;
+    opacity: 0;
+    transition: opacity .3s ease-in-out;
+    border-radius: 2px;
+  }
+
+  .glow-btn:hover:before {
+    opacity: 1;
+  }
+
+  .glow-btn:after {
+    z-index: -1;
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    left: 0;
+    top: 0;
+    border-radius: 2px;
+  }
+
+  @keyframes glowing-cycle {
+    0% { background-position: 0 0; }
+    50% { background-position: 400% 0; }
+    100% { background-position: 0 0; }
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
   .bg-grid-pattern {
     background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  }
+
+  /* --- UI/UX PRO MAX ENHANCEMENTS --- */
+  
+  /* 1. ULTRA-SMOOTH CUSTOM SCROLLBAR */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 240, 255, 0.2);
+  }
+
+  /* 2. BENTO-GRID HOVER PARENT */
+  .bento-container:hover > .glass-panel:not(:hover) {
+    opacity: 0.6;
+    filter: blur(2px) grayscale(0.5);
+    scale: 0.98;
+  }
+
+  /* 3. TACTICAL SHIMMER LOADING */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-load 2s infinite linear;
+  }
+
+  @keyframes shimmer-load {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* 4. NEON SCANLINE OVERLAY */
+  .scanline-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+  .scanline-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0, 240, 255, 0.02) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.1;
   }
 
   /* Mobile accessibility enhancements */

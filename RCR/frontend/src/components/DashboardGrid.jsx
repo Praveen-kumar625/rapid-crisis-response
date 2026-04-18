@@ -73,10 +73,10 @@ export const DashboardGrid = () => {
             variants={containerVariants}
             initial="initial"
             animate="animate"
-            className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto"
+            className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto scanline-overlay"
         >
             {/* TOP METRICS ROW */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bento-container">
                 <StatCard 
                     title="Active_Breaches" 
                     value={activeIncidents.length} 

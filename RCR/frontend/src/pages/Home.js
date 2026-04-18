@@ -78,17 +78,15 @@ function Home() {
                         className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full sm:w-auto"
                     >
                         <Link to="/report" className="w-full sm:w-auto">
-                            <Button variant="primary" className="w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 text-sm sm:text-base bg-red-600 hover:bg-red-500 text-white rounded-none border-2 border-red-400 shadow-[0_0_25px_rgba(220,38,38,0.4)] active:scale-95 transition-all" aria-label="Initiate SOS Report">
-                                <ShieldAlert size={24} className="animate-pulse" />
+                            <TacticalButton variant="danger" className="w-full sm:w-auto !py-6 !px-12 text-sm">
                                 INITIATE_SOS_SIGNAL
-                            </Button>
+                            </TacticalButton>
                         </Link>
                         
                         <Link to="/map" className="w-full sm:w-auto">
-                            <Button variant="secondary" className="w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 text-sm sm:text-base group bg-slate-900 hover:bg-slate-800 text-slate-100 rounded-none border border-slate-700 active:scale-95 transition-all" aria-label="View Live Command Map">
-                                <MapIcon size={24} className="group-hover:text-cyan-400 transition-colors" />
+                            <TacticalButton variant="primary" className="w-full sm:w-auto !py-6 !px-12 text-sm">
                                 COMMAND_CENTER
-                            </Button>
+                            </TacticalButton>
                         </Link>
                     </motion.div>
 

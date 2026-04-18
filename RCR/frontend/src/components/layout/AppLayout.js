@@ -1,6 +1,5 @@
 // RE-THEMED: Solid Tactical
 import React from 'react';
-import { Navbar } from './Navbar';
 import { MobileNavbar } from './MobileNavbar';
 import { DesktopLayout } from './DesktopLayout';
 import { StepInstructionGuide } from '../ui/StepInstructionGuide';
@@ -8,8 +7,6 @@ import { useUI } from '../../context/UIContext';
 
 
 export const AppLayout = ({ children, user, logout }) => {
-    const { openGuide } = useUI();
-
     return (
         <>
             {/* DESKTOP LAYOUT (Wraps children in its own structure) */}

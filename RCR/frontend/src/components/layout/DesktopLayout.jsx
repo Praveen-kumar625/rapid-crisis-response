@@ -4,8 +4,6 @@ import { CommandPalette } from '../ui/CommandPalette';
 import { useUI } from '../../context/UIContext';
 
 export const DesktopLayout = ({ children, user, logout }) => {
-    const { isSidebarExpanded } = useUI();
-
     return (
         <div className="hidden md:flex min-h-screen bg-[#020617] text-slate-100 selection:bg-cyan-500/30 overflow-hidden relative">
             {/* BACKGROUND TACTICAL EFFECTS */}

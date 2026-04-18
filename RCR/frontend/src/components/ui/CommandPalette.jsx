@@ -5,7 +5,6 @@ import {
     ShieldAlert, 
     Terminal, 
     Command,
-    Navigation,
     Activity,
     Map as MapIcon,
     BarChart3,

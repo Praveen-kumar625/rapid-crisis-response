@@ -14,7 +14,6 @@ const SwipeDispatch = ({ onDispatch, label = "Swipe to Dispatch" }) => {
     const maxDrag = containerWidth > 0 ? containerWidth - sliderWidth - 8 : 200;
     const progress = useTransform(x, [0, maxDrag], [0, 1]);
     const opacity = useTransform(progress, [0, 0.8], [1, 0]);
-    const successOpacity = useTransform(progress, [0.8, 1], [0, 1]);
 
     useEffect(() => {
         if (containerRef.current) {
@@ -31,7 +30,7 @@ const SwipeDispatch = ({ onDispatch, label = "Swipe to Dispatch" }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleDragEnd = (event, info) => {
+    const handleDragEnd = (_event, _info) => {
         const threshold = maxDrag * 0.8;
 
         if (x.get() > threshold) {
@@ -80,7 +79,6 @@ const SwipeDispatch = ({ onDispatch, label = "Swipe to Dispatch" }) => {
                 {!completed && (
                     <motion.div
                         drag="x"
-                        _dragX={x}
                         style={{ x }}
                         dragConstraints={{ left: 0, right: maxDrag }}
                         dragElastic={0.05}

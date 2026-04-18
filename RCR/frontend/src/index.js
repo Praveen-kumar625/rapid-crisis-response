@@ -15,6 +15,11 @@ if ('serviceWorker' in navigator) {
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com";
 
+if (process.env.NODE_ENV !== 'production') {
+    console.log(`[Auth_Diagnostics] Current Origin: ${window.location.origin}`);
+    console.log(`[Auth_Diagnostics] Ensure this origin is added to "Authorized JavaScript origins" in Google Cloud Console.`);
+}
+
 const container = document.getElementById('root');
 const root = createRoot(container);
 

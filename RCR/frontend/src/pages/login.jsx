@@ -22,8 +22,12 @@ const Login = () => {
         navigate('/dashboard');
     };
 
-    const handleGoogleError = () => {
-        toast.error("Google Auth failed. Check console.");
+    const handleGoogleError = (error) => {
+        console.error("Google Auth Terminal Error:", error);
+        toast.error("Google Auth failed. Check if your origin is registered in Google Cloud Console.", {
+            duration: 5000,
+            id: 'google-auth-error'
+        });
     };
 
     return (

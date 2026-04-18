@@ -5,6 +5,7 @@ import {
     Users, 
     Zap, 
     Clock, 
+    ChevronRight,
     Search,
     Filter
 } from 'lucide-react';

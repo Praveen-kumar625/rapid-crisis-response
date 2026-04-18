@@ -15,7 +15,6 @@ import { TacticalProvider } from './context/TacticalContext';
 // Pages
 const Home = lazy(() => import('./pages/Home'));
 const TacticalDashboard = lazy(() => import('./pages/TacticalDashboard'));
-const Analytics = lazy(() => import('./pages/Analytics'));
 const ReportPage = lazy(() => import('./pages/ReportPage'));
 const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 const TacticalHUD = lazy(() => import('./pages/TacticalHUD'));

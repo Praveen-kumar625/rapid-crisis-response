@@ -29,7 +29,7 @@ const NavItem = ({ to, icon: Icon, label, collapsed }) => (
 );
 
 export const DesktopSidebar = ({ user, logout }) => {
-    const { isSidebarExpanded, toggleSidebar } = useUI();
+    const { isSidebarExpanded } = useUI();
 
     return (
         <motion.aside 

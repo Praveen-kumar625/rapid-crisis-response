@@ -117,6 +117,10 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+  }
+
   /* Mobile accessibility enhancements */
   @media (max-width: 768px) {
     body {

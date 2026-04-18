@@ -67,13 +67,6 @@ export const DesktopSidebar = ({ user, logout }) => {
                         </div>
                     )}
                 </div>
-
-                <button 
-                    onClick={toggleSidebar}
-                    className="w-full h-10 flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
-                >
-                    <Icons.Chevron rotate={isSidebarExpanded ? 0 : 180} />
-                </button>
             </div>
         </motion.aside>
     );

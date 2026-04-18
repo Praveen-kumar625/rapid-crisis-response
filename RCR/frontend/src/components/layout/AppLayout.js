@@ -4,7 +4,6 @@ import { MobileNavbar } from './MobileNavbar';
 import { DesktopLayout } from './DesktopLayout';
 import { StepInstructionGuide } from '../ui/StepInstructionGuide';
 
-
 export const AppLayout = ({ children, user, logout }) => {
     return (
         <>
@@ -39,4 +38,3 @@ export const AppLayout = ({ children, user, logout }) => {
         </>
     );
 };
-

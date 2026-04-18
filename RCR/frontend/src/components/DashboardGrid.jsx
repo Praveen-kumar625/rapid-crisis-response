@@ -142,7 +142,7 @@ export const DashboardGrid = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/40">
-                            {incidents.slice(0, 5).map((inc, _) => (
+                            {incidents.slice(0, 5).map((inc) => (
                                 <tr key={inc.id} className="hover:bg-slate-800/20 transition-colors group">
                                     <td className="px-6 py-4 text-[11px] font-mono text-slate-400">{new Date(inc.createdAt).toLocaleString()}</td>
                                     <td className="px-6 py-4 text-[11px] font-bold text-white uppercase tracking-tight">UNIT_{inc.id.substring(0, 8)}</td>

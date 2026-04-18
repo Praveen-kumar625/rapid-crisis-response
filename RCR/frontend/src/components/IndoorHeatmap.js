@@ -45,7 +45,7 @@ const IndoorHeatmap = ({ incidents = [] }) => {
 
     // Merge static and live data
     const allAlerts = useMemo(() => {
-        const iotAsIncidents = (liveIotData || []).map(iot => ({
+        const iotAsIncidents = (Array.isArray(liveIotData) ? liveIotData : []).map(iot => ({
             id: iot.id,
             roomNumber: iot.room_number,
             floorLevel: iot.floor_level,

@@ -93,7 +93,7 @@ export const TacticalMap = ({
         return () => clearInterval(interval);
     }, [fetchEarthquakes]);
 
-    const markers = useMemo(() => (incidents || []).map((inc) => {
+    const markers = useMemo(() => (Array.isArray(incidents) ? incidents : []).map((inc) => {
         const lat = parseFloat(inc.location?.coordinates[1] || inc.lat);
         const lng = parseFloat(inc.location?.coordinates[0] || inc.lng);
         if (isNaN(lat) || isNaN(lng)) return null;

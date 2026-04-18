@@ -175,7 +175,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                     styles={MAP_STYLES}
                     className="w-full h-full min-h-0"
                 >
-                    {(filteredIncidents || []).map(inc => {
+                    {(Array.isArray(filteredIncidents) ? filteredIncidents : []).map(inc => {
                         const coords = inc.location?.coordinates || [inc.lng, inc.lat];
                         if (!coords || isNaN(coords[1])) return null;
                         return (
@@ -194,7 +194,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                         );
                     })}
 
-                    {(responders || []).filter(r => r.status !== 'OFF_DUTY').map(r => (
+                    {(Array.isArray(responders) ? responders : []).filter(r => r.status !== 'OFF_DUTY').map(r => (
                         <AdvancedMarker 
                             key={r.id}
                             position={{ lat: r.lat || DEFAULT_CENTER.lat, lng: r.lng || DEFAULT_CENTER.lng }}
@@ -205,7 +205,7 @@ function CrisisMap({ incidents: externalIncidents, onMarkerClick, activeFilter }
                         </AdvancedMarker>
                     ))}
 
-                    {(earthquakes || []).map(quake => (
+                    {(Array.isArray(earthquakes) ? earthquakes : []).map(quake => (
                         <AdvancedMarker 
                             key={quake.id}
                             position={{ 

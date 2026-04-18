@@ -127,19 +127,17 @@ function App() {
     };
 
     return (
-        <ErrorBoundary>
-            <UIProvider>
-                <Router>
-                    <Toaster position="top-center" />
+        <UIProvider>
+            <Router>
+                <Toaster position="top-center" />
 
-                    <AppLayout user={user} logout={logout}>
-                        <Suspense fallback={<PageLoader />}>
-                            <AnimatedRoutes />
-                        </Suspense>
-                    </AppLayout>
-                </Router>
-            </UIProvider>
-        </ErrorBoundary>
+                <AppLayout user={user} logout={logout}>
+                    <Suspense fallback={<PageLoader />}>
+                        <AnimatedRoutes />
+                    </Suspense>
+                </AppLayout>
+            </Router>
+        </UIProvider>
     );
 }
 

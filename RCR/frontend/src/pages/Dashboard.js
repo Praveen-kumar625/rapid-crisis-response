@@ -17,6 +17,7 @@ const Dashboard = () => {
             try {
                 const { data } = await api.get('/api/incidents');
                 if (isMounted) {
+                    // RULE 1: Strict array validation before setting state
                     setIncidents(Array.isArray(data) ? data : []);
                 }
             } catch (err) {
@@ -30,6 +31,8 @@ const Dashboard = () => {
         const initRealtime = async () => {
             socket = await getSocket();
             if (!socket) return;
+
+            // RULE 1: Validate socket event payload
             socket.on('incident.created', (payload) => {
                 try {
                     if (!payload || !payload.incident || !payload.incident.id) return;
@@ -44,6 +47,7 @@ const Dashboard = () => {
                     console.error('[Socket] Dispatch failed for incident.created', err);
                 }
             });
+
             socket.on('incident.status-updated', (payload) => {
                 try {
                     if (!payload || !payload.incident || !payload.incident.id) return;
@@ -70,7 +74,6 @@ const Dashboard = () => {
         <div className="h-full w-full max-w-[100vw] overflow-hidden bg-[#020617] bg-grid-pattern text-slate-100 flex flex-col lg:flex-row lg:overflow-hidden font-sans selection:bg-cyan-500/30 relative">
             <div className="scanline-overlay"></div>
             
-            {/* LEFT PANEL: INTEL FEED */}
             <aside className="w-full lg:w-1/4 h-auto lg:h-full border-b lg:border-b-0 lg:border-r border-white/10 bg-slate-950/40 backdrop-blur-xl flex flex-col shrink-0 min-h-0 z-10 overflow-hidden">
                 <div className="p-4 lg:p-6 border-b border-white/10 flex items-center justify-between bg-white/5 shrink-0">
                     <div className="flex items-center gap-3">
@@ -79,12 +82,12 @@ const Dashboard = () => {
                         </div>
                         <h2 className="text-[10px] lg:text-xs font-black uppercase tracking-[0.3em] text-glow-red text-danger">Live Intel Feed</h2>
                     </div>
-                    <span className="font-mono text-[9px] lg:text-[10px] text-slate-500 tabular-nums uppercase font-bold tracking-widest">Nodes: {incidents.length}</span>
+                    <span className="font-mono text-[9px] lg:text-[10px] text-slate-500 tabular-nums uppercase font-bold tracking-widest">Nodes: {Array.isArray(incidents) ? incidents.length : 0}</span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 lg:p-4 space-y-4">
                     <AnimatePresence initial={false}>
-                        {incidents.length === 0 ? (
+                        {!Array.isArray(incidents) || incidents.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center opacity-20 py-20">
                                 <Activity size={48} className="mb-4" />
                                 <p className="text-[10px] font-black uppercase tracking-widest">Scanning Network...</p>
@@ -134,9 +137,7 @@ const Dashboard = () => {
                 </div>
             </aside>
 
-            {/* CENTER CANVAS: TACTICAL MAP */}
             <main className="w-full lg:w-1/2 h-[60vh] lg:h-full relative border-b lg:border-b-0 lg:border-r border-white/10 bg-[#020617] shrink-0">
-                {/* Floating Toggles */}
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 w-[90%] lg:w-auto">
                     <div className="glass-tactical border-white/10 p-1.5 flex justify-center gap-1.5 shadow-2xl">
                         {['ALL', 'SENSORS', 'REPORTS'].map(mode => (
@@ -157,13 +158,12 @@ const Dashboard = () => {
 
                 <div className="w-full h-full opacity-80 mix-blend-lighten grayscale-[0.2] contrast-[1.1]">
                     <CrisisMap 
-                        incidents={incidents} 
+                        incidents={Array.isArray(incidents) ? incidents : []} 
                         onMarkerClick={setSelectedIncident}
                         activeFilter={mapMode}
                     />
                 </div>
 
-                {/* Dispatch FAB */}
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 w-[80%] lg:w-auto">
                     <button className="w-full lg:w-auto min-h-[52px] bg-cyan-500 hover:bg-cyan-400 text-[#020617] px-10 rounded-none font-black uppercase tracking-[0.3em] text-[11px] shadow-neon-cyan transition-all active:scale-[0.98] border-none group flex items-center justify-center gap-3">
                         <ShieldAlert size={18} className="group-hover:scale-110 transition-transform" />
@@ -172,7 +172,6 @@ const Dashboard = () => {
                 </div>
             </main>
 
-            {/* RIGHT PANEL: AI TRIAGE & COMMAND */}
             <aside className="w-full lg:w-1/4 h-auto lg:h-full bg-slate-950/40 backdrop-blur-xl flex flex-col p-4 lg:p-6 space-y-8 shrink-0 overflow-y-auto custom-scrollbar z-10 border-l border-white/5">
                 <section className="glass-panel p-5 border-white/10 shadow-xl shrink-0">
                     <div className="flex items-center gap-3 mb-6">
@@ -246,23 +245,6 @@ const Dashboard = () => {
                             <div className={`w-9 h-9 border border-white/10 flex items-center justify-center ${metric.color} font-black text-xs shrink-0`}>{metric.goal}</div>
                         </div>
                     ))}
-                </section>
-
-                <section className="grid grid-cols-2 gap-4 pb-8">
-                    <div className="glass-panel p-4 border-white/10 group relative cursor-help">
-                        <span className="text-[8px] uppercase text-slate-500 font-black block mb-2 tracking-[0.2em] flex items-center gap-1.5">Latency <Info size={10} /></span>
-                        <span className="font-mono text-cyan-400 text-sm tabular-nums font-black tracking-tight">{sysStats.latency}</span>
-                        <div className="absolute bottom-full left-0 mb-3 w-56 p-3 glass-tactical text-[9px] font-bold text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 uppercase tracking-widest leading-loose">
-                            Network response time across active nodes.
-                        </div>
-                    </div>
-                    <div className="glass-panel p-4 border-white/10 group relative cursor-help">
-                        <span className="text-[8px] uppercase text-slate-500 font-black block mb-2 tracking-[0.2em] flex items-center gap-1.5">Buffer <Info size={10} /></span>
-                        <span className="font-mono text-amber-500 text-sm font-black tracking-tight uppercase">{sysStats.queue}</span>
-                        <div className="absolute bottom-full right-0 mb-3 w-56 p-3 glass-tactical text-[9px] font-bold text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 uppercase tracking-widest leading-loose">
-                            Current AI pipeline throughput status.
-                        </div>
-                    </div>
                 </section>
             </aside>
         </div>

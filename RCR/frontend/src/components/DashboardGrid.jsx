@@ -64,11 +64,15 @@ export const DashboardGrid = () => {
     const { state } = useTactical();
     const { incidents, responders, commsStatus } = state;
 
+    // RULE 3: Protect all .filter() and .length operations with strict array check
     const isValidArray = Array.isArray(incidents);
-    const activeIncidents = isValidArray ? incidents.filter(i => i.status !== 'RESOLVED') : [];
-    const criticalIncidentsCount = activeIncidents.filter(i => i.severity >= 4).length;
-    const availableResponders = Array.isArray(responders) ? responders.filter(r => r.status === 'AVAILABLE').length : 0;
+    const activeIncidents = isValidArray ? incidents.filter(i => i && i.status !== 'RESOLVED') : [];
+    const criticalIncidentsCount = activeIncidents.filter(i => i && i.severity >= 4).length;
+    
+    const isValidResponders = Array.isArray(responders);
+    const availableResponders = isValidResponders ? responders.filter(r => r && r.status === 'AVAILABLE').length : 0;
 
+    // RULE 4: Fallback UI for corrupted state
     if (!isValidArray) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6">
@@ -106,7 +110,7 @@ export const DashboardGrid = () => {
                 />
                 <StatCard 
                     title="Responder_Units" 
-                    value={responders.length} 
+                    value={isValidResponders ? responders.length : 0} 
                     subValue={`${availableResponders} READY`} 
                     icon={Users} 
                     color="text-cyan-400" 
@@ -142,25 +146,9 @@ export const DashboardGrid = () => {
                             <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                             <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-white italic">Live_Tactical_Grid</h2>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-white/5 rounded text-cyan-400/70">
-                                <Search size={12} />
-                                <span className="text-[9px] font-black uppercase tracking-widest font-mono">SEC_01_ALPHA</span>
-                            </div>
-                            <button className="p-2 text-slate-500 hover:text-white hover:bg-white/5 transition-all">
-                                <Filter size={16} />
-                            </button>
-                        </div>
                     </div>
                     <div className="flex-1 relative bg-slate-950/40">
                         <TacticalMap incidents={incidents} />
-                        <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                            {['SAT', 'GRID', 'Z-AXIS'].map(layer => (
-                                <button key={layer} className="bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-cyan-400 hover:border-cyan-500/50 transition-all shadow-xl">
-                                    {layer}
-                                </button>
-                            ))}
-                        </div>
                     </div>
                 </motion.div>
 
@@ -171,23 +159,6 @@ export const DashboardGrid = () => {
                 >
                     <div className="flex-1 bg-slate-900/60 backdrop-blur-xl border border-white/5 flex flex-col overflow-hidden shadow-2xl shadow-black/50">
                         <IntelFeed incidents={incidents} />
-                    </div>
-                    
-                    {/* QUICK ACTION CARD */}
-                    <div className="h-32 bg-red-950/10 backdrop-blur-xl border border-red-500/20 flex items-center justify-between p-6 shrink-0 group hover:bg-red-950/20 transition-all cursor-pointer relative overflow-hidden">
-                        {/* High-Tech Background Pattern */}
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600 group-hover:w-1.5 transition-all" />
-                        
-                        <div className="space-y-1 relative z-10">
-                            <h3 className="text-[11px] font-black text-red-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                                <ShieldAlert size={14} className="animate-pulse" /> Direct_SOS_Relay
-                            </h3>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Broadcast emergency signal to all units</p>
-                        </div>
-                        <div className="w-14 h-14 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.15)] group-hover:scale-110 group-hover:bg-red-600/20 transition-all duration-500">
-                            <ShieldAlert size={28} className="text-red-500 group-hover:animate-pulse" />
-                        </div>
                     </div>
                 </motion.div>
             </div>
@@ -213,19 +184,19 @@ export const DashboardGrid = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {(Array.isArray(incidents) ? incidents.slice(0, 5) : []).map((inc) => (
-                                <tr key={inc.id} className="hover:bg-cyan-500/[0.03] transition-colors group">
-                                    <td className="px-6 py-4 text-[11px] font-mono text-slate-500 tabular-nums">[{new Date(inc.createdAt).toLocaleTimeString()}]</td>
-                                    <td className="px-6 py-4 text-[11px] font-black text-slate-300 uppercase tracking-tighter">UNIT_{inc.id.substring(0, 8)}</td>
+                            {(isValidArray ? incidents.slice(0, 5) : []).map((inc) => (
+                                <tr key={inc?.id} className="hover:bg-cyan-500/[0.03] transition-colors group">
+                                    <td className="px-6 py-4 text-[11px] font-mono text-slate-500 tabular-nums">[{new Date(inc?.createdAt).toLocaleTimeString()}]</td>
+                                    <td className="px-6 py-4 text-[11px] font-black text-slate-300 uppercase tracking-tighter">UNIT_{inc?.id?.substring(0, 8)}</td>
                                     <td className="px-6 py-4">
                                         <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest px-2 py-1 bg-cyan-500/5 border border-cyan-500/10">
-                                            {inc.category || 'GENERAL'}
+                                            {inc?.category || 'GENERAL'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${inc.severity >= 4 ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-cyan-500'}`} />
-                                            <span className={`text-[10px] font-black uppercase tracking-wider ${inc.severity >= 4 ? 'text-red-500' : 'text-slate-400'}`}>LEVEL_0{inc.severity}</span>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${inc?.severity >= 4 ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-cyan-500'}`} />
+                                            <span className={`text-[10px] font-black uppercase tracking-wider ${inc?.severity >= 4 ? 'text-red-500' : 'text-slate-400'}`}>LEVEL_0{inc?.severity}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">

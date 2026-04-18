@@ -19,16 +19,20 @@ const initialState = {
 function tacticalReducer(state, action) {
     switch (action.type) {
         case 'SET_INCIDENTS':
+            // RULE 1: Strictly validate incoming data before setting state
             return { ...state, incidents: Array.isArray(action.payload) ? action.payload : [], isLoading: false };
         case 'ADD_INCIDENT':
             if (!action.payload || !action.payload.id) return state;
-            if ((state.incidents || []).some(i => i.id === action.payload.id)) return state;
-            return { ...state, incidents: [action.payload, ...(state.incidents || [])] };
+            const currentIncidents = Array.isArray(state.incidents) ? state.incidents : [];
+            if (currentIncidents.some(i => i.id === action.payload.id)) return state;
+            return { ...state, incidents: [action.payload, ...currentIncidents] };
         case 'SET_RESPONDERS':
+            // RULE 1: Strictly validate incoming data before setting state
             return { ...state, responders: Array.isArray(action.payload) ? action.payload : [] };
         case 'UPDATE_RESPONDER': {
             if (!action.payload || !action.payload.id) return state;
-            const filtered = (state.responders || []).filter(r => r.id !== action.payload.id);
+            const currentResponders = Array.isArray(state.responders) ? state.responders : [];
+            const filtered = currentResponders.filter(r => r.id !== action.payload.id);
             return { ...state, responders: [...filtered, action.payload] };
         }
         case 'SET_BOTTOM_SHEET':
@@ -38,7 +42,8 @@ function tacticalReducer(state, action) {
         case 'UPDATE_LOCATION':
             return { ...state, userLocation: { ...state.userLocation, ...action.payload } };
         case 'ADD_INTEL':
-            return { ...state, intelFeed: [action.payload, ...state.intelFeed].slice(0, 20) };
+            const currentIntel = Array.isArray(state.intelFeed) ? state.intelFeed : [];
+            return { ...state, intelFeed: [action.payload, ...currentIntel].slice(0, 20) };
         case 'SET_SELECTED_INCIDENT':
             return { ...state, selectedIncident: action.payload };
         case 'SET_MAP_FILTER':
@@ -55,8 +60,9 @@ export const TacticalProvider = ({ children }) => {
         try {
             const [incidentsRes, respondersRes] = await Promise.all([
                 api.get('/api/incidents'),
-                api.get('/api/incidents/responders') // Assuming this endpoint exists or will be handled
+                api.get('/api/incidents/responders') 
             ]);
+            // RULE 1: Strictly validate API payloads
             dispatch({ type: 'SET_INCIDENTS', payload: Array.isArray(incidentsRes.data) ? incidentsRes.data : [] });
             dispatch({ type: 'SET_RESPONDERS', payload: Array.isArray(respondersRes.data) ? respondersRes.data : [] });
         } catch (err) {
@@ -77,36 +83,28 @@ export const TacticalProvider = ({ children }) => {
         let socket;
         (async () => {
             socket = await getSocket();
+            if (!socket) return;
+            
+            // RULE 1: Validate socket event payloads
             socket.on('incident.created', (payload) => {
-                if (payload?.incident) {
+                if (payload?.incident && payload.incident.id) {
                     dispatch({ type: 'ADD_INCIDENT', payload: payload.incident });
-                    dispatch({ type: 'ADD_INTEL', payload: `ALERT: ${payload.incident.title} reported at LVL_${payload.incident.floorLevel || '?'}` });
+                    dispatch({ type: 'ADD_INTEL', payload: `ALERT: ${payload.incident.title} reported` });
                 }
             });
+
             socket.on('responder.presence-update', (payload) => {
-                if (payload?.responder) {
+                if (payload?.responder && payload.responder.id) {
                     dispatch({ type: 'UPDATE_RESPONDER', payload: payload.responder });
                 }
             });
-            socket.on('NEW_IOT_ALERT', (event) => {
-                dispatch({ type: 'ADD_INTEL', payload: `IOT: ${event.category} detected in Room ${event.room_number}` });
-            });
         })();
-
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition((pos) => {
-                dispatch({ type: 'UPDATE_LOCATION', payload: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
-            });
-        }
 
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            if (socket) {
-                socket.off('incident.created');
-                socket.off('responder.presence-update');
-                socket.off('NEW_IOT_ALERT');
-            }
+            socket?.off('incident.created');
+            socket?.off('responder.presence-update');
         };
     }, []);
 

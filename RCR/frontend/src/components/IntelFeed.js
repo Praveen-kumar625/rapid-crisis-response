@@ -90,6 +90,7 @@ export const IntelFeed = ({ incidents, onSelectIncident, onAcknowledge }) => {
 
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
                 <AnimatePresence mode="popLayout">
+                    {/* RULE 2: Defensive component rendering with strict array check */}
                     {Array.isArray(incidents) ? incidents.map((inc) => (
                         <IncidentCard 
                             key={inc.id} 
@@ -98,6 +99,7 @@ export const IntelFeed = ({ incidents, onSelectIncident, onAcknowledge }) => {
                             onClick={() => onSelectIncident?.(inc)}
                         />
                     )) : (
+                        /* RULE 4: Fallback UI for non-array payload */
                         <div className="py-10 text-center opacity-50">
                             <AlertCircle size={32} className="mx-auto mb-4 text-warning" />
                             <p className="text-[10px] font-black uppercase tracking-widest">Feed_Corrupted / No Data</p>

@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function ActionPanel({ children }) {
+export const ActionPanel = ({ children }) => {
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-[#0B0F19] overflow-hidden">
             {/* OPERATOR CONTROL HEADER */}
@@ -17,4 +17,6 @@ export default function ActionPanel({ children }) {
             </div>
         </div>
     );
-}
+};
+
+export default ActionPanel;

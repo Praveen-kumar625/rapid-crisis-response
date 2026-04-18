@@ -137,3 +137,5 @@ export const TacticalMap = ({
         </section>
     );
 };
+
+export default TacticalMap;

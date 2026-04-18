@@ -171,3 +171,5 @@ export const DashboardGrid = () => {
         </div>
     );
 };
+
+export default DashboardGrid;

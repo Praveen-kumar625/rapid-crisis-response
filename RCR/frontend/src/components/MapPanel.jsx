@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function MapPanel({ title, children }) {
+export const MapPanel = ({ title, children }) => {
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-[#0B0F19] border border-white/5 overflow-hidden shadow-2xl">
             {/* TACTICAL PANEL HEADER */}
@@ -24,4 +24,6 @@ export default function MapPanel({ title, children }) {
             </div>
         </div>
     );
-}
+};
+
+export default MapPanel;

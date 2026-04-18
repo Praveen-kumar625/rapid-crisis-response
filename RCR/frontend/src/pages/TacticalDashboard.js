@@ -1,11 +1,11 @@
 import React, { Suspense } from 'react';
 import { useTactical } from '../context/TacticalContext';
 
-// Existing UI Components
-import MapPanel from '../components/MapPanel';
+// Existing UI Components - Using Named Imports for Robustness
+import { MapPanel } from '../components/MapPanel';
 import { TacticalMap } from '../components/TacticalMap';
 import { IntelFeed } from '../components/IntelFeed';
-import ActionPanel from '../components/ActionPanel';
+import { ActionPanel } from '../components/ActionPanel';
 import { AICommand } from '../components/AICommand';
 
 const LoadingState = ({ label }) => (

@@ -117,3 +117,5 @@ export const IntelFeed = ({ incidents, onSelectIncident, onAcknowledge }) => {
         </div>
     );
 };
+
+export default IntelFeed;

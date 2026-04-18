@@ -370,3 +370,5 @@ export const AICommand = ({ selectedIncident }) => {
         </aside>
     );
 };
+
+export default AICommand;

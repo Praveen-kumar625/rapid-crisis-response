@@ -1,24 +1,30 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Lock, Mail, Shield, LogIn as LogInIcon } from 'lucide-react';
-import { signInWithGoogle } from '../utils/firebase';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const toggleAuth = () => setIsLogin(!isLogin);
 
-    const handleGoogleLogin = async () => {
-        setLoading(true);
-        try {
-            await signInWithGoogle();
-        } catch (error) {
-            toast.error("Auth failed. Check API keys.");
-        } finally {
-            setLoading(false);
-        }
+    const handleGoogleSuccess = (credentialResponse) => {
+        const token = credentialResponse.credential;
+        localStorage.setItem('google_token', token);
+        const decoded = jwtDecode(token);
+        
+        toast.success(`Welcome, ${decoded.name}`);
+        window.dispatchEvent(new Event('google-login-success'));
+        navigate('/dashboard');
+    };
+
+    const handleGoogleError = () => {
+        toast.error("Google Auth failed. Check console.");
     };
 
     return (
@@ -59,15 +65,19 @@ const Login = () => {
                         <button className="w-full bg-cyan-500 hover:bg-cyan-400 text-[#060B13] py-5 md:py-4 font-black uppercase text-sm md:text-xs tracking-[0.2em] transition-all">
                             Initiate_Auth
                         </button>
-                        <button 
-                            onClick={handleGoogleLogin} 
-                            className="w-full border border-slate-800 text-white py-4 flex items-center justify-center gap-3 text-[12px] md:text-[10px] uppercase font-bold tracking-widest bg-slate-900/40"
-                        >
-                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" className="w-5 h-5 md:w-4 md:h-4" alt="G" />
-                            {loading ? "..." : "Google Login"}
-                        </button>
+                        
+                        <div className="pt-2 flex justify-center">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={handleGoogleError}
+                                theme="filled_blue"
+                                shape="square"
+                                size="large"
+                                width="100%"
+                            />
+                        </div>
                     </div>
-                    {/* Mobile Only: Sign Up link to match your image */}
+                    {/* Mobile Only: Sign Up link */}
                     <div className="md:hidden mt-10 text-center">
                         <p className="text-slate-500 text-[10px] font-black tracking-widest uppercase">Need an account?</p>
                         <button onClick={toggleAuth} className="text-cyan-400 text-[12px] font-black tracking-widest uppercase underline mt-1">Sign Up</button>

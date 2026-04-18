@@ -255,8 +255,13 @@ function ReportForm() {
                 clearTimeout(timeoutId);
                 toast.error('Dispatch Failure - Queued for sync', { id: toastId });
                 await queueReport({...payload, mediaFile, synced: false });
-            } finally {
-                setIsSubmitting(false);
+
+                // 🚨 Proactive Sync: If we think we're online but it failed, 
+                // try to trigger the global sync logic immediately
+                if (navigator.onLine) {
+                    window.dispatchEvent(new Event('online'));
+                }
+            } finally {                setIsSubmitting(false);
             }
         } else {
             await queueReport({...payload, mediaFile, synced: false });

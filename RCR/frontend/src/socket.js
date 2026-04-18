@@ -41,7 +41,7 @@ export async function getSocket() {
 }
 
 /**
- * OBJECTIVE 2: Fail-safe Socket Emitter with Timeout
+ * OBJECTIVE 2: fail-safe socket emitter with timeout
  */
 export async function emitWithTimeout(event, payload, timeout = 5000) {
     const s = await getSocket();
@@ -51,14 +51,19 @@ export async function emitWithTimeout(event, payload, timeout = 5000) {
             reject(new Error(`TIMEOUT:${event}`));
         }, timeout);
 
-        s.emit(event, payload, (response) => {
+        try {
+            s.emit(event, payload, (response) => {
+                clearTimeout(timer);
+                if (response && response.status === 'error') {
+                    reject(new Error(response.message || 'SOCKET_ERROR'));
+                } else {
+                    resolve(response);
+                }
+            });
+        } catch (err) {
             clearTimeout(timer);
-            if (response && response.status === 'error') {
-                reject(new Error(response.message || 'SOCKET_ERROR'));
-            } else {
-                resolve(response);
-            }
-        });
+            reject(err);
+        }
     });
 }
 
@@ -70,34 +75,50 @@ export async function emitWithTimeout(event, payload, timeout = 5000) {
 export async function flushSyncQueue() {
     if (isSyncing || !navigator.onLine) return;
     
-    const pending = await getPendingReports();
-    if (pending.length === 0) return;
+    try {
+        const pending = await getPendingReports();
+        if (pending.length === 0) return;
 
-    isSyncing = true;
-    const s = await getSocket();
+        isSyncing = true;
+        const s = await getSocket();
 
-    console.log(`[Sync] Processing ${pending.length} queued signals...`);
+        console.log(`[Sync] Proactive uplink: Processing ${pending.length} queued signals...`);
 
-    for (const report of pending) {
-        try {
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 5000);
-                s.emit('report.created', report, (ack) => {
-                    clearTimeout(timeout);
-                    if (ack && ack.status === 'success') resolve();
-                    else reject(new Error('ACK_FAIL'));
+        for (const report of pending) {
+            try {
+                // Ensure report has required fields for backend
+                const syncPayload = {
+                    ...report,
+                    status: 'OPEN',
+                    createdAt: report.createdAt || new Date()
+                };
+
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 10000);
+                    s.emit('incident.create', syncPayload, (ack) => {
+                        clearTimeout(timeout);
+                        if (ack && (ack.status === 'success' || ack.id)) resolve();
+                        else reject(new Error('ACK_FAIL'));
+                    });
                 });
-            });
-            await markReportSynced(report.localId);
-            console.log(`[Sync] Node ${report.localId} confirmed.`);
-        } catch (err) {
-            console.error(`[Sync] Failed to flush report ${report.localId}:`, err.message);
-            break; // Stop flushing if we hit a serious error
+                await markReportSynced(report.localId);
+                console.log(`[Sync] Node ${report.localId} synchronization confirmed.`);
+            } catch (err) {
+                console.error(`[Sync] Terminal failure for report ${report.localId}:`, err.message);
+                // If it's a timeout, we stop and wait for better connectivity
+                if (err.message === 'SYNC_TIMEOUT') break;
+            }
+        }
+    } catch (err) {
+        console.error('[Sync] Queue access error:', err);
+    } finally {
+        isSyncing = false;
+        // Check if we still have pending reports
+        const remaining = await getPendingReports();
+        if (remaining.length === 0 && navigator.onLine) {
+            // All good
         }
     }
-    
-    isSyncing = false;
-    if (pending.length > 0) toast.success('Offline signals synchronized.');
 }
 
 // FIXED: Export function to update socket token on refresh

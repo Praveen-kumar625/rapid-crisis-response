@@ -1,6 +1,6 @@
-// frontend/src/index.js
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import App from './App';
 import './index.css';
 
@@ -13,10 +13,13 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "171708174617-qkherktevmu6jus7bdk53hk64e16a0v8.apps.googleusercontent.com";
+
 const container = document.getElementById('root');
 const root = createRoot(container);
-// Auth0Provider and GoogleOAuthProvider deleted. Firebase manages state internally.
 
 root.render(
-    <App />
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <App />
+    </GoogleOAuthProvider>
 );

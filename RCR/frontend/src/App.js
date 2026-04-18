@@ -1,13 +1,12 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth, handleRedirectResult } from './utils/firebase';
 import toast, { Toaster } from 'react-hot-toast';
 
 import { joinHotelRoom, updateSocketToken } from './socket';
 import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
+import { jwtDecode } from 'jwt-decode';
 import { getPendingReports, markReportSynced } from './idb';
 import { UIProvider } from './context/UIContext';
 import { TacticalProvider } from './context/TacticalContext';
@@ -102,31 +101,51 @@ function App() {
     useEffect(() => {
         window.addEventListener('online', flushOfflineQueue);
         if (navigator.onLine) flushOfflineQueue();
-        return () => window.removeEventListener('online', flushOfflineQueue);
+
+        // 🚨 Robust Background Sync: Periodically check for pending reports even if online events were missed
+        const syncInterval = setInterval(() => {
+            if (navigator.onLine) flushOfflineQueue();
+        }, 30000);
+
+        return () => {
+            window.removeEventListener('online', flushOfflineQueue);
+            clearInterval(syncInterval);
+        };
     }, []);
 
     useEffect(() => {
-        handleRedirectResult().catch(console.error);
-
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                const token = await firebaseUser.getIdToken();
-                localStorage.setItem('google_token', token);
-                setUser(firebaseUser);
-
-                updateSocketToken(token);
-                syncUserContext();
-            } else {
-                localStorage.removeItem('google_token');
-                setUser(null);
+        const initAuth = async () => {
+            const token = localStorage.getItem('google_token');
+            if (token) {
+                try {
+                    const decoded = jwtDecode(token);
+                    // Check expiration
+                    if (decoded.exp * 1000 < Date.now()) {
+                        localStorage.removeItem('google_token');
+                        setUser(null);
+                        return;
+                    }
+                    setUser(decoded);
+                    updateSocketToken(token);
+                    syncUserContext();
+                } catch (err) {
+                    console.error('Invalid token', err);
+                    localStorage.removeItem('google_token');
+                }
             }
-        });
+        };
 
-        return () => unsubscribe();
+        initAuth();
+
+        const handleLoginSuccess = () => initAuth();
+        window.addEventListener('google-login-success', handleLoginSuccess);
+        
+        return () => {
+            window.removeEventListener('google-login-success', handleLoginSuccess);
+        };
     }, []);
 
     const logout = async () => {
-        await auth.signOut();
         localStorage.removeItem('google_token');
         setUser(null);
         toast.success('Logged out');

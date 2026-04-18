@@ -54,6 +54,18 @@ export const TacticalMap = ({
     
     const [earthquakes, setEarthquakes] = useState([]);
     const [userLocation, setUserLocation] = useState(null);
+    const [mapInstance, setMapInstance] = useState(null);
+
+    // 🚨 Desktop Fix: Ensure map adjusts when container dimensions change (e.g. sidebar collapse)
+    useEffect(() => {
+        if (!mapInstance) return;
+        const observer = new ResizeObserver(() => {
+            window.google?.maps?.event.trigger(mapInstance, 'resize');
+        });
+        const container = document.getElementById('tactical-map-container');
+        if (container) observer.observe(container);
+        return () => observer.disconnect();
+    }, [mapInstance]);
 
     const fetchEarthquakes = useCallback(async () => {
         try {
@@ -126,9 +138,10 @@ export const TacticalMap = ({
     }
 
     return (
-        <section className="flex-1 h-full w-full max-w-[100vw] overflow-x-hidden relative bg-navy-950 border-r border-white/10 touch-auto">
+        <section id="tactical-map-container" className="flex-1 h-full w-full overflow-hidden relative bg-navy-950 border-r border-white/10 touch-auto">
             <APIProvider apiKey={apiKey}>
                 <Map
+                    onLoad={(map) => setMapInstance(map)}
                     defaultCenter={RESPONDER_HQ}
                     defaultZoom={14}
                     mapId={mapId}

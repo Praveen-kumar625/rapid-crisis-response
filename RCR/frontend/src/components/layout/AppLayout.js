@@ -3,7 +3,6 @@ import React from 'react';
 import { MobileNavbar } from './MobileNavbar';
 import { DesktopLayout } from './DesktopLayout';
 import { StepInstructionGuide } from '../ui/StepInstructionGuide';
-import { useUI } from '../../context/UIContext';
 
 
 export const AppLayout = ({ children, user, logout }) => {

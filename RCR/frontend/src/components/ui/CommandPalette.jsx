@@ -9,7 +9,6 @@ import {
     Map as MapIcon,
     BarChart3,
     Settings,
-    ChevronRight,
     AlertCircle
 } from 'lucide-react';
 import { useUI } from '../../context/UIContext';

@@ -1,7 +1,6 @@
 import React from 'react';
 import { DesktopSidebar } from './DesktopSidebar';
 import { CommandPalette } from '../ui/CommandPalette';
-import { useUI } from '../../context/UIContext';
 
 export const DesktopLayout = ({ children, user, logout }) => {
     return (

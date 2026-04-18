@@ -1,12 +1,10 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
     Activity, 
     ShieldAlert, 
     Users, 
     Zap, 
     Clock, 
-    ChevronRight,
     Search,
     Filter
 } from 'lucide-react';

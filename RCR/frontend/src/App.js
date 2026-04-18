@@ -10,6 +10,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPendingReports, markReportSynced } from './idb';
 import { UIProvider } from './context/UIContext';
+import { TacticalProvider } from './context/TacticalContext';
 
 // Pages
 const Home = lazy(() => import('./pages/Home'));
@@ -130,17 +131,19 @@ function App() {
 
     return (
         <ErrorBoundary>
-            <UIProvider>
-                <Router>
-                    <Toaster position="top-center" />
+            <TacticalProvider>
+                <UIProvider>
+                    <Router>
+                        <Toaster position="top-center" />
 
-                    <AppLayout user={user} logout={logout}>
-                        <Suspense fallback={<PageLoader />}>
-                            <AnimatedRoutes />
-                        </Suspense>
-                    </AppLayout>
-                </Router>
-            </UIProvider>
+                        <AppLayout user={user} logout={logout}>
+                            <Suspense fallback={<PageLoader />}>
+                                <AnimatedRoutes />
+                            </Suspense>
+                        </AppLayout>
+                    </Router>
+                </UIProvider>
+            </TacticalProvider>
         </ErrorBoundary>
     );
 }

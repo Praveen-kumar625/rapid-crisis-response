@@ -1,21 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { connection } = require('../infrastructure/queue');
 const Redis = require('ioredis');
-const { REDIS, NODE_ENV } = require('../config/env');
+const { NODE_ENV } = require('../config/env');
 
-const redisClient = new Redis({
-    host: REDIS.host,
-    port: REDIS.port,
+// Reuse connection config from infrastructure
+const healthRedis = new Redis(connection, {
     lazyConnect: true,
-    connectTimeout: 1000,
-    maxRetriesPerRequest: 0 // 🚨 FIXED: Do not retry in tests
+    connectTimeout: 2000,
+    maxRetriesPerRequest: 0
 });
 
 router.get('/', async (req, res) => {
-    // 🚨 ROOT CAUSE FIX: In TEST mode, return 200 immediately to avoid timeouts/503s
+    // Return 200 immediately in test mode to avoid blocking CI
     if (NODE_ENV === 'test') {
-        return res.json({ status: 'OK', message: 'Health check bypassed in test mode' });
+        return res.json({ status: 'OK', mode: 'test' });
     }
 
     let databaseStatus = 'UP';
@@ -23,23 +23,30 @@ router.get('/', async (req, res) => {
     let hasError = false;
 
     try {
+        // Verify PostgreSQL connection
         await db.raw('SELECT 1');
     } catch (err) {
+        console.error('[Healthcheck] DB Error:', err.message);
         databaseStatus = 'DOWN';
         hasError = true;
     }
 
     try {
-        await redisClient.ping();
+        // Verify Redis connection
+        await healthRedis.ping();
     } catch (err) {
+        console.error('[Healthcheck] Redis Error:', err.message);
         redisStatus = 'DOWN';
         hasError = true;
     }
 
     const payload = {
-        status: hasError ? 'DEGRADED' : 'OK',
+        status: hasError ? 'UNAVAILABLE' : 'OK',
         timestamp: new Date().toISOString(),
-        services: { database: databaseStatus, redis: redisStatus }
+        services: {
+            database: databaseStatus,
+            queue_redis: redisStatus
+        }
     };
 
     if (hasError) {

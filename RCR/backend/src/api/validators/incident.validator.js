@@ -10,9 +10,9 @@ const incidentSchema = z.object({
     floorLevel: z.number().int().default(1),
     roomNumber: z.string().min(1),
     wingId: z.string().min(1),
-    mediaType: z.string().optional(),
-    mediaBase64: z.string().optional(),
-    mediaUrl: z.string().url().optional(),
+    mediaType: z.string().optional().nullable(),
+    mediaBase64: z.string().optional().nullable(),
+    mediaUrl: z.string().url().optional().nullable(),
     triageMethod: z.string().optional(),
 });
 
@@ -40,7 +40,7 @@ const statusUpdateSchema = z.object({
 
 // 🚨 NEW: Validator for Task Status Update
 const taskStatusSchema = z.object({
-    status: z.enum(['PENDING', 'DISPATCHED', 'ACKNOWLEDGED', 'SECURED']),
+    status: z.enum(['PENDING', 'DISPATCHED', 'ACKNOWLEDGED', 'SECURED', 'COMPLETED']),
     evidenceUrl: z.string().url().optional(),
 });
 

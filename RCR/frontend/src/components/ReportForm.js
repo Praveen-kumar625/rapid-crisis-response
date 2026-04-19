@@ -124,7 +124,13 @@ function ReportForm() {
                 recorder.onstop = async() => {
                     const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
                     const currentMimeType = recorder.mimeType || 'audio/webm';
-                    
+
+                    if (blob.size < 100) {
+                        toast.error('Recording too short — hold button longer');
+                        setSosMessage(''); setIsAudioRecording(false);
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onloadend = async() => {
                         const base64 = reader.result.split(',')[1];
@@ -210,7 +216,11 @@ function ReportForm() {
     const handleSubmit = async(e) => {
         e.preventDefault();
         if (!form.title.trim()) { toast.error('Subject identifier required'); titleRef.current?.focus(); return; }
+        if (form.title.trim().length < 5) { toast.error('Title must be at least 5 characters'); titleRef.current?.focus(); return; }
         if (!form.description.trim()) { toast.error('Narrative required'); descriptionRef.current?.focus(); return; }
+        if (!form.category) { toast.error('Select a classification category'); return; }
+        if (!form.wingId.trim()) { toast.error('Sector (Wing) is required'); return; }
+        if (!form.roomNumber.trim()) { toast.error('Unit (Room number) is required'); return; }
         
         setIsSubmitting(true);
         let finalForm = { ...form };
@@ -237,16 +247,21 @@ function ReportForm() {
             }, 5000);
 
             try {
-                let mediaUrl = null;
+                let mediaUrl;
                 if (mediaFile) {
-                    const fileName = mediaFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                    const { data: urlData } = await api.get(`/api/incidents/upload-url?fileName=${fileName}&mimeType=${mediaType}`);
-                    if (urlData && urlData.uploadUrl) {
-                        await fetch(urlData.uploadUrl, { method: 'PUT', body: mediaFile, headers: { 'Content-Type': mediaType } });
-                        mediaUrl = urlData.fileUrl;
+                    try {
+                        const fileName = mediaFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+                        const { data: urlData } = await api.get(`/api/incidents/upload-url?fileName=${fileName}&mimeType=${mediaType}`);
+                        if (urlData && urlData.uploadUrl) {
+                            await fetch(urlData.uploadUrl, { method: 'PUT', body: mediaFile, headers: { 'Content-Type': mediaType } });
+                            mediaUrl = urlData.fileUrl;
+                        }
+                    } catch (uploadErr) {
+                        console.warn('[ReportForm] Media upload skipped:', uploadErr.message);
+                        toast('Media upload skipped — submitting without file', { icon: '⚠️' });
                     }
                 }
-                await api.post('/api/incidents', { ...payload, mediaUrl });
+                await api.post('/api/incidents', { ...payload, ...(mediaUrl && { mediaUrl }) });
                 clearTimeout(timeoutId);
                 toast.success('Incident Dispatched', { id: toastId });
                 setForm({ title: '', description: '', severity: 3, category: '', floorLevel: 1, roomNumber: '', wingId: '' });

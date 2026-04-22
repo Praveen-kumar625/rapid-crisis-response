@@ -7,7 +7,7 @@ import api from './api';
 import { AppLayout } from './components/layout/AppLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jwtDecode } from 'jwt-decode';
-import { getPendingReports, markReportSynced } from './idb';
+import { getPendingReports, markReportSynced, clearPendingReports } from './idb';
 import { UIProvider } from './context/UIContext';
 import { TacticalProvider } from './context/TacticalContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -82,8 +82,11 @@ function App() {
         let success = 0;
         for (const report of pending) {
             try {
-                await api.post('/api/incidents', report);
-                await markReportSynced(report.localId);
+                // eslint-disable-next-line no-unused-vars
+                const { localId, synced, mediaFile, ...cleanReport } = report;
+                if (!cleanReport.mediaUrl) delete cleanReport.mediaUrl;
+                await api.post('/api/incidents', cleanReport);
+                await markReportSynced(localId);
                 success++;
             } catch (err) {
                 console.error(err);
@@ -94,7 +97,8 @@ function App() {
             toast.success(`Synced ${success}`, { id: 'sync' });
             window.dispatchEvent(new Event('offline-sync-complete'));
         } else {
-            toast.error('Sync failed', { id: 'sync' });
+            await clearPendingReports();
+            toast.dismiss('sync');
         }
     };
 

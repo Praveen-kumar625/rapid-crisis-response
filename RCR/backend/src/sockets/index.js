@@ -168,6 +168,10 @@ function initSocket(httpServer) {
                 if (incident?.id) {
                     io.to(`incident-${incident.id}`).emit(`incident.${payload.type}`, payload);
                 }
+            } else if (channel.endsWith('_tasks')) {
+                io.to(`hotel_${hotelId}`).emit(`task.${payload.type}`, payload);
+            } else if (channel.endsWith('_responders')) {
+                io.to(`hotel_${hotelId}`).emit('responder.presence-update', payload);
             } else if (channel.endsWith('_iot')) {
                 // PHASE 1 GLUE: Bridge IoT alerts to connected clients
                 io.to(`hotel_${hotelId}`).emit('NEW_IOT_ALERT', payload.data);

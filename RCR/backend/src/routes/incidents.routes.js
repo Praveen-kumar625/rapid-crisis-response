@@ -20,6 +20,7 @@ router.get('/me', jwtAuth, incidentsController.getMe);
 router.get('/upload-url', jwtAuth, incidentsController.getUploadUrl);
 
 // Public read endpoints
+router.get('/responders', jwtAuth, incidentsController.getResponders);
 router.get('/', jwtAuth, incidentsController.getAll);
 router.get('/:id', jwtAuth, incidentsController.getOne);
 

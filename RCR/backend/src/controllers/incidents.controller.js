@@ -34,6 +34,19 @@ exports.getMe = async(req, res) => {
     });
 };
 
+exports.getResponders = async(req, res) => {
+    try {
+        const hotelId = req.user?.hotelId;
+        const responders = await db('users')
+            .where({ hotel_id: hotelId, role: 'RESPONDER' })
+            .select('id', 'name', 'responder_role', 'responder_status', 'current_floor', 'current_wing');
+        res.json(responders);
+    } catch (err) {
+        console.error('[IncidentsController] getResponders failed:', err);
+        res.status(500).json({ error: 'Failed to fetch responders', details: err.message });
+    }
+};
+
 exports.getAll = async(req, res) => {
     try {
         const { bbox, wingId, floorLevel, roomNumber } = req.query;

@@ -26,6 +26,7 @@ const envSchema = z.object({
     TWILIO_ACCOUNT_SID: z.string().optional(),
     TWILIO_AUTH_TOKEN: z.string().optional(),
     TWILIO_FROM_NUMBER: z.string().optional(),
+    TWILIO_TO_NUMBERS: z.string().optional(),
     COMMANDER_PHONE_NUMBER: z.string().optional(),
 });
 
@@ -64,6 +65,7 @@ module.exports = {
         accountSid: env.TWILIO_ACCOUNT_SID,
         authToken: env.TWILIO_AUTH_TOKEN,
         fromNumber: env.TWILIO_FROM_NUMBER,
+        toNumbers: env.TWILIO_TO_NUMBERS || env.COMMANDER_PHONE_NUMBER || '',
     },
     COMMANDER_PHONE_NUMBER: env.COMMANDER_PHONE_NUMBER,
     ALLOWED_ORIGINS: (env.ALLOWED_ORIGINS || '').split(',').map(u => u.trim()).filter(Boolean),

@@ -62,6 +62,11 @@ export async function markReportSynced(localId) {
     await db.delete(REPORT_STORE, localId);
 }
 
+export async function clearPendingReports() {
+    const db = await getDB();
+    await db.clear(REPORT_STORE);
+}
+
 // Tasks Caching Logic
 export async function cacheTasks(tasks) {
     const db = await getDB();
